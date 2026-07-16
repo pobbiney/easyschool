@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Country;
 use App\Models\Staff;
+use App\Models\StaffDoc;
 use Illuminate\Support\Facades\Auth;
 use PhpParser\Builder\Function_;
 
@@ -87,5 +88,60 @@ class StaffController extends Controller
             : back()->with('error_message','Something went wrong, please try again.');
     }
 
+    }
+
+    public function getListstaffView()
+    {
+        $liststaff = Staff::where('status','Active')->get();
+        return view('staff.list-staff',['liststaff'=>$liststaff]);
+    }
+
+    //get Staff details
+      public function getStaffID($id)
+    {
+         $data = Staff::findOrFail($id);
+          return response()->json($data);
+    }
+
+     //Delete Staff
+     public function deleteStaff(Request $request)
+    {
+        Staff ::where('id',$request->staff_id)->delete();
+        return redirect('list-staff')->with('message_success','Staff deleted successfully!');
+    }
+
+    
+    public function addDocStaff(Request $request)
+    {
+        foreach($request->documents as $index => $doc)
+        {
+            $file = $request->file("documents.$index.document");
+
+            if(!$file){
+                continue;
+            }
+
+            $filename = time().'_'.$file->getClientOriginalName();
+
+            $file->move(
+                public_path('uploads/staffdocs'),
+                $filename
+            );
+
+            StaffDoc::create([
+                'staff_id'       => $request->staff_number,
+                'level'    => $doc['level'],
+               
+                'year'    => $doc['year'],
+                'qualification'    => $doc['qualification'],
+                'document_path'  => $filename,
+                'created_by'     => Auth::id()
+            ]);
+        }
+
+        return back()->with(
+            'message_success',
+            'Document saved successfully'
+        );
     }
 }

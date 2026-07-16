@@ -9,8 +9,7 @@ use App\Http\Controllers\UserManagement\UserManagementController;
 use App\Http\Controllers\Staff\StaffController;
 use App\Http\Controllers\Settings\SettingsController;
 use App\Http\Controllers\Stock\StockController;
-
- 
+use App\Http\Controllers\Student\StudentController;
 
 Route::get('forgot-password',[AuthenticationController::class,'getForgetPassword'])->name('forgot-password');
 Route::post('forgot-password-process',[AuthenticationController::class,'forgotPass'])->name('forgot-password-process');
@@ -34,6 +33,18 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
    Route::controller(StaffController::class)->group(function () {
         Route::get('add-staff', 'getstaffView')->name('add-staff');
         Route::post('add-staff-process', 'addStaff')->name('add-staff-process');
+        Route::get('list-staff', 'getListstaffView')->name('list-staff');
+        Route::get('staff-id/{id}', 'getStaffID')->name('staff-id');
+        Route::post('delete-staff-process', 'deleteStaff')->name('delete-staff-process');
+         Route::post('add-staff-document-process', 'addDocStaff')->name('add-staff-document-process');
+        
+    });
+/* End StaffController*/
+
+/* StaffController*/
+   Route::controller(StudentController::class)->group(function () {
+        Route::get('student', 'getStudentView')->name('student');
+    
         
     });
 /* End StaffController*/

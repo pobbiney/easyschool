@@ -49,8 +49,9 @@
   <link rel="stylesheet" href="{{asset('assets/css/lib/calendar.css')}}">
   <!-- main css -->
   <link rel="stylesheet" href="{{asset('assets/css/style.css')}}">
-      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+       
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <style>
     .sidebar-menu {
@@ -66,6 +67,32 @@
 .sidebar-submenu li a {
   font-size: 16px;
   font-weight: 600;
+}
+
+
+.swal-rounded {
+    border-radius: 18px !important;
+    padding: 28px 20px 24px !important;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25) !important;
+}
+
+.swal-title {
+    font-weight: 700 !important;
+    font-size: 30px !important;
+    color: #1F2937 !important;
+}
+
+.swal-text {
+    font-size: 16.5px !important;
+    color: #6B7280 !important;
+}
+
+.swal-timer-success {
+    background: #25A194 !important;
+}
+
+.swal-timer-error {
+    background: #E5484D !important;
 }
     </style>
   @yield('css')
@@ -820,25 +847,75 @@
 
  <script>
     @if(session('message_success'))
-  Swal.fire({
-    icon: 'success',
-    title: 'Saved!',
-    text: "{{ session('message_success') }}",
-    timer: 2500,
-    timerProgressBar: true,
-    showConfirmButton: false
-});
+        Swal.fire({
+            icon: 'success',
+            iconColor: '#25A194',
+            title: 'Success!',
+            text: "{{ session('message_success') }}",
+            timer: 2500,
+            timerProgressBar: true,
+            showConfirmButton: false,
+            showClass: {
+                popup: 'animate__animated animate__fadeInDown animate__faster'
+            },
+            hideClass: {
+                popup: 'animate__animated animate__fadeOutUp animate__faster'
+            },
+            customClass: {
+                popup: 'swal-rounded',
+                title: 'swal-title',
+                htmlContainer: 'swal-text',
+                timerProgressBar: 'swal-timer-success'
+            },
+            backdrop: 'rgba(10, 13, 12, 0.45)'
+        });
     @endif
+
     @if(session('message_error'))
-Swal.fire({
-    icon: 'error',
-    title: 'Error !',
-    text: "{{ session('message_error') }}",
-    timer: 2500,
-    timerProgressBar: true,
-    showConfirmButton: false
-});
+        Swal.fire({
+            icon: 'error',
+            iconColor: '#E5484D',
+            title: 'Oops!',
+            text: "{{ session('message_error') }}",
+            timer: 2500,
+            timerProgressBar: true,
+            showConfirmButton: false,
+            showClass: {
+                popup: 'animate__animated animate__shakeX animate__faster'
+            },
+            hideClass: {
+                popup: 'animate__animated animate__fadeOutUp animate__faster'
+            },
+            customClass: {
+                popup: 'swal-rounded',
+                title: 'swal-title',
+                htmlContainer: 'swal-text',
+                timerProgressBar: 'swal-timer-error'
+            },
+            backdrop: 'rgba(10, 13, 12, 0.45)'
+        });
     @endif
+</script>
+<script>
+    let table = new DataTable('#dataTable');
+
+    // ✅ Data Table start
+    $('.data-table').each(function () {
+        const $table = $(this);
+        const tableInstance = new DataTable(this);
+
+        // Handle search input (inside same wrapper)
+        $table.closest('.dataTable-wrapper').find('.dt-search .dt-input').on('keyup', function () {
+            tableInstance.search(this.value).draw();
+        });
+
+        // Handle page length change (inside same wrapper)
+        $table.closest('.dataTable-wrapper').find('.dt-length .dt-input').on('change', function () {
+            const value = $(this).val();
+            tableInstance.page.len(value).draw();
+        });
+    });
+    // ✅ Data Table end
 </script>
 
 @yield('scripts')
