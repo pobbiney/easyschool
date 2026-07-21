@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Asset\AssetController;
  
 use App\Http\Controllers\Authentication\AuthenticationController;
+use App\Http\Controllers\Course\CourseController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\UserManagement\UserManagementController;
 use App\Http\Controllers\Staff\StaffController;
@@ -36,7 +37,10 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         Route::get('list-staff', 'getListstaffView')->name('list-staff');
         Route::get('staff-id/{id}', 'getStaffID')->name('staff-id');
         Route::post('delete-staff-process', 'deleteStaff')->name('delete-staff-process');
-         Route::post('add-staff-document-process', 'addDocStaff')->name('add-staff-document-process');
+        Route::post('add-staff-document-process', 'addDocStaff')->name('add-staff-document-process');
+        Route::get('edit-staff/{id}', 'geteditStaffID')->name('edit-staff');
+        Route::post('update-staff-process/{id}', 'updateStaff')->name('update-staff-process');
+        Route::get('view-staff-details/{id}', 'getstaffDetailsView')->name('view-staff-details');
         
     });
 /* End StaffController*/
@@ -44,6 +48,17 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
 /* StaffController*/
    Route::controller(StudentController::class)->group(function () {
         Route::get('student', 'getStudentView')->name('student');
+    
+        
+    });
+/* End StaffController*/
+
+/* StaffController*/
+   Route::controller(CourseController::class)->group(function () {
+        Route::get('add-course', 'getAddCourseView')->name('add-course');
+        Route::post('add-course-process', 'addCourse')->name('add-course-process');
+        Route::get('get-course-id/{id}', 'getCourseID')->name('get-course-id');
+        Route::post('update-course-process', 'updateCourse')->name('update-course-process');
     
         
     });

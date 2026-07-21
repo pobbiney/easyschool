@@ -11,8 +11,8 @@
             <div class="">
                 <h1 class="fw-semibold mb-4 h6 text-primary-light">STAFF MANAGEMENT</h1>
                 <div class="">
-                <a href="index.html" class="text-secondary-light hover-text-primary hover-underline">Dashboard </a>
-                <a href="guardian-list.html" class="text-secondary-light hover-text-primary hover-underline d-none"> /
+                <a href="#" class="text-secondary-light hover-text-primary hover-underline">Dashboard </a>
+                <a href="#" class="text-secondary-light hover-text-primary hover-underline d-none"> /
                     Staff Management</a>
                 <span class="text-secondary-light">/ List Staff</span>
                 </div>
@@ -132,7 +132,7 @@
                                     <td>
                                         {{$loop->iteration}}
                                     </td>
-                                    <td><span class="text-primary-600">{{$list->employee_id}}</span></td>
+                                    <td><span class="text-primary-600"><b>{{$list->employee_id}}</b></span></td>
                                     <td>
                                          <div class="d-flex align-items-center">
                                             @if(!empty($list->picture))
@@ -168,14 +168,14 @@
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-lg-end border p-12">
                                                 <li>
-                                                    <a href="student-list.html"
+                                                    <a href="{{route('view-staff-details',Crypt::encrypt($list->id))}}"
                                                         class="dropdown-item rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-2 py-6">
                                                         <i class="ri-user-3-line"></i>
-                                                        View Student
+                                                        View Staff
                                                     </a>
                                                 </li>
                                                 <li>
-                                                    <a href="edit-teacher.html"
+                                                    <a href="{{route('edit-staff',Crypt::encrypt($list->id))}}"
                                                         class="dropdown-item rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-2 py-6">
                                                         <i class="ri-edit-2-line"></i>
                                                         Edit

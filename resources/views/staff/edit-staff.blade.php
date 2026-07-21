@@ -46,18 +46,13 @@
                 <a href="#" class="text-secondary-light hover-text-primary hover-underline">Dashboard </a>
                 <a href="#" class="text-secondary-light hover-text-primary hover-underline d-none"> /
                     Staff Management</a>
-                <span class="text-secondary-light">/ Add New Staff</span>
+                <span class="text-secondary-light">/ Update Staff</span>
                 </div>
             </div>
-            <a href="add-new-guardian.html" class="btn btn-primary-600 d-flex align-items-center gap-6 d-none">
-                <span class="d-flex text-md">
-                <i class="ri-add-large-line"></i>
-                </span>
-                Add Guardian
-            </a>
+            
         </div>
             
-         <form action="{{ route('add-staff-process')}}" enctype="multipart/form-data" method="POST" class="mt-24">
+         <form action="{{ route('update-staff-process',$id)}}" enctype="multipart/form-data" method="POST" class="mt-24">
             @csrf
             <div class="row gy-3">
                 
@@ -73,7 +68,12 @@
                                  <div class="upload-container">
 
                                         <label for="imageUpload" class="upload-box">
-                                            <img id="preview" src="{{ asset('assets/images/thumbs/teacher-details-img.png')}}" alt="Profile Preview">
+                                            @if(!empty($datas->picture))
+                                                <img id="preview" src="{{ $datas->picture }}" alt="Profile Preview">
+                                            
+                                            @else
+                                            <img id="preview"src="{{ asset('assets/images/thumbs/teacher-details-img.png')}}" alt="Profile Preview">
+                                            @endif
                                             <div class="upload-text">Click to upload photo</div>
                                         </label>
 
@@ -92,7 +92,7 @@
                                             class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Title
                                         </label>
                                         <select name="title" class="form-control form-select">
-                                            <option value="{{ old('title') }}" selected disabled>Select Title</option>
+                                            <option value="{{ $datas->title  }}"    >{{ $datas->title  }}</option>
                                             <option value="Mr">Mr</option>
                                             <option value="Miss">Miss</option>
                                             <option value="Mrs">Mrs</option>
@@ -108,7 +108,7 @@
                                             class="text-sm fw-semibold text-primary-light d-inline-block mb-8"> 
                                             First Name
                                         </label>
-                                        <input type="text"  name="firstname" class="form-control" value="{{ old('firstname') }}"
+                                        <input type="text"  name="firstname" class="form-control" value="{{ $datas->firstname  }}"
                                             placeholder="Enter First name">
                                             @error('firstname') <small style="color:red;">{{$message}}</small>@enderror
                                     </div>
@@ -118,7 +118,7 @@
                                         <label for="phoneNumber"
                                             class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Othername
                                         </label>
-                                        <input type="text"  name="othername" class="form-control" value="{{ old('othername') }}"
+                                        <input type="text"  name="othername" class="form-control" value="{{ $datas->othername  }}"
                                             placeholder="Enter Othername">
                                     </div>
                                 </div>
@@ -128,7 +128,7 @@
                                             class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Surname
                                         </label>
                                         <input type="text" name="surname" class="form-control"
-                                            placeholder="Enter Surname" value="{{ old('surname') }}">
+                                            placeholder="Enter Surname" value="{{ $datas->surname  }}">
                                             @error('surname') <small style="color:red;">{{$message}}</small>@enderror
                                     </div>
                                 </div>
@@ -140,7 +140,7 @@
                                         <select class="form-control" name="nationality">
                                             <option value="" selected disabled>Select Nationality</option>
                                              @foreach($listcountry as $country)
-                                            <option value="{{$country->id}}">{{$country->name}}</option>
+                                            <option @if ($datas->nationality == $country->id) selected @endif value="{{$country->id}}">{{$country->name}}</option>
                                             @endforeach
                                         </select>
                                          @error('nationality') <small style="color:red;">{{$message}}</small>@enderror
@@ -152,7 +152,7 @@
                                             class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Gender
                                         </label>
                                         <select class="form-control" name="gender">
-                                            <option value="" selected disabled>Select Gender</option>
+                                            <option value="{{ $datas->gender  }}"    >{{ $datas->gender  }}</option>
                                              <option value="Male" {{ old('gender') == 'Male' ? 'selected' : '' }}>Male</option>
                                             <option value="Female" {{ old('gender') == 'Female' ? 'selected' : '' }}>Female</option>
                                             
@@ -166,7 +166,7 @@
                                             class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Date of Bith</label>
                                                
                                         <input type="text" name="dob"   class="form-control datepicker"
-                                            placeholder="Enter Date of bith" value="{{ old('dob') }}">
+                                            placeholder="Enter Date of bith" value="{{ $datas->dob  }}">
                                             @error('dob') <small style="color:red;">{{$message}}</small>@enderror
                                     </div>
                                 </div>
@@ -176,7 +176,7 @@
                                             class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Marital Status
                                         </label>
                                         <select class="form-control" name="marital_status">
-                                            <option value="" selected disabled>Select Marital Status</option>
+                                            <option value="{{ $datas->marital_status  }}"    >{{ $datas->marital_status  }}</option>
                                             <option value="Married" {{ old('marital_status') == 'Married' ? 'selected' : '' }}>Married</option>
                                             <option value="Single" {{ old('marital_status') == 'Single' ? 'selected' : '' }}>Single</option>
                                             <option value="Divorced" {{ old('marital_status') == 'Divorced' ? 'selected' : '' }}>Divorced</option>
@@ -190,7 +190,7 @@
                                             class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Email
                                         </label>
                                         <input type="text" name="email"   class="form-control "
-                                            placeholder="Enter Email" value="{{ old('email') }}">
+                                            placeholder="Enter Email" value="{{ $datas->email  }}">
                                             @error('email') <small style="color:red;">{{$message}}</small>@enderror
                                     </div>
                                 </div>
@@ -200,7 +200,7 @@
                                             class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Address
                                         </label>
                                         <input type="text" name="address"   class="form-control "
-                                            placeholder="Enter Address" value="{{ old('address') }}">
+                                            placeholder="Enter Address" value="{{ $datas->residential_address  }}">
                                             @error('address') <small style="color:red;">{{$message}}</small>@enderror
                                     </div>
                                 </div>
@@ -210,7 +210,7 @@
                                             class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Phone
                                         </label>
                                         <input type="number" name="phone"   class="form-control "
-                                            placeholder="Enter Phone" value="{{ old('phone') }}">
+                                            placeholder="Enter Phone" value="{{ $datas->mobile  }}">
                                             @error('phone') <small style="color:red;">{{$message}}</small>@enderror
                                     </div>
                                 </div>
@@ -228,7 +228,7 @@
                                         <label for="guardianAddress"
                                             class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Staff ID
                                         </label>
-                                        <input type="text" name="staff_number" class="form-control" value="{{ $staffCode}}" readonly/>
+                                        <input type="text" name="staff_number" class="form-control" value="{{ $datas->employee_id}}" readonly/>
                                      </div>
                                 </div>
                                 <div class="col-md-4">
@@ -236,7 +236,7 @@
                                         <label for="guardianAddress"
                                             class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Position 
                                         </label>
-                                        <input type="text" name="position" class="form-control" value="{{ old('position') }}"  />
+                                        <input type="text" name="position" class="form-control" value="{{ $datas->position  }}"  />
                                      </div>
                                 </div>
                                 <div class="col-md-4">
@@ -245,7 +245,7 @@
                                             class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Status 
                                         </label>
                                         <select class="form-control" name="status">
-                                            <option value="" selected disabled>Select Status</option>
+                                            <option value="{{ $datas->status  }}"    >{{ $datas->status  }}</option>
                                              <option value="Active" {{ old('status') == 'Active' ? 'selected' : '' }}>Active</option>
                                             <option value="Inactive" {{ old('status') == 'Inactive' ? 'selected' : '' }}>Inactive</option>
                                             
