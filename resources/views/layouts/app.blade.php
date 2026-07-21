@@ -250,14 +250,14 @@
       </button>
       <ul class="dropdown-menu dropdown-menu-lg-end border p-12">
         <li>
-          <a href="student-details.html" 
+          <a href="{{route('profile')}}" 
             class="dropdown-item rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-2 py-6">
             <i class="ri-user-3-line"></i>
             My Profile
           </a>
         </li>
         <li>
-          <a href="general.html"
+          <a href="{{route('profile')}}"
             class="dropdown-item rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-2 py-6">
             <i class="ri-settings-3-line"></i>
             Setting

@@ -222,5 +222,12 @@ class StaffController extends Controller
         $listdoc = StaffDoc::where('staff_id',$decodeId)->get();
         return view('staff.view-staff-details',['datas'=>$datas,'listcountry'=>$listcountry,'id'=>$id,'listdoc'=>$listdoc]);
     }
+
+    public function getstaffprofileView()
+    {
+
+        $datas = Staff::where('id',Auth::user()->id);
+        return view('staff.profile',['datas'=>$datas]);
+    }
     
 }
