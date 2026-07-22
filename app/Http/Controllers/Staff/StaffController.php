@@ -226,7 +226,7 @@ class StaffController extends Controller
     public function getstaffprofileView()
     {
 
-        $datas = Staff::where('id',Auth::user()->id);
+        $datas = Staff::where('id', Auth::user()->staff_id)->first();
         return view('staff.profile',['datas'=>$datas]);
     }
     

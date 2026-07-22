@@ -1,6 +1,6 @@
 @php
 
-    $staff_query = DB::select('SELECT * FROM staff WHERE id = :id', ['id' => auth()->user()->id]);
+    $staff_query = DB::select('SELECT * FROM staff WHERE id = :id', ['id' => auth()->user()->staff_id]);
 
     $userCat = auth()->user()->user_cat;
     $links = DB::select('SELECT user_links.link_id, user_links.page_id,user_links.page_id_sub, user_links.link_url, user_links.link_name, user_links.link_image, user_links.link_parent FROM user_cat_links INNER JOIN user_links ON user_cat_links.link_id = user_links.link_id WHERE user_cat_links.cat_id = :id ORDER BY user_links.link_name ASC',['id' => $userCat]);

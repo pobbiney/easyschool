@@ -25,6 +25,8 @@
                 <div class="card-body p-24">
                     <div class="d-flex gap-32 flex-md-row flex-column">
                         <div class="max-w-300-px w-100 text-center">
+
+                               
                             <figure class="mb-24 w-120-px h-120-px mx-auto rounded-circle overflow-hidden">
                                 @if(!empty($datas->picture))
                                  <img src="{{ $datas->picture }}" alt="Student Image" class="w-100 h-100 object-fit-cover">
@@ -42,16 +44,7 @@
                             <p class="mb-0">Staff No: <span class="text-primary-600 fw-semibold">{{ $datas->employee_id }}</span>
                             </p>
                              
-                            <div class="mt-32 d-flex gap-16 w-100">
-                                
-                                <a href="{{route('edit-staff',Crypt::encrypt($datas->id))}}"
-                                    class="btn btn-primary-600 border fw-medium border-primary-600 text-md d-flex justify-content-center align-items-center gap-8 flex-grow-1 px-12 py-8 radius-8">
-                                    <span class="d-flex text-lg">
-                                        <i class="ri-edit-line"></i>
-                                    </span>
-                                    Edit
-                                </a>
-                            </div>
+                            
                         </div>
                         <div class="">
                             <span class="h-100 w-1-px bg-neutral-200"></span>
@@ -112,9 +105,9 @@
                             id="pills-studentDetails-tab" data-bs-toggle="pill" data-bs-target="#pills-studentDetails"
                             type="button" role="tab" aria-controls="pills-studentDetails" aria-selected="true">
                             <span class="d-flex tab-icon line-height-1 text-md">
-                                <i class="ri-group-line"></i>
+                                <i class="ri-camera-line"></i>
                             </span>
-                             Education Background
+                             Change Photo
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
@@ -123,35 +116,11 @@
                             id="pills-attendance-tab" data-bs-toggle="pill" data-bs-target="#pills-attendance"
                             type="button" role="tab" aria-controls="pills-attendance" aria-selected="false">
                             <span class="d-flex tab-icon line-height-1 text-md">
-                                   <i class="ri-home-line"></i>
+                                   <i class="ri-lock-line"></i>
                             </span>
-                            Bank Details
+                           Change Password
                         </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button
-                            class="nav-link d-flex align-items-center gap-8 text-secondary-light fw-medium text-sm text-hover-primary-600 text-capitalize bg-transparent px-20 py-12 "
-                            id="pills-leave-tab" data-bs-toggle="pill" data-bs-target="#pills-leave" type="button"
-                            role="tab" aria-controls="pills-leave" aria-selected="false">
-                            <span class="d-flex tab-icon line-height-1 text-md">
-                                    <i class="ri-login-box-line"></i>
-                            </span>
-                            My Payslips
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button
-                            class="nav-link d-flex align-items-center gap-8 text-secondary-light fw-medium text-sm text-hover-primary-600 text-capitalize bg-transparent px-20 py-12 "
-                            id="pills-fees-tab" data-bs-toggle="pill" data-bs-target="#pills-fees" type="button"
-                            role="tab" aria-controls="pills-fees" aria-selected="false">
-                            <span class="d-flex tab-icon line-height-1 text-md">
-                                 <i class="ri-money-dollar-box-line"></i>
-                            </span>
-                            Finance
-                        </button>
-                    </li>
-                     
-                    
+                    </li>  
                 </ul>
 
 
@@ -161,43 +130,27 @@
                     <div class="tab-pane fade show active" id="pills-studentDetails" role="tabpanel"
                         aria-labelledby="pills-studentDetails-tab" tabindex="0">
                         <div class="row gy-4">
-                            <div class="col-12">
+                            <div class="col-6">
                                 <div class="shadow-1 radius-12 bg-base h-100 overflow-hidden">
                                     <div
-                                        class="card-header border-bottom bg-base py-16 px-24 d-flex align-items-center justify-content-between">
-                                        <h6 class="text-lg fw-semibold mb-0">Educational Background</h6>
+                                        class="card-header border-bottom bg-base py-16 px-24 d-flex align-items-center justify-content-between" >
+                                        <h6 class="text-lg fw-semibold mb-0">Change Photo</h6>
                                     </div>
                                     <div class="card-body p-0">
-                                          <table class="table bordered-table mb-0 data-table" id="dataTable" data-page-length='10'>
-                                            <thead>
-                                                <tr>
-                                                    <th scope="col">
-                                                        #
-                                                    </th>
-                                                    <th scope="col">Level</th>
-                                                    <th scope="col">Year  </th>
-                                                    <th scope="col">Qualification</th>
-                                                    <th scope="col">Certificate</th>
-                                                    
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach($listdoc as $list)
-                                                <tr>
-                                                    <td>
-                                                        {{$loop->iteration}}
-                                                    </td>
-                                                     
-                                                     
-                                                    <td>{{$list->level}}</td>
-                                                    <td>{{$list->year}}</td>
-                                                    <td>{{$list->qualification}}</td>
-                                                    <td> <a href="{{ asset('uploads/staffdocs/' . $list->document_path) }}" class="btn btn-sm btn-primary"> <i class="ri-file-text-line"></i> View Certificate</td>
-                                                     
-                                                </tr>
-                                                @endforeach
-                                            </tbody>
-                                        </table>
+                                        <div class="row" style="margin-left: 20px;">
+                                            
+
+                                                <div class="avatar-upload mt-16" style="margin-bottom: 30px;">
+                                                    <div class="avatar-preview style-two" style="height: 200px;width:200px">
+                                                        <div id="previewImage1" style="height: 200px;width:200px"></div>
+                                                    </div>
+                                                </div><br/>
+                                                <label for="imageUpload"
+                                                    class="form-label fw-semibold text-secondary-light text-md mb-8">Upload Photo  
+                                                <input type="file" class="form-control radius-8" id="imageUpload">
+                                                
+                                            </div>
+                                        
                                     </div>
                                 </div>
                             </div>
@@ -389,575 +342,7 @@
                                     </div>
                                 </div>
 
-                                <div class="table-responsive overflow-x-auto">
-                                    <table class="table mb-0 table-heading-dark-mode">
-                                        <thead>
-                                            <tr>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">Month
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">1</th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">2</th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">3</th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">4</th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">5</th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">6</th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">7</th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">8</th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">9</th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">10
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">11
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">12
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">13
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">14
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">15
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">15
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">16
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">17
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">18
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">19
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">20
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">21
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">22
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">23
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">24
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">25
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">26
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">27
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">28
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">29
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">30
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td class="px-10 py-16 text-sm">Jan</td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">H</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">A</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">F</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">L</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">H</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">A</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">L</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">h</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">F</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">H</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">A</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">H</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">p</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">p</span>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td class="px-10 py-16 text-sm">Feb</td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                            </tr>
-                                            <tr>
-                                                <td class="px-10 py-16 text-sm">Mar</td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                            </tr>
-                                            <tr>
-                                                <td class="px-10 py-16 text-sm">Apr</td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                            </tr>
-                                            <tr>
-                                                <td class="px-10 py-16 text-sm">May</td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                            </tr>
-                                            <tr>
-                                                <td class="px-10 py-16 text-sm">May</td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                            </tr>
-                                            <tr>
-                                                <td class="px-10 py-16 text-sm">Jun</td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                            </tr>
-                                            <tr>
-                                                <td class="px-10 py-16 text-sm">Ju</td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                            </tr>
-                                            <tr>
-                                                <td class="px-10 py-16 text-sm">Aug</td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                            </tr>
-                                            <tr>
-                                                <td class="px-10 py-16 text-sm">Sep</td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                            </tr>
-                                            <tr>
-                                                <td class="px-10 py-16 text-sm">Oct</td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                            </tr>
-                                            <tr>
-                                                <td class="px-10 py-16 text-sm">Nov</td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                            </tr>
-                                            <tr>
-                                                <td class="px-10 py-16 text-sm">Dec</td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
+                                 
                             </div>
                         </div>
                     </div>
@@ -2524,5 +1909,27 @@
 @endsection
 
 @section('scripts')
- 
+ <script>
+    // ================== Image Upload Js Start ===========================
+    function readURL(input, previewElementId) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                $('#' + previewElementId).css('background-image', 'url(' + e.target.result + ')');
+                $('#' + previewElementId).hide();
+                $('#' + previewElementId).fadeIn(650);
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    $("#imageUpload").change(function () {
+        readURL(this, 'previewImage1');
+    });
+
+    $("#imageUploadTwo").change(function () {
+        readURL(this, 'previewImage2');
+    });
+    // ================== Image Upload Js End ===========================
+</script>
 @endsection

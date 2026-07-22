@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Authentication\AuthenticationController;
+use App\Http\Controllers\Course\CourseController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\UserManagement\UserManagementController;
 use App\Http\Controllers\Staff\StaffController;
@@ -38,10 +39,21 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
     });
 /* End StaffController*/
 
-/* StaffController*/
+/* StudentController*/
    Route::controller(StudentController::class)->group(function () {
         Route::get('student', 'getStudentView')->name('student');
     
         
     });
-/* End StaffController*/
+/* End StudentController*/
+
+/* CourseController*/
+   Route::controller(CourseController::class)->group(function () {
+        Route::get('add-course', 'getAddCourseView')->name('add-course');
+        Route::post('add-course-process', 'addCourse')->name('add-course-process');
+        Route::get('get-course-id/{id}', 'getCourseID')->name('get-course-id');
+        Route::post('update-course-process', 'updateCourse')->name('update-course-process');
+    
+        
+    });
+/* End CourseController*/
