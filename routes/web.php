@@ -35,6 +35,9 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         Route::post('delete-staff-process', 'deleteStaff')->name('delete-staff-process');
         Route::post('add-staff-document-process', 'addDocStaff')->name('add-staff-document-process');
         Route::get('profile', 'getstaffprofileView')->name('profile');
+        Route::get('update-staff-process', 'updateStaff')->name('update-staff-process');
+        Route::post('update-photo-process', 'updatePhoto')->name('update-photo-process');
+        Route::post('update-password-process', 'updatePassword')->name('update-password-process');
         
     });
 /* End StaffController*/

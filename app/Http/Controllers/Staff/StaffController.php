@@ -9,6 +9,7 @@ use App\Models\Staff;
 use App\Models\StaffDoc;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Hash;
 use PhpParser\Builder\Function_;
 
 class StaffController extends Controller
@@ -229,5 +230,69 @@ class StaffController extends Controller
         $datas = Staff::where('id', Auth::user()->staff_id)->first();
         return view('staff.profile',['datas'=>$datas]);
     }
+
+    public function updatePhoto(Request $request)
+{
+    $request->validate([
+        'staff_id' => 'required',
+        'image' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048',
+    ]);
+
+    $insertstaff = Staff::find($request->staff_id);
+
+    if (!$insertstaff) {
+        return back()->with('message_error', 'Staff record not found.');
+    }
+
+    $file = $request->file('image');
+    $ext = $file->getClientOriginalExtension();
+    $filename = time() . '.' . $ext;
+
+    // Delete old picture if it exists, before saving the new one
+    if (!empty($insertstaff->picture) && file_exists(public_path($insertstaff->picture))) {
+        unlink(public_path($insertstaff->picture));
+    }
+
+    $file->move(public_path('uploads/profile-photo'), $filename);
+
+    $insertstaff->picture = 'uploads/profile-photo/' . $filename;
+    $status = $insertstaff->save();
+
+    return $status
+        ? back()->with('message_success', 'Photo uploaded successfully')
+        : back()->with('message_error', 'Something went wrong, please try again.');
+   }
+
+   //Updating User Password
+
+     public function updatePassword(Request $request){
+        session(['active_tab' => $request->active_tab]);
+       $request->validate([
+              'current_password' => 'required|string|min:8',
+            'new_password' => 'required|string|min:8',
+            'confirm_password' => 'required|same:new_password',
+        ], [
+            'confirm_password.same' => 'The password confirmation does not match.',
+            'confirm_password.required' => 'Please confirm your password.',
+        ]);
+
+         $user = Auth::user();
+
+    // Check if the old password matches
+    if (!Hash::check($request->current_password, $user->password)) {
+        return back()->with('error_message', 'Current password is incorrect.');
+    }
+
+    // Update new password
+    $user->update([
+        'password' => Hash::make($request->new_password)
+    ]);
+    
+    return redirect()->back()
+        ->with('active_tab', $request->active_tab)
+        ->with('message_success', 'Password changed successfully..');
+    
+    }
+
     
 }
