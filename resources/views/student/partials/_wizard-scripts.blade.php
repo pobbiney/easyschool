@@ -234,5 +234,20 @@
         $('#doc_hidden_' + id).remove();
     });
 
+    $('#studentWizardForm').on('submit', function (event) {
+        for (let step = 1; step <= 2; step++) {
+            if (!validateStep(step)) {
+                event.preventDefault();
+                showStep(step);
+
+                if (typeof showAppToast === 'function') {
+                    showAppToast('error', 'Please complete all required fields before submitting.');
+                }
+
+                return false;
+            }
+        }
+    });
+
     showStep(1);
 </script>

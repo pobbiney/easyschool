@@ -77,10 +77,15 @@
     </div>
     <div class="col-xxl-3 col-xl-4 col-sm-6">
         <label class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Status <span class="text-danger-600">*</span></label>
+        @php
+            $selectedStatus = old('status', $student?->status ?? 'Active');
+            if ($selectedStatus === 'Draft') {
+                $selectedStatus = 'Active';
+            }
+        @endphp
         <select name="status" class="form-control form-select wizard-required">
-            <option value="Active" {{ old('status', $student?->status ?? 'Active') == 'Active' ? 'selected' : '' }}>Active</option>
-            <option value="Inactive" {{ old('status', $student?->status ?? '') == 'Inactive' ? 'selected' : '' }}>Inactive</option>
-            <option value="Draft" {{ old('status', $student?->status ?? '') == 'Draft' ? 'selected' : '' }}>Draft</option>
+            <option value="Active" {{ $selectedStatus == 'Active' ? 'selected' : '' }}>Active</option>
+            <option value="Inactive" {{ $selectedStatus == 'Inactive' ? 'selected' : '' }}>Inactive</option>
         </select>
         @error('status') <small class="text-danger">{{ $message }}</small> @enderror
     </div>

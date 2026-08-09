@@ -42,7 +42,7 @@ class StudentController extends Controller
         }
 
         $this->fillStudentFromRequest($student, $request);
-        $student->status = trim($request->status);
+        $student->status = $this->resolveFinalStudentStatus($request);
         $student->updated_by = Auth::id();
         $student->save();
 
@@ -139,7 +139,7 @@ class StudentController extends Controller
         }
 
         $this->fillStudentFromRequest($student, $request);
-        $student->status = trim($request->status);
+        $student->status = $this->resolveFinalStudentStatus($request);
         $student->updated_by = Auth::id();
         $student->save();
 
@@ -196,10 +196,21 @@ class StudentController extends Controller
 
     private function generateStudentCode()
     {
-        $lastStudent = Student::latest('id')->first();
-        $number = $lastStudent ? $lastStudent->id + 1 : 1;
+        $prefix = strtoupper(trim(config('school.student_id_prefix', 'STD')));
+        $padLength = max(1, (int) config('school.student_id_pad_length', 3));
+        $pattern = '/^' . preg_quote($prefix, '/') . '-(\d+)$/i';
 
-        return 'STD-' . str_pad($number, 5, '0', STR_PAD_LEFT);
+        $lastNumber = Student::pluck('student_id')
+            ->map(function ($studentId) use ($pattern) {
+                if (preg_match($pattern, $studentId, $matches)) {
+                    return (int) $matches[1];
+                }
+
+                return 0;
+            })
+            ->max() ?? 0;
+
+        return $prefix . '-' . str_pad((string) ($lastNumber + 1), $padLength, '0', STR_PAD_LEFT);
     }
 
     private function studentValidationRules()
@@ -244,7 +255,6 @@ class StudentController extends Controller
         $student->dob = trim($request->dob);
         $student->phone = trim($request->phone);
         $student->email = $this->cleanInput($request->email);
-        $student->status = trim($request->status ?? '') ?: 'Draft';
 
         $student->father_name = $this->cleanInput($request->father_name);
         $student->father_phone = $this->cleanInput($request->father_phone);
@@ -264,18 +274,15 @@ class StudentController extends Controller
         $student->blood_group = $this->cleanInput($request->blood_group);
         $student->height = $this->cleanInput($request->height);
         $student->weight = $this->cleanInput($request->weight);
-
-        $student->bank_account_number = $this->cleanInput($request->bank_account_number);
-        $student->bank_name = $this->cleanInput($request->bank_name);
-        $student->ifsc_code = $this->cleanInput($request->ifsc_code);
-        $student->national_id_number = $this->cleanInput($request->national_id_number);
-
-        $student->previous_school_name = $this->cleanInput($request->previous_school_name);
-        $student->previous_school_address = $this->cleanInput($request->previous_school_address);
+        $student->has_nhis = $this->cleanInput($request->has_nhis);
+        $student->nhis_number = $request->has_nhis === 'Yes'
+            ? $this->cleanInput($request->nhis_number)
+            : null;
+        $student->nhis_card_name = $request->has_nhis === 'Yes'
+            ? $this->cleanInput($request->nhis_card_name)
+            : null;
         $student->current_address = $this->cleanInput($request->current_address);
-        $student->permanent_address = $this->cleanInput($request->permanent_address);
-        $student->hostel = $this->cleanInput($request->hostel);
-        $student->room_no = $this->cleanInput($request->room_no);
+        $student->previous_school_name = $this->cleanInput($request->previous_school_name);
         $student->notes = $this->cleanInput($request->notes);
 
         if ($request->hasFile('picture')) {
@@ -293,6 +300,13 @@ class StudentController extends Controller
         if ($request->hasFile('guardian_photo')) {
             $student->guardian_photo = $this->uploadPhoto($request->file('guardian_photo'), 'uploads/parent-photos', $student->guardian_photo);
         }
+    }
+
+    private function resolveFinalStudentStatus(Request $request): string
+    {
+        $status = trim($request->status ?? '');
+
+        return in_array($status, ['Active', 'Inactive'], true) ? $status : 'Active';
     }
 
     private function cleanInput($value)

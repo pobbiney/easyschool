@@ -118,12 +118,15 @@
         <div class="info-section">
             <h3 class="info-section-title">Medical &amp; Other Details</h3>
             <table class="info-table">
+                <tr><td>National Health Insurance</td><td>{{ $student->has_nhis ?: '—' }}</td></tr>
+                @if($student->has_nhis === 'Yes')
+                    <tr><td>Card Name</td><td>{{ $student->nhis_card_name ?: '—' }}</td></tr>
+                    <tr><td>NHIS Number</td><td>{{ $student->nhis_number ?: '—' }}</td></tr>
+                @endif
                 <tr><td>Blood Group</td><td>{{ $student->blood_group ?: '—' }}</td></tr>
                 <tr><td>Height</td><td>{{ $student->height ?: '—' }}</td></tr>
                 <tr><td>Weight</td><td>{{ $student->weight ?: '—' }}</td></tr>
-                <tr><td>Hostel / Room</td><td>{{ $student->hostel ? $student->hostel . ' / ' . $student->room_no : '—' }}</td></tr>
                 <tr><td>Current Address</td><td>{{ $student->current_address ?: '—' }}</td></tr>
-                <tr><td>Permanent Address</td><td>{{ $student->permanent_address ?: '—' }}</td></tr>
                 <tr><td>Previous School</td><td>{{ $student->previous_school_name ?: '—' }}</td></tr>
                 @if($student->notes)
                     <tr><td>Notes</td><td>{{ $student->notes }}</td></tr>

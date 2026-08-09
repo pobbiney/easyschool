@@ -196,12 +196,16 @@
                         <h6 class="text-lg fw-semibold"><i class="ri-heart-pulse-line text-primary-600"></i> Medical & Address</h6>
                     </div>
                     <div class="p-20">
+                        <div class="detail-row"><span class="detail-label">National Health Insurance</span><span class="detail-value">: {{ $student->has_nhis ?: '-' }}</span></div>
+                        @if($student->has_nhis === 'Yes')
+                            <div class="detail-row"><span class="detail-label">Card Name</span><span class="detail-value">: {{ $student->nhis_card_name ?: '-' }}</span></div>
+                            <div class="detail-row"><span class="detail-label">NHIS Number</span><span class="detail-value">: {{ $student->nhis_number ?: '-' }}</span></div>
+                        @endif
                         <div class="detail-row"><span class="detail-label">Blood Group</span><span class="detail-value">: {{ $student->blood_group ?: '-' }}</span></div>
                         <div class="detail-row"><span class="detail-label">Height</span><span class="detail-value">: {{ $student->height ?: '-' }}</span></div>
                         <div class="detail-row"><span class="detail-label">Weight</span><span class="detail-value">: {{ $student->weight ?: '-' }}</span></div>
                         <div class="detail-row"><span class="detail-label">Current Address</span><span class="detail-value">: {{ $student->current_address ?: '-' }}</span></div>
-                        <div class="detail-row"><span class="detail-label">Permanent Address</span><span class="detail-value">: {{ $student->permanent_address ?: '-' }}</span></div>
-                        <div class="detail-row"><span class="detail-label">Hostel / Room</span><span class="detail-value">: {{ $student->hostel ? $student->hostel . ' / ' . $student->room_no : '-' }}</span></div>
+                        <div class="detail-row"><span class="detail-label">Previous School</span><span class="detail-value">: {{ $student->previous_school_name ?: '-' }}</span></div>
                     </div>
                 </div>
             </div>
@@ -209,11 +213,9 @@
             <div class="col-lg-6">
                 <div class="detail-card bg-base">
                     <div class="detail-card-header">
-                        <h6 class="text-lg fw-semibold"><i class="ri-file-upload-line text-primary-600"></i> School & Documents</h6>
+                        <h6 class="text-lg fw-semibold"><i class="ri-file-upload-line text-primary-600"></i> Documents</h6>
                     </div>
                     <div class="p-20">
-                        <div class="detail-row"><span class="detail-label">Previous School</span><span class="detail-value">: {{ $student->previous_school_name ?: '-' }}</span></div>
-                        <div class="detail-row"><span class="detail-label">School Address</span><span class="detail-value">: {{ $student->previous_school_address ?: '-' }}</span></div>
                         @if($docs->count() > 0)
                             <div class="mt-12">
                                 <h6 class="text-md fw-semibold mb-8">Documents</h6>
