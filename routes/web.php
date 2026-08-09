@@ -10,6 +10,7 @@ use App\Http\Controllers\Student\StudentController;
 use App\Http\Controllers\Student\AcademicYearController;
 use App\Http\Controllers\Student\SchoolClassController;
 use App\Http\Controllers\Settings\SchoolSettingController;
+use App\Http\Controllers\Dormitory\DormitoryController;
 
 Route::get('forgot-password',[AuthenticationController::class,'getForgetPassword'])->name('forgot-password');
 Route::post('forgot-password-process',[AuthenticationController::class,'forgotPass'])->name('forgot-password-process');
@@ -91,6 +92,23 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         Route::post('update-school-settings-process', 'update')->name('update-school-settings-process');
     });
 /* End SchoolSettingController*/
+
+/* DormitoryController*/
+   Route::controller(DormitoryController::class)->group(function () {
+        Route::get('dormitory-setup', 'index')->name('dormitory-setup');
+        Route::post('add-house-process', 'storeHouse')->name('add-house-process');
+        Route::get('get-house-id/{id}', 'showHouse')->name('get-house-id');
+        Route::post('update-house-process', 'updateHouse')->name('update-house-process');
+        Route::post('add-dormitory-process', 'storeDormitory')->name('add-dormitory-process');
+        Route::get('get-dormitory-id/{id}', 'showDormitory')->name('get-dormitory-id');
+        Route::post('update-dormitory-process', 'updateDormitory')->name('update-dormitory-process');
+        Route::get('get-dormitories-by-house/{houseId}', 'dormitoriesByHouse')->name('get-dormitories-by-house');
+        Route::get('get-available-beds/{dormitoryId}', 'availableBeds')->name('get-available-beds');
+        Route::get('get-student-dormitory/{id}', 'getStudentAssignment')->name('get-student-dormitory');
+        Route::post('assign-student-dormitory-process', 'assignStudent')->name('assign-student-dormitory-process');
+        Route::post('unassign-student-dormitory-process', 'unassignStudent')->name('unassign-student-dormitory-process');
+    });
+/* End DormitoryController*/
 
 /* CourseController*/
    Route::controller(CourseController::class)->group(function () {

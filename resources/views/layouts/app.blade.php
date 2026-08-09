@@ -941,7 +941,14 @@
 <script>
     $('.data-table').each(function () {
         const $table = $(this);
-        const tableInstance = new DataTable(this);
+        const options = {};
+
+        if ($table.hasClass('data-table-scroll-x')) {
+            options.scrollX = true;
+            options.autoWidth = false;
+        }
+
+        const tableInstance = new DataTable(this, options);
 
         // Handle search input (inside same wrapper)
         $table.closest('.dataTable-wrapper').find('.dt-search .dt-input').on('keyup', function () {

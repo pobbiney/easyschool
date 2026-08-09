@@ -8,6 +8,7 @@ use App\Models\StudentDoc;
 use App\Models\AcademicYear;
 use App\Models\SchoolClass;
 use App\Models\SchoolSetting;
+use App\Models\House;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
@@ -100,10 +101,24 @@ class StudentController extends Controller
 
     public function getListStudentsView()
     {
-        $students = Student::orderBy('id', 'desc')->get();
+        $students = Student::with(['house', 'dormitory', 'bed'])
+            ->orderBy('id', 'desc')
+            ->get();
+
+        $houses = House::where('status', 'Active')->orderBy('name')->get();
+        $schoolClasses = SchoolClass::where('status', 'Active')->orderBy('name')->pluck('name');
+        $categories = Student::query()
+            ->whereNotNull('category')
+            ->where('category', '!=', '')
+            ->distinct()
+            ->orderBy('category')
+            ->pluck('category');
 
         return view('student.list-students', [
             'students' => $students,
+            'houses' => $houses,
+            'schoolClasses' => $schoolClasses,
+            'categories' => $categories,
         ]);
     }
 

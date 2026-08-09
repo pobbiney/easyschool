@@ -45,6 +45,9 @@ class Student extends Model
         'current_address',
         'previous_school_name',
         'notes',
+        'house_id',
+        'dormitory_id',
+        'bed_id',
         'status',
         'created_by',
         'updated_by',
@@ -53,6 +56,21 @@ class Student extends Model
     public function docs()
     {
         return $this->hasMany(StudentDoc::class, 'student_id');
+    }
+
+    public function house()
+    {
+        return $this->belongsTo(House::class);
+    }
+
+    public function dormitory()
+    {
+        return $this->belongsTo(Dormitory::class);
+    }
+
+    public function bed()
+    {
+        return $this->belongsTo(DormitoryBed::class, 'bed_id');
     }
 
     public function getFullNameAttribute()
