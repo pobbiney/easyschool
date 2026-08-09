@@ -70,29 +70,78 @@
 }
 
 
-.swal-rounded {
-    border-radius: 18px !important;
-    padding: 28px 20px 24px !important;
-    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25) !important;
+.app-toast {
+    border-radius: 14px !important;
+    padding: 0 !important;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14) !important;
+    border: 1px solid rgba(15, 23, 42, 0.06) !important;
+    overflow: hidden !important;
+    width: 380px !important;
+    max-width: calc(100vw - 32px) !important;
 }
 
-.swal-title {
-    font-weight: 700 !important;
-    font-size: 30px !important;
-    color: #1F2937 !important;
+.app-toast .swal2-html-container {
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
-.swal-text {
-    font-size: 16.5px !important;
-    color: #6B7280 !important;
+.app-toast-wrap {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 18px;
+    border-left: 4px solid #25A194;
+    background: #fff;
+    text-align: left;
+}
+
+.app-toast-wrap.is-error {
+    border-left-color: #E5484D;
+}
+
+.app-toast-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.app-toast-icon.is-success {
+    background: rgba(37, 161, 148, 0.12);
+    color: #25A194;
+}
+
+.app-toast-icon.is-error {
+    background: rgba(229, 72, 77, 0.12);
+    color: #E5484D;
+}
+
+.app-toast-heading {
+    font-size: 15px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 4px;
+    line-height: 1.3;
+}
+
+.app-toast-message {
+    font-size: 13px;
+    color: #6B7280;
+    line-height: 1.5;
 }
 
 .swal-timer-success {
     background: #25A194 !important;
+    height: 3px !important;
 }
 
 .swal-timer-error {
     background: #E5484D !important;
+    height: 3px !important;
 }
     </style>
   @yield('css')
@@ -846,60 +895,50 @@
 </script>
 
  <script>
-    @if(session('message_success'))
-        Swal.fire({
-            icon: 'success',
-            iconColor: '#25A194',
-            title: 'Success!',
-            text: "{{ session('message_success') }}",
-            timer: 2500,
-            timerProgressBar: true,
+    window.showAppToast = function (type, message) {
+        let isSuccess = type === 'success';
+        let heading = isSuccess ? 'Success!' : 'Something went wrong';
+        let iconClass = isSuccess ? 'ri-checkbox-circle-fill' : 'ri-error-warning-fill';
+        let safeMessage = $('<div>').text(message).html();
+
+        Swal.mixin({
+            toast: true,
+            position: 'top-end',
             showConfirmButton: false,
-            showClass: {
-                popup: 'animate__animated animate__fadeInDown animate__faster'
-            },
-            hideClass: {
-                popup: 'animate__animated animate__fadeOutUp animate__faster'
-            },
+            timer: 4000,
+            timerProgressBar: true,
             customClass: {
-                popup: 'swal-rounded',
-                title: 'swal-title',
-                htmlContainer: 'swal-text',
-                timerProgressBar: 'swal-timer-success'
+                popup: 'app-toast',
+                timerProgressBar: isSuccess ? 'swal-timer-success' : 'swal-timer-error'
             },
-            backdrop: 'rgba(10, 13, 12, 0.45)'
+            didOpen: function (toast) {
+                toast.addEventListener('mouseenter', Swal.stopTimer);
+                toast.addEventListener('mouseleave', Swal.resumeTimer);
+            }
+        }).fire({
+            html: `
+                <div class="app-toast-wrap ${isSuccess ? '' : 'is-error'}">
+                    <div class="app-toast-icon ${isSuccess ? 'is-success' : 'is-error'}">
+                        <i class="${iconClass}"></i>
+                    </div>
+                    <div>
+                        <div class="app-toast-heading">${heading}</div>
+                        <div class="app-toast-message">${safeMessage}</div>
+                    </div>
+                </div>
+            `
         });
+    };
+
+    @if(session('message_success'))
+        showAppToast('success', @json(session('message_success')));
     @endif
 
     @if(session('message_error'))
-        Swal.fire({
-            icon: 'error',
-            iconColor: '#E5484D',
-            title: 'Oops!',
-            text: "{{ session('message_error') }}",
-            timer: 2500,
-            timerProgressBar: true,
-            showConfirmButton: false,
-            showClass: {
-                popup: 'animate__animated animate__shakeX animate__faster'
-            },
-            hideClass: {
-                popup: 'animate__animated animate__fadeOutUp animate__faster'
-            },
-            customClass: {
-                popup: 'swal-rounded',
-                title: 'swal-title',
-                htmlContainer: 'swal-text',
-                timerProgressBar: 'swal-timer-error'
-            },
-            backdrop: 'rgba(10, 13, 12, 0.45)'
-        });
+        showAppToast('error', @json(session('message_error')));
     @endif
 </script>
 <script>
-    let table = new DataTable('#dataTable');
-
-    // ✅ Data Table start
     $('.data-table').each(function () {
         const $table = $(this);
         const tableInstance = new DataTable(this);

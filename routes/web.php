@@ -7,6 +7,9 @@ use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\UserManagement\UserManagementController;
 use App\Http\Controllers\Staff\StaffController;
 use App\Http\Controllers\Student\StudentController;
+use App\Http\Controllers\Student\AcademicYearController;
+use App\Http\Controllers\Student\SchoolClassController;
+use App\Http\Controllers\Settings\SchoolSettingController;
 
 Route::get('forgot-password',[AuthenticationController::class,'getForgetPassword'])->name('forgot-password');
 Route::post('forgot-password-process',[AuthenticationController::class,'forgotPass'])->name('forgot-password-process');
@@ -31,24 +34,63 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         Route::get('add-staff', 'getstaffView')->name('add-staff');
         Route::post('add-staff-process', 'addStaff')->name('add-staff-process');
         Route::get('list-staff', 'getListstaffView')->name('list-staff');
+        Route::get('edit-staff/{id}', 'geteditStaffID')->name('edit-staff');
+        Route::get('view-staff-details/{id}', 'getstaffDetailsView')->name('view-staff-details');
         Route::get('staff-id/{id}', 'getStaffID')->name('staff-id');
         Route::post('delete-staff-process', 'deleteStaff')->name('delete-staff-process');
         Route::post('add-staff-document-process', 'addDocStaff')->name('add-staff-document-process');
         Route::get('profile', 'getstaffprofileView')->name('profile');
-        Route::get('update-staff-process', 'updateStaff')->name('update-staff-process');
+        Route::post('update-staff-process/{id}', 'updateStaff')->name('update-staff-process');
         Route::post('update-photo-process', 'updatePhoto')->name('update-photo-process');
         Route::post('update-password-process', 'updatePassword')->name('update-password-process');
         
     });
 /* End StaffController*/
 
+/* UserManagementController*/
+   Route::controller(UserManagementController::class)->group(function () {
+        Route::get('user-categories', 'getUserCategoriesView')->name('user-categories');
+        Route::post('add-user-category-process', 'addUserCategory')->name('add-user-category-process');
+        Route::get('get-user-category-id/{id}', 'getUserCategoryId')->name('get-user-category-id');
+        Route::post('update-user-category-process', 'updateUserCategory')->name('update-user-category-process');
+        Route::post('delete-user-category-process', 'deleteUserCategory')->name('delete-user-category-process');
+    });
+/* End UserManagementController*/
+
 /* StudentController*/
    Route::controller(StudentController::class)->group(function () {
-        Route::get('student', 'getStudentView')->name('student');
-    
-        
+        Route::get('add-student', 'getAddStudentView')->name('add-student');
+        Route::post('add-student-process', 'addStudent')->name('add-student-process');
+        Route::post('save-student-draft-process', 'saveStudentDraft')->name('save-student-draft-process');
+        Route::get('list-students', 'getListStudentsView')->name('list-students');
+        Route::get('edit-student/{id}', 'getEditStudentView')->name('edit-student');
+        Route::post('update-student-process/{id}', 'updateStudent')->name('update-student-process');
+        Route::get('view-student-details/{id}', 'getStudentDetailsView')->name('view-student-details');
+        Route::get('print-student-details/{id}', 'printStudentDetailsView')->name('print-student-details');
+        Route::get('student-profile/{id}', 'publicStudentProfileView')->name('public-student-profile')->middleware('signed');
+    });
+
+   Route::controller(AcademicYearController::class)->group(function () {
+        Route::get('academic-years', 'index')->name('academic-years');
+        Route::post('add-academic-year-process', 'store')->name('add-academic-year-process');
+        Route::get('get-academic-year-id/{id}', 'show')->name('get-academic-year-id');
+        Route::post('update-academic-year-process', 'update')->name('update-academic-year-process');
+    });
+
+   Route::controller(SchoolClassController::class)->group(function () {
+        Route::get('school-classes', 'index')->name('school-classes');
+        Route::post('add-school-class-process', 'store')->name('add-school-class-process');
+        Route::get('get-school-class-id/{id}', 'show')->name('get-school-class-id');
+        Route::post('update-school-class-process', 'update')->name('update-school-class-process');
     });
 /* End StudentController*/
+
+/* SchoolSettingController*/
+   Route::controller(SchoolSettingController::class)->group(function () {
+        Route::get('school-settings', 'index')->name('school-settings');
+        Route::post('update-school-settings-process', 'update')->name('update-school-settings-process');
+    });
+/* End SchoolSettingController*/
 
 /* CourseController*/
    Route::controller(CourseController::class)->group(function () {

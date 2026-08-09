@@ -14143,6 +14143,22 @@ td.fc-header-center {
 /* === home 16 end === */
 /* === data table start === */
 /* Data Table css start */
+.dataTable-wrapper,
+.dataTable-wrapper .dt-container,
+.dataTable-wrapper .dt-scroll-body,
+.dataTable-wrapper .dt-layout-cell,
+.dataTable-wrapper .card-body {
+  overflow: visible !important;
+}
+
+.dataTable-wrapper table.dataTable td.table-action-cell {
+  position: static !important;
+}
+
+.dataTable-wrapper .dropdown-menu {
+  z-index: 1055;
+}
+
 .dt-layout-cell {
   overflow-x: auto;
 }

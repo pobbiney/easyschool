@@ -86,7 +86,7 @@ class StaffController extends Controller
         $status = $insertstaff->save();
 
         return $status 
-            ? back()->with('message_success','Staff added successfully') 
+            ? redirect()->route('list-staff')->with('message_success','Staff added successfully') 
             : back()->with('error_message','Something went wrong, please try again.');
     }
 
@@ -211,7 +211,7 @@ class StaffController extends Controller
         $status = $insertstaff->save();
 
         return $status 
-            ? back()->with('message_success','Staff updated successfully') 
+            ? redirect()->route('list-staff')->with('message_success','Staff updated successfully') 
             : back()->with('error_message','Something went wrong, please try again.');
     }
 

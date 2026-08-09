@@ -1,5 +1,5 @@
 <!-- page title -->
-@php $pageName = "staff"; $subpageName = "add-staff"; @endphp
+@php $pageName = "staff"; $subpageName = "list-staff"; @endphp
 
 @extends('layouts.app')
 <style>
@@ -43,10 +43,9 @@
             <div class="">
                 <h1 class="fw-semibold mb-4 h6 text-primary-light">STAFF MANAGEMENT</h1>
                 <div class="">
-                <a href="#" class="text-secondary-light hover-text-primary hover-underline">Dashboard </a>
-                <a href="#" class="text-secondary-light hover-text-primary hover-underline d-none"> /
-                    Staff Management</a>
-                <span class="text-secondary-light">/ Update Staff</span>
+                <a href="{{ route('dashboard') }}" class="text-secondary-light hover-text-primary hover-underline">Dashboard</a>
+                <a href="{{ route('list-staff') }}" class="text-secondary-light hover-text-primary hover-underline"> / Staff List</a>
+                <span class="text-secondary-light"> / Update Staff</span>
                 </div>
             </div>
             
@@ -69,7 +68,7 @@
 
                                         <label for="imageUpload" class="upload-box">
                                             @if(!empty($datas->picture))
-                                                <img id="preview" src="{{ $datas->picture }}" alt="Profile Preview">
+                                                <img id="preview" src="{{ asset($datas->picture) }}" alt="Profile Preview">
                                             
                                             @else
                                             <img id="preview"src="{{ asset('assets/images/thumbs/teacher-details-img.png')}}" alt="Profile Preview">
