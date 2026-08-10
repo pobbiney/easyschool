@@ -3,7 +3,31 @@
     $staff_query = DB::select('SELECT * FROM staff WHERE id = :id', ['id' => auth()->user()->staff_id]);
 
     $userCat = auth()->user()->user_cat;
-    $links = DB::select('SELECT user_links.link_id, user_links.page_id,user_links.page_id_sub, user_links.link_url, user_links.link_name, user_links.link_image, user_links.link_parent FROM user_cat_links INNER JOIN user_links ON user_cat_links.link_id = user_links.link_id WHERE user_cat_links.cat_id = :id ORDER BY user_links.link_name ASC',['id' => $userCat]);
+    $userId = auth()->user()->id;
+
+    $categoryLinkIds = DB::table('user_cat_links')
+        ->where('cat_id', $userCat)
+        ->pluck('link_id');
+
+    $extraLinkIds = DB::table('user_extra_links')
+        ->where('user_id', $userId)
+        ->pluck('link_id');
+
+    $allLinkIds = $categoryLinkIds->merge($extraLinkIds)->unique()->values();
+
+    $links = DB::table('user_links')
+        ->whereIn('link_id', $allLinkIds)
+        ->where('status', 'Active')
+        ->orderBy('link_name')
+        ->get([
+            'link_id',
+            'page_id',
+            'page_id_sub',
+            'link_url',
+            'link_name',
+            'link_image',
+            'link_parent',
+        ]);
     $parents = array();
     $child = array();
     foreach ($links as $row_links) {

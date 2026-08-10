@@ -8,6 +8,7 @@ use App\Models\UserCatLink;
 use App\Models\UserLink;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class UserManagementController extends Controller
 {
@@ -15,13 +16,26 @@ class UserManagementController extends Controller
     {
         $categories = UserCat::orderBy('cat_name')->get();
 
+        $userCounts = User::select('user_cat', DB::raw('count(*) as total'))
+            ->groupBy('user_cat')
+            ->pluck('total', 'user_cat');
+
         foreach ($categories as $category) {
             $category->assigned_links = UserCatLink::where('cat_id', $category->cat_id)
                 ->join('user_links', 'user_cat_links.link_id', '=', 'user_links.link_id')
                 ->where('user_links.link_url', '!=', '#')
                 ->pluck('user_links.link_name')
                 ->toArray();
+
+            $category->users_count = (int) ($userCounts[$category->cat_id] ?? 0);
         }
+
+        $stats = [
+            'total' => $categories->count(),
+            'active' => $categories->where('status', 'Active')->count(),
+            'inactive' => $categories->where('status', '!=', 'Active')->count(),
+            'users' => $userCounts->sum(),
+        ];
 
         $parentLinks = UserLink::where('link_parent', 0)
             ->where('status', 'Active')
@@ -33,7 +47,7 @@ class UserManagementController extends Controller
             ->orderBy('link_name')
             ->get();
 
-        return view('user-management.user-categories', compact('categories', 'parentLinks', 'childLinks'));
+        return view('user-management.user-categories', compact('categories', 'parentLinks', 'childLinks', 'stats'));
     }
 
     public function addUserCategory(Request $request)
@@ -66,11 +80,22 @@ class UserManagementController extends Controller
             ->pluck('link_id')
             ->toArray();
 
+        $assignedLinks = UserCatLink::where('cat_id', $id)
+            ->join('user_links', 'user_cat_links.link_id', '=', 'user_links.link_id')
+            ->where('user_links.link_url', '!=', '#')
+            ->where('user_links.status', 'Active')
+            ->orderBy('user_links.link_name')
+            ->get([
+                'user_links.link_id',
+                'user_links.link_name',
+            ]);
+
         return response()->json([
             'cat_id' => $category->cat_id,
             'cat_name' => $category->cat_name,
             'status' => $category->status,
             'link_ids' => $assignedLinkIds,
+            'links' => $assignedLinks,
         ]);
     }
 

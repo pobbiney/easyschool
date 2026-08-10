@@ -2,6 +2,25 @@
 @php $pageName = "staff"; $subpageName = "list-staff"; @endphp
 
 @extends('layouts.app')
+@section('css')
+<style>
+    .screen-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 500;
+        background: rgba(37, 161, 148, 0.08);
+        color: var(--primary-600, #25A194);
+        margin: 0 6px 6px 0;
+    }
+
+    .system-access-fields.is-disabled {
+        opacity: 0.55;
+        pointer-events: none;
+    }
+</style>
 <style>
 .upload-container{
     display:flex;
@@ -254,6 +273,8 @@
                                 </div>
                             </div>
                         </div>
+
+                        @include('staff.partials._section-system-access')
                     </div>
                 </div>
                
@@ -291,5 +312,15 @@ document.getElementById("imageUpload").addEventListener("change", function(event
     }
 
 });
-</script>
+    </script>
+    @include('staff.partials._extra-screens-scripts')
+    <script>
+        initStaffExtraScreens({
+            accessToggle: document.getElementById('enable_system_access'),
+            accessFields: document.getElementById('system-access-fields'),
+            categorySelect: document.getElementById('staff_user_cat'),
+            previewBox: document.getElementById('inherited-screens-preview'),
+            categoryLinksUrl: @json(url('get-user-category-id')),
+        });
+    </script>
 @endsection
