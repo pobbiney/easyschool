@@ -146,8 +146,15 @@
         border: 1px solid var(--neutral-200, #e5e7eb);
     }
 
-    .assigned-teacher-item .teacher-name-cell {
+    .assigned-teacher-item .teacher-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
         min-width: 0;
+    }
+
+    .assigned-teacher-item .class-badge {
+        align-self: flex-start;
     }
 
     .assign-course-preview {
@@ -243,12 +250,12 @@
     <div class="card h-100 assignment-list-wrapper">
         <div class="card-header border-bottom bg-base py-16 px-24">
             <h6 class="text-lg fw-semibold mb-4">Course Teacher Assignments</h6>
-            <p class="text-sm text-secondary-light mb-0">Assign teachers to courses for specific classes. Multiple teachers can be assigned to the same course and class.</p>
+            <p class="text-sm text-secondary-light mb-0">Assign teachers to courses across one or more classes. Multiple teachers can be assigned to the same course and class.</p>
         </div>
         <div class="card-body p-0 dataTable-wrapper">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-16 px-20 py-12 border-bottom border-neutral-200">
                 <form class="navbar-search dt-search m-0">
-                    <input type="text" class="dt-input bg-transparent radius-4" aria-controls="dataTable" name="search" placeholder="Search courses, classes, or teachers...">
+                    <input type="text" class="dt-input bg-transparent radius-4" aria-controls="dataTable" name="search" placeholder="Search courses or teachers...">
                     <iconify-icon icon="ion:search-outline" class="icon"></iconify-icon>
                 </form>
             </div>
@@ -258,7 +265,6 @@
                         <tr>
                             <th>Course / Sub-Course</th>
                             <th>Type</th>
-                            <th>Class</th>
                             <th>Teachers</th>
                             <th>Action</th>
                         </tr>
@@ -273,7 +279,6 @@
                             <tr>
                                 <td></td>
                                 <td class="text-center py-24 text-secondary-light">No courses available. Add courses first.</td>
-                                <td></td>
                                 <td></td>
                                 <td></td>
                             </tr>
@@ -320,7 +325,7 @@
             return initials.toUpperCase();
         }
 
-        function renderAssignedTeachersList(containerSelector, assignments, emptyMessage) {
+        function renderAssignedTeachersList(containerSelector, assignments, emptyMessage, showClass) {
             const $container = $(containerSelector);
 
             if (!assignments.length) {
@@ -330,12 +335,18 @@
 
             const html = assignments.map(function (assignment) {
                 const avatar = teacherAvatarHtml(assignment.teacher_name, assignment.teacher_picture);
+                const classLabel = showClass && assignment.class_name
+                    ? '<span class="class-badge">' + assignment.class_name + '</span>'
+                    : '';
 
                 return (
                     '<div class="assigned-teacher-item">' +
                         '<div class="teacher-name-cell">' +
                             '<span class="teacher-avatar">' + avatar + '</span>' +
-                            '<span class="fw-semibold">' + (assignment.teacher_name || 'Unknown teacher') + '</span>' +
+                            '<div class="teacher-meta">' +
+                                '<span class="fw-semibold">' + (assignment.teacher_name || 'Unknown teacher') + '</span>' +
+                                classLabel +
+                            '</div>' +
                         '</div>' +
                         '<button type="button" class="btn btn-sm btn-outline-danger-600 remove-assigned-teacher-btn" data-assignment-id="' + assignment.id + '">' +
                             'Remove' +
@@ -350,13 +361,20 @@
         function refreshAssignedTeachersList() {
             const classId = $('#assign_school_class_id').val();
             const className = $('#assign_school_class_id option:selected').text();
-            const assignments = assignmentsForClass(classId);
+            const assignments = classId
+                ? assignmentsForClass(classId)
+                : currentAssignments;
 
-            $('#assignedTeachersClassLabel').text(classId ? className : 'Select a class');
+            $('#assignedTeachersClassLabel').text(
+                classId ? className : (currentAssignments.length ? 'All classes' : 'Select a class')
+            );
             renderAssignedTeachersList(
                 '#assignedTeachersList',
                 assignments,
-                classId ? 'No teachers assigned to this class yet.' : 'Select a class to view assigned teachers.'
+                classId
+                    ? 'No teachers assigned to this class yet.'
+                    : (currentAssignments.length ? 'No teachers assigned to this course yet.' : 'Select a class to filter, or add a teacher above.'),
+                true
             );
             $('#assign_staff_id').val('');
         }
@@ -366,13 +384,11 @@
                 return;
             }
 
-            const classId = $('#viewCourseTeachersModal').data('class-id');
-            const assignments = assignmentsForClass(classId);
-
             renderAssignedTeachersList(
                 '#viewTeachersList',
-                assignments,
-                'No teachers assigned to this class yet.'
+                currentAssignments,
+                'No teachers assigned to this course yet.',
+                true
             );
         }
 
@@ -396,25 +412,12 @@
             syncTableTeacherCounts(activeCourseId);
         }
 
-        function assignmentCountByClass(courseId) {
-            const counts = {};
-
-            currentAssignments.forEach(function (assignment) {
-                const classId = String(assignment.school_class_id);
-                counts[classId] = (counts[classId] || 0) + 1;
-            });
-
-            return counts;
-        }
-
         function buildTeacherCountPill(count, meta) {
             if (count > 0) {
                 return (
                     '<button type="button" class="teacher-count-pill view-course-teachers-btn is-active"' +
                         ' data-course-id="' + meta.courseId + '"' +
                         ' data-course-name="' + meta.courseName + '"' +
-                        ' data-class-id="' + meta.classId + '"' +
-                        ' data-class-name="' + meta.className + '"' +
                         ' data-url="' + meta.courseUrl + '">' +
                         count +
                     '</button>'
@@ -428,27 +431,10 @@
             const meta = {
                 courseId: $row.attr('data-course-id'),
                 courseName: $row.attr('data-course-name'),
-                classId: $row.attr('data-class-id'),
-                className: $row.attr('data-class-name') || $row.find('.class-badge').text() || '—',
                 courseUrl: $row.attr('data-course-url'),
             };
 
             $row.find('.course-teachers-cell').html(buildTeacherCountPill(count, meta));
-        }
-
-        function configureCourseClassRow($row, classId, className, count) {
-            $row.attr('data-class-id', classId);
-            $row.attr('data-class-name', className);
-            $row.find('.course-class-cell').html('<span class="class-badge">' + className + '</span>');
-            $row.find('.assign-course-teacher-btn').attr('data-class-id', classId);
-            updateCourseRowCount($row, count);
-        }
-
-        function createCourseClassRow($templateRow, classId, className, count) {
-            const $row = $templateRow.clone();
-            $row.removeClass('d-none');
-            configureCourseClassRow($row, classId, className, count);
-            return $row;
         }
 
         function syncTableTeacherCounts(courseId) {
@@ -456,69 +442,18 @@
                 return;
             }
 
-            const counts = assignmentCountByClass(courseId);
-            const classIds = Object.keys(counts);
-            let $rows = $('tr.course-group-row[data-course-id="' + courseId + '"]');
-            let $placeholderRow = $rows.filter('[data-class-id=""]').first();
-
-            classIds.forEach(function (classId) {
-                const count = counts[classId];
-                const className = getClassName(classId);
-                let $row = $rows.filter('[data-class-id="' + classId + '"]');
-
-                if (!$row.length && $placeholderRow.length) {
-                    configureCourseClassRow($placeholderRow, classId, className, count);
-                    $placeholderRow = $();
-                    $rows = $('tr.course-group-row[data-course-id="' + courseId + '"]');
-                    return;
-                }
-
-                if (!$row.length) {
-                    const $newRow = createCourseClassRow($rows.first(), classId, className, count);
-                    $rows.last().after($newRow);
-                    $rows = $('tr.course-group-row[data-course-id="' + courseId + '"]');
-                    return;
-                }
-
-                updateCourseRowCount($row, count);
-            });
-
-            $rows = $('tr.course-group-row[data-course-id="' + courseId + '"]');
-            $rows.each(function () {
-                const $row = $(this);
-                const classId = $row.attr('data-class-id');
-
-                if (!classId) {
-                    if (!classIds.length) {
-                        $row.attr('data-class-name', '');
-                        $row.find('.course-class-cell').html('<span class="text-secondary-light">—</span>');
-                        $row.find('.assign-course-teacher-btn').removeAttr('data-class-id');
-                        updateCourseRowCount($row, 0);
-                    }
-                    return;
-                }
-
-                updateCourseRowCount($row, counts[classId] || 0);
-            });
-        }
-
-        function getClassName(classId) {
-            const fromAssignment = currentAssignments.find(function (item) {
-                return String(item.school_class_id) === String(classId);
-            });
-
-            if (fromAssignment && fromAssignment.class_name) {
-                return fromAssignment.class_name;
+            const $row = $('tr.course-group-row[data-course-id="' + courseId + '"]').first();
+            if (!$row.length) {
+                return;
             }
 
-            return $('#assign_school_class_id option[value="' + classId + '"]').text() || '—';
+            updateCourseRowCount($row, currentAssignments.length);
         }
 
         $('body').on('click', '.assign-course-teacher-btn', function () {
             const button = $(this);
-            const presetClassId = button.data('class-id') || '';
 
-            $.get(button.data('url'), function (data) {
+            $.getJSON(button.data('url'), function (data) {
                 currentAssignments = data.assignments || [];
                 activeCourseId = data.id;
 
@@ -526,43 +461,45 @@
                 $('#assign_course_name').text(data.name);
                 $('#assign_course_name_inline').text(data.parent_name ? data.parent_name + ' / ' + data.name : data.name);
                 $('#assign_course_type_label').text(data.is_sub_course ? 'Sub-Course' : 'Course');
-                $('#assign_school_class_id').val(presetClassId);
+                $('#assign_school_class_id').val('');
                 refreshAssignedTeachersList();
 
                 if (assignModal) {
                     assignModal.show();
                 }
+            }).fail(function () {
+                showToast('error', 'Unable to load course teacher assignments.');
             });
         });
 
         $('body').on('click', '.view-course-teachers-btn.is-active', function () {
             const button = $(this);
-            const classId = button.data('class-id');
 
-            $.get(button.data('url'), function (data) {
+            $.getJSON(button.data('url'), function (data) {
                 currentAssignments = data.assignments || [];
                 activeCourseId = data.id;
 
-                const assignments = (data.assignments || []).filter(function (item) {
-                    return String(item.school_class_id) === String(classId);
-                });
-
                 $('#view_teachers_course_name').text(data.parent_name ? data.parent_name + ' / ' + data.name : data.name);
-                $('#view_teachers_class_name').text(button.data('class-name') || '—');
-                $('#viewCourseTeachersModal').data('class-id', classId);
                 renderAssignedTeachersList(
                     '#viewTeachersList',
-                    assignments,
-                    'No teachers assigned to this class yet.'
+                    currentAssignments,
+                    'No teachers assigned to this course yet.',
+                    true
                 );
 
                 if (viewModal) {
                     viewModal.show();
                 }
+            }).fail(function () {
+                showToast('error', 'Unable to load assigned teachers.');
             });
         });
 
-        $('#assign_school_class_id').on('change', refreshAssignedTeachersList);
+        $(document).on('change', '#assign_school_class_id', refreshAssignedTeachersList);
+
+        if (assignModalEl) {
+            assignModalEl.addEventListener('shown.bs.modal', refreshAssignedTeachersList);
+        }
 
         $('#assignCourseTeacherForm').on('submit', function (event) {
             event.preventDefault();

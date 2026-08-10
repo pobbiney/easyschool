@@ -48,7 +48,7 @@
                             <span class="text-xs text-secondary-light" id="assignedTeachersClassLabel">Select a class</span>
                         </div>
                         <div id="assignedTeachersList" class="assigned-teachers-list">
-                            <p class="text-sm text-secondary-light mb-0">Select a class to view assigned teachers.</p>
+                            <p class="text-sm text-secondary-light mb-0">Assigned teachers will appear here.</p>
                         </div>
                     </div>
                 </div>
@@ -69,11 +69,7 @@
             <div class="modal-header border-bottom px-24 py-16">
                 <div>
                     <h6 class="modal-title fw-semibold mb-4">Assigned Teachers</h6>
-                    <p class="text-sm text-secondary-light mb-0">
-                        <strong id="view_teachers_course_name">—</strong>
-                        <span class="text-secondary-light"> • </span>
-                        <span id="view_teachers_class_name">—</span>
-                    </p>
+                    <p class="text-sm text-secondary-light mb-0">All teachers assigned to <strong id="view_teachers_course_name">—</strong></p>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
