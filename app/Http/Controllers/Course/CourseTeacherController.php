@@ -79,13 +79,12 @@ class CourseTeacherController extends Controller
         $schoolClass = SchoolClass::where('id', $request->school_class_id)->where('status', 'Active')->firstOrFail();
         $teacher = $this->teacherStaffQuery()->where('staff.id', $request->staff_id)->firstOrFail();
 
-        $alreadyAssigned = CourseTeachingAssignment::query()
-            ->where('course_id', $course->id)
-            ->where('school_class_id', $schoolClass->id)
-            ->where('staff_id', $teacher->id)
-            ->exists();
+        $assignment = CourseTeachingAssignment::firstOrNew([
+            'course_id' => $course->id,
+            'school_class_id' => $schoolClass->id,
+        ]);
 
-        if ($alreadyAssigned) {
+        if ($assignment->exists && (int) $assignment->staff_id === (int) $teacher->id) {
             $message = 'This teacher is already assigned to this course and class.';
 
             if ($request->expectsJson()) {
@@ -95,24 +94,28 @@ class CourseTeacherController extends Controller
             return back()->with('message_error', $message);
         }
 
-        $assignment = CourseTeachingAssignment::create([
-            'course_id' => $course->id,
-            'school_class_id' => $schoolClass->id,
-            'staff_id' => $teacher->id,
-            'created_by' => Auth::id(),
-            'updated_by' => Auth::id(),
-        ]);
+        if (! $assignment->exists) {
+            $assignment->created_by = Auth::id();
+        }
+
+        $assignment->staff_id = $teacher->id;
+        $assignment->updated_by = Auth::id();
+        $assignment->save();
 
         $assignment->load(['teacher', 'schoolClass']);
 
+        $message = $assignment->wasRecentlyCreated
+            ? 'Course teacher assigned successfully.'
+            : 'Course teacher updated for this class.';
+
         if ($request->expectsJson()) {
             return response()->json([
-                'message' => 'Course teacher assigned successfully.',
+                'message' => $message,
                 'assignment' => $this->formatAssignment($assignment),
             ]);
         }
 
-        return back()->with('message_success', 'Course teacher assigned successfully.');
+        return back()->with('message_success', $message);
     }
 
     public function unassign(Request $request)

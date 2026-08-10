@@ -4,7 +4,7 @@
             <div class="modal-header border-bottom px-24 py-16">
                 <div>
                     <h6 class="modal-title fw-semibold mb-4">Assign Course Teacher</h6>
-                    <p class="text-sm text-secondary-light mb-0">Assign one or more teachers to <strong id="assign_course_name">this course</strong> for a class.</p>
+                    <p class="text-sm text-secondary-light mb-0">Assign one teacher per class for <strong id="assign_course_name">this course</strong>. Use different classes to assign multiple teachers.</p>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -39,7 +39,7 @@
                                 <option value="{{ $teacher->id }}">{{ $teacher->full_name }}</option>
                             @endforeach
                         </select>
-                        <small class="text-secondary-light d-block mt-8">Multiple teachers can be assigned to the same course and class.</small>
+                        <small class="text-secondary-light d-block mt-8">One teacher per class. To assign another teacher, choose a different class.</small>
                     </div>
 
                     <div class="assigned-teachers-panel" id="assignedTeachersPanel">
@@ -55,7 +55,7 @@
                 <div class="modal-footer border-top px-24 py-16">
                     <div class="d-flex gap-2 ms-auto">
                         <button type="button" class="btn btn-outline-neutral-400" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary-600">Add Teacher</button>
+                        <button type="submit" class="btn btn-primary-600" id="assignCourseTeacherSubmitBtn">Assign Teacher</button>
                     </div>
                 </div>
             </form>

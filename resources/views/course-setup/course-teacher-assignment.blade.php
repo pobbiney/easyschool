@@ -250,7 +250,7 @@
     <div class="card h-100 assignment-list-wrapper">
         <div class="card-header border-bottom bg-base py-16 px-24">
             <h6 class="text-lg fw-semibold mb-4">Course Teacher Assignments</h6>
-            <p class="text-sm text-secondary-light mb-0">Assign teachers to courses across one or more classes. Multiple teachers can be assigned to the same course and class.</p>
+            <p class="text-sm text-secondary-light mb-0">Assign teachers to courses across one or more classes. One teacher per class for each course.</p>
         </div>
         <div class="card-body p-0 dataTable-wrapper">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-16 px-20 py-12 border-bottom border-neutral-200">
@@ -295,24 +295,27 @@
 @endsection
 
 @section('scripts')
+@php
+    $teacherOptions = $teachers->map(fn ($teacher) => [
+        'id' => $teacher->id,
+        'name' => $teacher->full_name,
+    ])->values();
+    $classOptions = $schoolClasses->map(fn ($schoolClass) => [
+        'id' => $schoolClass->id,
+        'name' => $schoolClass->name,
+    ])->values();
+@endphp
 <script>
     (function () {
         const assignModalEl = document.getElementById('assignCourseTeacherModal');
         const viewModalEl = document.getElementById('viewCourseTeachersModal');
         const assignModal = assignModalEl ? new bootstrap.Modal(assignModalEl) : null;
         const viewModal = viewModalEl ? new bootstrap.Modal(viewModalEl) : null;
+        const allTeachers = @json($teacherOptions);
+        const allClasses = @json($classOptions);
         let currentAssignments = [];
         let activeCourseId = null;
-
-        function assignmentsForClass(classId) {
-            if (!classId) {
-                return [];
-            }
-
-            return currentAssignments.filter(function (item) {
-                return String(item.school_class_id) === String(classId);
-            });
-        }
+        let activeCourseUrl = null;
 
         function teacherAvatarHtml(teacherName, picture) {
             if (picture) {
@@ -358,25 +361,91 @@
             $container.html(html);
         }
 
+        function assignedClassIds() {
+            return currentAssignments.map(function (assignment) {
+                return String(assignment.school_class_id);
+            });
+        }
+
+        function availableClasses() {
+            const assignedIds = assignedClassIds();
+
+            return allClasses.filter(function (schoolClass) {
+                return !assignedIds.includes(String(schoolClass.id));
+            });
+        }
+
+        function refreshClassDropdown() {
+            const classes = availableClasses();
+            let options = '<option value="">Select class</option>';
+
+            classes.forEach(function (schoolClass) {
+                options += '<option value="' + schoolClass.id + '">' + schoolClass.name + '</option>';
+            });
+
+            if (!classes.length) {
+                options = '<option value="">All classes already have a teacher</option>';
+            }
+
+            $('#assign_school_class_id').html(options);
+        }
+
         function refreshAssignedTeachersList() {
-            const classId = $('#assign_school_class_id').val();
-            const className = $('#assign_school_class_id option:selected').text();
-            const assignments = classId
-                ? assignmentsForClass(classId)
-                : currentAssignments;
+            const unassignedCount = availableClasses().length;
 
             $('#assignedTeachersClassLabel').text(
-                classId ? className : (currentAssignments.length ? 'All classes' : 'Select a class')
+                currentAssignments.length
+                    ? unassignedCount + ' class' + (unassignedCount === 1 ? '' : 'es') + ' still open'
+                    : 'No assignments yet'
             );
             renderAssignedTeachersList(
                 '#assignedTeachersList',
-                assignments,
-                classId
-                    ? 'No teachers assigned to this class yet.'
-                    : (currentAssignments.length ? 'No teachers assigned to this course yet.' : 'Select a class to filter, or add a teacher above.'),
+                currentAssignments,
+                'No teachers assigned to this course yet. Select a class above to assign one.',
                 true
             );
             $('#assign_staff_id').val('');
+            refreshClassDropdown();
+            refreshTeacherDropdown();
+        }
+
+        function refreshTeacherDropdown() {
+            const classId = $('#assign_school_class_id').val();
+            let options = '<option value="">Select teacher</option>';
+
+            allTeachers.forEach(function (teacher) {
+                options += '<option value="' + teacher.id + '">' + teacher.name + '</option>';
+            });
+
+            $('#assign_staff_id').html(options);
+            $('#assignCourseTeacherSubmitBtn').prop('disabled', !classId);
+        }
+
+        function reloadCourseAssignments(callback) {
+            if (!activeCourseUrl) {
+                if (callback) {
+                    callback();
+                }
+                return;
+            }
+
+            $.getJSON(activeCourseUrl, function (data) {
+                currentAssignments = data.assignments || [];
+                if (callback) {
+                    callback();
+                }
+            }).fail(function () {
+                showToast('error', 'Unable to refresh course teacher assignments.');
+                if (callback) {
+                    callback();
+                }
+            });
+        }
+
+        function refreshAssignmentUi() {
+            refreshAssignedTeachersList();
+            refreshViewTeachersList();
+            syncTableTeacherCounts(activeCourseId);
         }
 
         function refreshViewTeachersList() {
@@ -404,12 +473,9 @@
         }
 
         function removeAssignment(assignmentId) {
-            currentAssignments = currentAssignments.filter(function (item) {
-                return String(item.id) !== String(assignmentId);
+            reloadCourseAssignments(function () {
+                refreshAssignmentUi();
             });
-            refreshAssignedTeachersList();
-            refreshViewTeachersList();
-            syncTableTeacherCounts(activeCourseId);
         }
 
         function buildTeacherCountPill(count, meta) {
@@ -456,13 +522,13 @@
             $.getJSON(button.data('url'), function (data) {
                 currentAssignments = data.assignments || [];
                 activeCourseId = data.id;
+                activeCourseUrl = button.data('url');
 
                 $('#assign_course_id').val(data.id);
                 $('#assign_course_name').text(data.name);
                 $('#assign_course_name_inline').text(data.parent_name ? data.parent_name + ' / ' + data.name : data.name);
                 $('#assign_course_type_label').text(data.is_sub_course ? 'Sub-Course' : 'Course');
-                $('#assign_school_class_id').val('');
-                refreshAssignedTeachersList();
+                refreshAssignmentUi();
 
                 if (assignModal) {
                     assignModal.show();
@@ -478,6 +544,7 @@
             $.getJSON(button.data('url'), function (data) {
                 currentAssignments = data.assignments || [];
                 activeCourseId = data.id;
+                activeCourseUrl = button.data('url');
 
                 $('#view_teachers_course_name').text(data.parent_name ? data.parent_name + ' / ' + data.name : data.name);
                 renderAssignedTeachersList(
@@ -495,7 +562,7 @@
             });
         });
 
-        $(document).on('change', '#assign_school_class_id', refreshAssignedTeachersList);
+        $(document).on('change', '#assign_school_class_id', refreshTeacherDropdown);
 
         if (assignModalEl) {
             assignModalEl.addEventListener('shown.bs.modal', refreshAssignedTeachersList);
@@ -506,6 +573,16 @@
 
             const $form = $(this);
             const $submitBtn = $form.find('[type="submit"]');
+
+            if (!$('#assign_school_class_id').val()) {
+                showToast('error', 'Select a class before assigning a teacher.');
+                return;
+            }
+
+            if (!$('#assign_staff_id').val()) {
+                showToast('error', 'Select a teacher to assign.');
+                return;
+            }
 
             $submitBtn.prop('disabled', true);
 
@@ -518,15 +595,11 @@
                     'X-Requested-With': 'XMLHttpRequest',
                 },
                 success: function (response) {
-                    if (response.assignment) {
-                        currentAssignments.push(response.assignment);
-                    }
-
                     activeCourseId = $('#assign_course_id').val();
-                    refreshAssignedTeachersList();
-                    refreshViewTeachersList();
-                    syncTableTeacherCounts(activeCourseId);
-                    showToast('success', response.message || 'Course teacher assigned successfully.');
+                    reloadCourseAssignments(function () {
+                        refreshAssignmentUi();
+                        showToast('success', response.message || 'Course teacher assigned successfully.');
+                    });
                 },
                 error: function (xhr) {
                     const message = xhr.responseJSON?.message
@@ -537,7 +610,7 @@
                     showToast('error', message);
                 },
                 complete: function () {
-                    $submitBtn.prop('disabled', false);
+                    refreshTeacherDropdown();
                 },
             });
         });
