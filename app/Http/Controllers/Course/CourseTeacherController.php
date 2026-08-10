@@ -18,6 +18,7 @@ class CourseTeacherController extends Controller
     {
         $topLevelCourses = Course::topLevel()
             ->with([
+                'subCourses.parent',
                 'subCourses.teachingAssignments.teacher',
                 'subCourses.teachingAssignments.schoolClass',
                 'teachingAssignments.teacher',
@@ -26,20 +27,25 @@ class CourseTeacherController extends Controller
             ->orderBy('name')
             ->get();
 
+        $assignableCourses = $this->assignableCourses($topLevelCourses);
         $schoolClasses = SchoolClass::where('status', 'Active')->orderBy('name')->get();
         $teachers = $this->teacherStaffQuery()->get();
 
         $assignmentCount = CourseTeachingAssignment::count();
+        $assignedClassPairs = CourseTeachingAssignment::query()
+            ->select('course_id', 'school_class_id')
+            ->distinct()
+            ->count();
         $totalSlots = $this->countAssignableSlots($topLevelCourses, $schoolClasses->count());
 
         return view('course-setup.course-teacher-assignment', [
-            'topLevelCourses' => $topLevelCourses,
+            'assignableCourses' => $assignableCourses,
             'schoolClasses' => $schoolClasses,
             'teachers' => $teachers,
             'stats' => [
-                'total_courses' => $topLevelCourses->count(),
+                'total_courses' => $assignableCourses->count(),
                 'assignments' => $assignmentCount,
-                'unassigned' => max($totalSlots - $assignmentCount, 0),
+                'unassigned' => max($totalSlots - $assignedClassPairs, 0),
                 'teachers' => $teachers->count(),
             ],
         ]);
@@ -56,14 +62,7 @@ class CourseTeacherController extends Controller
             'parent_name' => $course->parent?->name,
             'is_sub_course' => $course->isSubCourse(),
             'assignments' => $course->teachingAssignments->map(function ($assignment) {
-                return [
-                    'id' => $assignment->id,
-                    'school_class_id' => $assignment->school_class_id,
-                    'class_name' => $assignment->schoolClass?->name,
-                    'staff_id' => $assignment->staff_id,
-                    'teacher_name' => $assignment->teacher?->full_name,
-                    'teacher_position' => $assignment->teacher?->position,
-                ];
+                return $this->formatAssignment($assignment);
             })->values(),
         ]);
     }
@@ -80,18 +79,38 @@ class CourseTeacherController extends Controller
         $schoolClass = SchoolClass::where('id', $request->school_class_id)->where('status', 'Active')->firstOrFail();
         $teacher = $this->teacherStaffQuery()->where('staff.id', $request->staff_id)->firstOrFail();
 
-        $assignment = CourseTeachingAssignment::firstOrNew([
-            'course_id' => $course->id,
-            'school_class_id' => $schoolClass->id,
-        ]);
+        $alreadyAssigned = CourseTeachingAssignment::query()
+            ->where('course_id', $course->id)
+            ->where('school_class_id', $schoolClass->id)
+            ->where('staff_id', $teacher->id)
+            ->exists();
 
-        if (! $assignment->exists) {
-            $assignment->created_by = Auth::id();
+        if ($alreadyAssigned) {
+            $message = 'This teacher is already assigned to this course and class.';
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message], 422);
+            }
+
+            return back()->with('message_error', $message);
         }
 
-        $assignment->staff_id = $teacher->id;
-        $assignment->updated_by = Auth::id();
-        $assignment->save();
+        $assignment = CourseTeachingAssignment::create([
+            'course_id' => $course->id,
+            'school_class_id' => $schoolClass->id,
+            'staff_id' => $teacher->id,
+            'created_by' => Auth::id(),
+            'updated_by' => Auth::id(),
+        ]);
+
+        $assignment->load(['teacher', 'schoolClass']);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Course teacher assigned successfully.',
+                'assignment' => $this->formatAssignment($assignment),
+            ]);
+        }
 
         return back()->with('message_success', 'Course teacher assigned successfully.');
     }
@@ -103,6 +122,13 @@ class CourseTeacherController extends Controller
         ]);
 
         CourseTeachingAssignment::where('id', $request->assignment_id)->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Course teacher assignment removed successfully.',
+                'assignment_id' => (int) $request->assignment_id,
+            ]);
+        }
 
         return back()->with('message_success', 'Course teacher assignment removed successfully.');
     }
@@ -119,6 +145,17 @@ class CourseTeacherController extends Controller
             ->orderBy('staff.firstname');
     }
 
+    private function assignableCourses($topLevelCourses)
+    {
+        return $topLevelCourses->flatMap(function ($course) {
+            if ($course->subCourses->isNotEmpty()) {
+                return $course->subCourses;
+            }
+
+            return collect([$course]);
+        });
+    }
+
     private function countAssignableSlots($topLevelCourses, int $classCount): int
     {
         if ($classCount === 0) {
@@ -126,9 +163,23 @@ class CourseTeacherController extends Controller
         }
 
         $courseCount = $topLevelCourses->sum(function ($course) {
-            return 1 + $course->subCourses->count();
+            return $course->subCourses->isNotEmpty()
+                ? $course->subCourses->count()
+                : 1;
         });
 
         return $courseCount * $classCount;
+    }
+
+    private function formatAssignment(CourseTeachingAssignment $assignment): array
+    {
+        return [
+            'id' => $assignment->id,
+            'school_class_id' => $assignment->school_class_id,
+            'class_name' => $assignment->schoolClass?->name,
+            'staff_id' => $assignment->staff_id,
+            'teacher_name' => $assignment->teacher?->full_name,
+            'teacher_picture' => $assignment->teacher?->picture ? asset($assignment->teacher->picture) : null,
+        ];
     }
 }

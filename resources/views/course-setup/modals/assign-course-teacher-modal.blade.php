@@ -4,7 +4,7 @@
             <div class="modal-header border-bottom px-24 py-16">
                 <div>
                     <h6 class="modal-title fw-semibold mb-4">Assign Course Teacher</h6>
-                    <p class="text-sm text-secondary-light mb-0">Assign a teacher to teach <strong id="assign_course_name">this course</strong> in a class.</p>
+                    <p class="text-sm text-secondary-light mb-0">Assign one or more teachers to <strong id="assign_course_name">this course</strong> for a class.</p>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -36,30 +36,53 @@
                         <select class="form-control form-select" name="staff_id" id="assign_staff_id" required>
                             <option value="">Select teacher</option>
                             @foreach($teachers as $teacher)
-                                <option value="{{ $teacher->id }}">
-                                    {{ $teacher->full_name }} — {{ $teacher->position }}
-                                </option>
+                                <option value="{{ $teacher->id }}">{{ $teacher->full_name }}</option>
                             @endforeach
                         </select>
-                        <small class="text-secondary-light d-block mt-8">Only staff with the Teacher user category are listed. One teacher per course and class.</small>
+                        <small class="text-secondary-light d-block mt-8">Multiple teachers can be assigned to the same course and class.</small>
                     </div>
 
-                    <div class="current-teacher-box" id="currentAssignmentBox" style="display:none;">
-                        <small class="text-secondary-light d-block mb-8">Current assignment for selected class</small>
-                        <span class="d-block fw-semibold text-sm" id="currentAssignmentTeacher"></span>
-                        <span class="d-block text-xs text-secondary-light" id="currentAssignmentMeta"></span>
+                    <div class="assigned-teachers-panel" id="assignedTeachersPanel">
+                        <div class="d-flex align-items-center justify-content-between gap-3 mb-12">
+                            <h6 class="text-sm fw-semibold mb-0">Assigned Teachers</h6>
+                            <span class="text-xs text-secondary-light" id="assignedTeachersClassLabel">Select a class</span>
+                        </div>
+                        <div id="assignedTeachersList" class="assigned-teachers-list">
+                            <p class="text-sm text-secondary-light mb-0">Select a class to view assigned teachers.</p>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer border-top px-24 py-16 d-flex justify-content-between">
-                    <button type="button" class="btn btn-outline-danger-600" id="unassignCourseTeacherBtn" style="display:none;">
-                        Remove Assignment
-                    </button>
+                <div class="modal-footer border-top px-24 py-16">
                     <div class="d-flex gap-2 ms-auto">
                         <button type="button" class="btn btn-outline-neutral-400" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary-600">Save Assignment</button>
+                        <button type="submit" class="btn btn-primary-600">Add Teacher</button>
                     </div>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="viewCourseTeachersModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content radius-12 border-0">
+            <div class="modal-header border-bottom px-24 py-16">
+                <div>
+                    <h6 class="modal-title fw-semibold mb-4">Assigned Teachers</h6>
+                    <p class="text-sm text-secondary-light mb-0">
+                        <strong id="view_teachers_course_name">—</strong>
+                        <span class="text-secondary-light"> • </span>
+                        <span id="view_teachers_class_name">—</span>
+                    </p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-24">
+                <div id="viewTeachersList" class="assigned-teachers-list"></div>
+            </div>
+            <div class="modal-footer border-top px-24 py-16">
+                <button type="button" class="btn btn-outline-neutral-400" data-bs-dismiss="modal">Close</button>
+            </div>
         </div>
     </div>
 </div>
