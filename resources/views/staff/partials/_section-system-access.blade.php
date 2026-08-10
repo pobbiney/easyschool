@@ -30,11 +30,32 @@
 
         return 'ri-window-line';
     };
+
+    $savedAccessLinks = $savedAccessLinks ?? [];
+    $savedAccessLinkIds = array_map('intval', old('extra_link_ids', $assignedExtraLinkIds ?? []));
+    $inheritedPreviewLinks = $savedAccessLinks;
+
+    if (old('extra_link_ids') && isset($childLinks)) {
+        $previewLinkIds = array_map('intval', old('extra_link_ids'));
+        $inheritedPreviewLinks = $childLinks
+            ->whereIn('link_id', $previewLinkIds)
+            ->sortBy('link_name')
+            ->map(function ($link) {
+                return [
+                    'link_id' => (int) $link->link_id,
+                    'link_name' => $link->link_name,
+                ];
+            })
+            ->values()
+            ->all();
+    }
 @endphp
 
 @include('staff.partials._extra-screens-styles')
 
-<div class="staff-access-card shadow-1 radius-12 bg-base overflow-hidden mt-24" id="system-access-section">
+<div class="staff-access-card shadow-1 radius-12 bg-base overflow-hidden mt-24" id="system-access-section"
+    data-saved-access-link-ids='@json($savedAccessLinkIds)'
+    data-saved-access-links='@json($inheritedPreviewLinks)'>
     <div class="card-header border-bottom bg-base py-16 px-24 d-flex flex-wrap align-items-center justify-content-between gap-3">
         <div class="d-flex align-items-center gap-12">
             <span class="section-title-icon"><i class="ri-shield-keyhole-line"></i></span>
@@ -86,7 +107,13 @@
             <div class="col-12">
                 <label class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Inherited Screens</label>
                 <div id="inherited-screens-preview" class="inherited-screens-box border radius-8 p-16">
-                    <span class="text-sm text-secondary-light">Select a user category to preview inherited screens.</span>
+                    @if(count($inheritedPreviewLinks))
+                        @foreach($inheritedPreviewLinks as $link)
+                            <span class="screen-badge">{{ $link['link_name'] }}</span>
+                        @endforeach
+                    @else
+                        <span class="text-sm text-secondary-light">Select a user category to preview inherited screens.</span>
+                    @endif
                 </div>
             </div>
 
@@ -121,7 +148,7 @@
                                 <div class="extra-screen-grid">
                                     @foreach($moduleChildren as $child)
                                         @php
-                                            $isChecked = in_array($child->link_id, $assignedExtraLinkIds ?? []);
+                                            $isChecked = in_array((int) $child->link_id, $savedAccessLinkIds, true);
                                         @endphp
                                         <label class="extra-screen-tile {{ $isChecked ? 'is-selected' : '' }}"
                                             for="extra_link_{{ $child->link_id }}"

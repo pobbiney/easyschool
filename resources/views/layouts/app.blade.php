@@ -1,19 +1,20 @@
 @php
-
     $staff_query = DB::select('SELECT * FROM staff WHERE id = :id', ['id' => auth()->user()->staff_id]);
 
-    $userCat = auth()->user()->user_cat;
     $userId = auth()->user()->id;
 
-    $categoryLinkIds = DB::table('user_cat_links')
-        ->where('cat_id', $userCat)
-        ->pluck('link_id');
-
-    $extraLinkIds = DB::table('user_extra_links')
+    $allLinkIds = DB::table('user_access_links')
         ->where('user_id', $userId)
         ->pluck('link_id');
 
-    $allLinkIds = $categoryLinkIds->merge($extraLinkIds)->unique()->values();
+    if ($allLinkIds->isNotEmpty()) {
+        $parentLinkIds = DB::table('user_links')
+            ->whereIn('link_id', $allLinkIds)
+            ->where('link_parent', '>', 0)
+            ->pluck('link_parent');
+
+        $allLinkIds = $allLinkIds->merge($parentLinkIds)->unique()->values();
+    }
 
     $links = DB::table('user_links')
         ->whereIn('link_id', $allLinkIds)

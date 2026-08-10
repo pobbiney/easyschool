@@ -2,6 +2,44 @@
 @php $pageName = "staff"; $subpageName = "list-staff"; @endphp
 
 @extends('layouts.app')
+
+@section('css')
+<style>
+    .staff-list-dataTable-wrapper,
+    .staff-list-dataTable-wrapper .dt-container,
+    .staff-list-dataTable-wrapper .dt-layout-cell {
+        overflow: visible !important;
+    }
+
+    .staff-list-table-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .staff-list-dataTable-wrapper table.dataTable,
+    .staff-list-table-scroll table {
+        min-width: 1020px;
+    }
+
+    .staff-list-dataTable-wrapper .table-action-cell {
+        position: relative !important;
+    }
+
+    .staff-list-dataTable-wrapper .table-action-cell .dropdown-menu {
+        z-index: 1060;
+    }
+
+    @media (max-width: 767px) {
+        .staff-list-dataTable-wrapper .dt-search {
+            width: 100%;
+        }
+
+        .staff-list-dataTable-wrapper .dt-search .dt-input {
+            width: 100%;
+        }
+    }
+</style>
+@endsection
  
 @section('content')
 
@@ -25,7 +63,7 @@
               
     <div class="mt-24">
         <div class="card h-100">
-            <div class="card-body p-0 dataTable-wrapper">
+            <div class="card-body p-0 dataTable-wrapper staff-list-dataTable-wrapper">
 
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-16 px-20 py-12 border-bottom border-neutral-200">
                     <div class="d-flex flex-wrap align-items-center gap-16">
@@ -50,7 +88,7 @@
                     </div>
                 </div>
 
-                <div class="p-0">
+                <div class="p-0 table-responsive staff-list-table-scroll">
                     <table class="table bordered-table mb-0 data-table" id="dataTable" data-page-length='10'>
                         <thead>
                             <tr>
@@ -103,10 +141,10 @@
                                         <span class="bg-danger-100 text-danger-600 px-24 py-4 radius-4 fw-medium text-sm">{{ $list->status }}</span>
                                     @endif
                                 </td>
-                                <td>
+                                <td class="table-action-cell">
                                     <div class="btn-group">
                                         <button type="button" class="text-primary-light text-xl"
-                                            data-bs-toggle="dropdown" data-bs-display="static"
+                                            data-bs-toggle="dropdown"
                                             aria-expanded="false">
                                             <iconify-icon icon="tabler:dots-vertical"></iconify-icon>
                                         </button>
@@ -274,5 +312,13 @@
     }
 
     toggleSaveButton();
+
+    document.querySelectorAll('.staff-list-dataTable-wrapper .table-action-cell [data-bs-toggle="dropdown"]').forEach(function (toggle) {
+        bootstrap.Dropdown.getOrCreateInstance(toggle, {
+            popperConfig: {
+                strategy: 'fixed'
+            }
+        });
+    });
 </script>
 @endsection

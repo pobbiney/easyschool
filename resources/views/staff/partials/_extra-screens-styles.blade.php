@@ -152,7 +152,8 @@
     .extra-screen-tile input {
         position: absolute;
         opacity: 0;
-        pointer-events: none;
+        width: 1px;
+        height: 1px;
     }
 
     .extra-screen-tile-body {
@@ -245,7 +246,7 @@
     }
 
     .extra-screen-tile.is-inherited {
-        cursor: not-allowed;
+        cursor: pointer;
     }
 
     .extra-screen-tile.is-inherited .extra-screen-tile-body {

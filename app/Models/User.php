@@ -49,17 +49,30 @@ class User extends  Authenticatable
 		'remember_token',
 		'staff_id',
         'user_cat',
+		'cat_id',
 		'status',
 	];
 
+	public function category()
+	{
+		return $this->belongsTo(UserCat::class, 'user_cat', 'cat_id');
+	}
+
+	public function accessLinks()
+	{
+		return $this->hasMany(UserAccessLink::class, 'user_id');
+	}
+
 	public function getUserCategory (){
 
-		return UserCat::find($this->user_cat)->cat_name;
+		$category = UserCat::find($this->user_cat);
+
+		return $category ? $category->cat_name : 'Not Available';
 	}
 
        public function categoryname()
 {
-	return $this->belongsTo(UserCat::class, 'user_cat', 'cat_id'); // Adjust if your FK is different
+	return $this->belongsTo(UserCat::class, 'user_cat', 'cat_id');
 }
 
 	public function getUserName ($id){
@@ -78,6 +91,6 @@ class User extends  Authenticatable
 
 	public function staff()
 {
-    return $this->belongsTo(\App\Models\Staff::class, 'staff_id', 'staff_id');
+    return $this->belongsTo(Staff::class, 'staff_id', 'id');
 }
 }

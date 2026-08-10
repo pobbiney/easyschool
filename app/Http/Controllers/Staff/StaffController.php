@@ -9,11 +9,11 @@ use App\Models\Staff;
 use App\Models\StaffDoc;
 use App\Models\User;
 use App\Models\UserCat;
-use App\Models\UserCatLink;
-use App\Models\UserExtraLink;
+use App\Models\UserAccessLink;
 use App\Models\UserLink;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class StaffController extends Controller
@@ -41,6 +41,7 @@ class StaffController extends Controller
             'categories' => $categories,
             'staffUser' => null,
             'assignedExtraLinkIds' => [],
+            'savedAccessLinks' => [],
         ], $screenLinks));
     }
     
@@ -54,7 +55,7 @@ class StaffController extends Controller
             'surname' => 'required',
             'firstname' => 'required',
             'gender' => 'required',
-            'email' => $enableLogin ? 'required|email|unique:users,email' : 'required|email',
+            'email' => 'required|email',
             'phone' => 'required',
             'dob' => 'required',
             'position' => 'required',
@@ -67,7 +68,7 @@ class StaffController extends Controller
 
         if ($enableLogin) {
             $rules['user_cat'] = 'required';
-            $rules['password'] = 'required|string|min:8';
+            $rules['password'] = $this->loginPasswordRule($request);
         }
 
         $request->validate($rules);
@@ -112,18 +113,8 @@ class StaffController extends Controller
         }
 
         if ($enableLogin) {
-            $user = new User();
-            $user->name = trim($request->firstname . ' ' . ($request->othername ? $request->othername . ' ' : '') . $request->surname);
-            $user->email = trim($request->email);
-            $user->phone = trim($request->phone);
-            $user->password = Hash::make($request->password);
-            $user->user_cat = $request->user_cat;
-            $user->cat_id = $request->user_cat;
-            $user->staff_id = $insertstaff->id;
-            $user->status = trim($request->status);
-            $user->save();
-
-            $this->saveUserExtraLinks($user->id, $request->extra_link_ids ?? [], $request->user_cat);
+            $user = $this->saveStaffUserLogin($insertstaff, $request);
+            $this->saveUserAccessLinks($user->id, $request->extra_link_ids ?? []);
         }
 
         return redirect()->route('list-staff')->with('message_success', 'Staff added successfully');
@@ -194,13 +185,12 @@ class StaffController extends Controller
         $categories = UserCat::where('status', 'Active')->orderBy('cat_name')->get();
         $screenLinks = $this->getScreenLinks();
         $staffUser = User::where('staff_id', $decodeId)->first();
-        $assignedExtraLinkIds = [];
 
-        if ($staffUser) {
-            $assignedExtraLinkIds = UserExtraLink::where('user_id', $staffUser->id)
-                ->pluck('link_id')
-                ->toArray();
+        if (! $staffUser && ! empty($datas->email)) {
+            $staffUser = User::where('email', $datas->email)->first();
         }
+
+        $savedAccess = $this->getSavedAccessLinksForUser($staffUser);
 
         return view('staff.edit-staff', array_merge([
             'datas' => $datas,
@@ -208,7 +198,8 @@ class StaffController extends Controller
             'id' => $id,
             'categories' => $categories,
             'staffUser' => $staffUser,
-            'assignedExtraLinkIds' => $assignedExtraLinkIds,
+            'assignedExtraLinkIds' => $savedAccess['ids'],
+            'savedAccessLinks' => $savedAccess['links'],
         ], $screenLinks));
     }
 
@@ -216,23 +207,16 @@ class StaffController extends Controller
     {
 
        $decodeId = Crypt::decrypt($id);
+       $insertstaff = Staff::findOrFail($decodeId);
        $staffUser = User::where('staff_id', $decodeId)->first();
        $enableLogin = $this->wantsSystemAccess($request);
-
-       $emailRule = 'required|email';
-       if ($enableLogin) {
-           $emailRule = 'required|email|unique:users,email';
-           if ($staffUser) {
-               $emailRule .= ',' . $staffUser->id;
-           }
-       }
 
        $rules = [
             'title' => 'required',
             'surname' => 'required',
             'firstname' => 'required',
             'gender' => 'required',
-            'email' => $emailRule,
+            'email' => 'required|email',
             'phone' => 'required',
             'dob' => 'required',
             'position' => 'required',
@@ -245,13 +229,11 @@ class StaffController extends Controller
 
        if ($enableLogin) {
            $rules['user_cat'] = 'required';
-           $rules['password'] = $staffUser ? 'nullable|string|min:8' : 'required|string|min:8';
+           $rules['password'] = $this->loginPasswordRule($request, $staffUser, $insertstaff);
        }
 
        $request->validate($rules);
 
-
-        $insertstaff = Staff::findOrFail($decodeId);
 
         if ($request->hasFile('image')) {
             $file = $request->file('image');
@@ -290,29 +272,14 @@ class StaffController extends Controller
         }
 
         if ($enableLogin) {
-            if (!$staffUser) {
-                $staffUser = new User();
-                $staffUser->password = Hash::make($request->password);
-            } elseif ($request->filled('password')) {
-                $staffUser->password = Hash::make($request->password);
-            }
-
-            $staffUser->name = trim($request->firstname . ' ' . ($request->othername ? $request->othername . ' ' : '') . $request->surname);
-            $staffUser->email = trim($request->email);
-            $staffUser->phone = trim($request->phone);
-            $staffUser->user_cat = $request->user_cat;
-            $staffUser->cat_id = $request->user_cat;
-            $staffUser->staff_id = $insertstaff->id;
-            $staffUser->status = trim($request->status);
-            $staffUser->save();
-
-            $this->saveUserExtraLinks($staffUser->id, $request->extra_link_ids ?? [], $request->user_cat);
+            $staffUser = $this->saveStaffUserLogin($insertstaff, $request, $staffUser);
+            $this->saveUserAccessLinks($staffUser->id, $request->extra_link_ids ?? []);
         } elseif ($staffUser) {
-            UserExtraLink::where('user_id', $staffUser->id)->delete();
+            UserAccessLink::where('user_id', $staffUser->id)->delete();
             $staffUser->delete();
         }
 
-        return redirect()->route('list-staff')->with('message_success', 'Staff updated successfully');
+        return redirect()->route('edit-staff', $id)->with('message_success', 'Staff updated successfully');
     }
 
     public function getstaffDetailsView($id)
@@ -414,6 +381,36 @@ class StaffController extends Controller
         return compact('parentLinks', 'childLinks');
     }
 
+    private function getSavedAccessLinksForUser(?User $staffUser): array
+    {
+        if (! $staffUser) {
+            return [
+                'ids' => [],
+                'links' => [],
+            ];
+        }
+
+        $links = UserAccessLink::query()
+            ->where('user_access_links.user_id', $staffUser->id)
+            ->join('user_links', 'user_access_links.link_id', '=', 'user_links.link_id')
+            ->where('user_links.link_parent', '>', 0)
+            ->where('user_links.link_url', '!=', '#')
+            ->where('user_links.status', 'Active')
+            ->orderBy('user_links.link_name')
+            ->get([
+                'user_links.link_id',
+                'user_links.link_name',
+            ]);
+
+        return [
+            'ids' => $links->pluck('link_id')->map(fn ($id) => (int) $id)->values()->all(),
+            'links' => $links->map(fn ($link) => [
+                'link_id' => (int) $link->link_id,
+                'link_name' => $link->link_name,
+            ])->values()->all(),
+        ];
+    }
+
     private function expandLinkIdsWithParents(array $selectedLinkIds)
     {
         $linkIdsToSave = [];
@@ -431,25 +428,64 @@ class StaffController extends Controller
         return array_unique($linkIdsToSave);
     }
 
-    private function saveUserExtraLinks($userId, array $selectedLinkIds, $categoryId = null)
+    private function loginPasswordRule(Request $request, ?User $linkedUser = null, ?Staff $staff = null)
     {
-        UserExtraLink::where('user_id', $userId)->delete();
+        $existingUser = $this->findExistingLoginUser($request, $linkedUser, $staff);
 
-        if ($categoryId) {
-            $categoryLinkIds = UserCatLink::where('cat_id', $categoryId)
-                ->pluck('link_id')
-                ->map(fn ($id) => (int) $id)
-                ->toArray();
+        return $existingUser ? 'nullable|string|min:8' : 'required|string|min:8';
+    }
 
-            $selectedLinkIds = array_values(array_filter($selectedLinkIds, function ($linkId) use ($categoryLinkIds) {
-                return !in_array((int) $linkId, $categoryLinkIds, true);
-            }));
+    private function findExistingLoginUser(Request $request, ?User $linkedUser = null, ?Staff $staff = null)
+    {
+        $user = User::where('email', trim($request->email))->first();
+
+        if ($user) {
+            return $user;
         }
 
+        if ($linkedUser) {
+            return $linkedUser;
+        }
+
+        if ($staff && $staff->id) {
+            return User::where('staff_id', $staff->id)->first();
+        }
+
+        return null;
+    }
+
+    private function saveStaffUserLogin(Staff $staff, Request $request, ?User $existingUser = null)
+    {
+        $user = $this->findExistingLoginUser($request, $existingUser, $staff) ?? new User();
+        $isNewUser = ! $user->exists;
+
+        if ($isNewUser) {
+            $user->password = Hash::make($request->password);
+        } elseif ($request->filled('password')) {
+            $user->password = Hash::make($request->password);
+        }
+
+        $user->name = trim($request->firstname . ' ' . ($request->othername ? $request->othername . ' ' : '') . $request->surname);
+        $user->email = trim($request->email);
+        $user->phone = trim($request->phone);
+        $user->user_cat = $request->user_cat;
+        $user->cat_id = $request->user_cat;
+        $user->staff_id = $staff->id;
+        $user->status = trim($request->status);
+        $user->save();
+
+        return $user;
+    }
+
+    private function saveUserAccessLinks($userId, array $selectedLinkIds)
+    {
+        UserAccessLink::where('user_id', $userId)->delete();
+
+        $selectedLinkIds = array_values(array_unique(array_map('intval', $selectedLinkIds)));
         $linkIdsToSave = $this->expandLinkIdsWithParents($selectedLinkIds);
 
         foreach ($linkIdsToSave as $linkId) {
-            UserExtraLink::create([
+            UserAccessLink::create([
                 'user_id' => $userId,
                 'link_id' => $linkId,
             ]);
