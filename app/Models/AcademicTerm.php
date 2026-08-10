@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class AcademicYear extends Model
+class AcademicTerm extends Model
 {
     protected $fillable = [
         'name',
+        'sort_order',
         'status',
         'created_by',
         'updated_by',
@@ -15,6 +16,6 @@ class AcademicYear extends Model
 
     public function courseRegistrations()
     {
-        return $this->hasMany(CourseRegistration::class, 'academic_year_id');
+        return $this->hasMany(CourseRegistration::class, 'academic_term_id');
     }
 }

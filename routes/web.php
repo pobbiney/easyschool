@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Authentication\AuthenticationController;
 use App\Http\Controllers\Course\CourseController;
 use App\Http\Controllers\Course\CourseTeacherController;
+use App\Http\Controllers\Course\CourseRegistrationController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\UserManagement\UserManagementController;
 use App\Http\Controllers\Staff\StaffController;
@@ -133,5 +134,13 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         Route::get('get-course-teacher-assignment/{id}', 'show')->name('get-course-teacher-assignment');
         Route::post('assign-course-teacher-process', 'assign')->name('assign-course-teacher-process');
         Route::post('unassign-course-teacher-process', 'unassign')->name('unassign-course-teacher-process');
+    });
+
+   Route::controller(CourseRegistrationController::class)->group(function () {
+        Route::get('course-registration', 'index')->name('course-registration');
+        Route::get('course-registration-courses', 'courses')->name('course-registration-courses');
+        Route::get('course-registration-registered', 'registered')->name('course-registration-registered');
+        Route::post('course-registration-register', 'register')->name('course-registration-register');
+        Route::post('course-registration-unregister', 'unregister')->name('course-registration-unregister');
     });
 /* End CourseController*/

@@ -25,4 +25,9 @@ class SchoolClass extends Model
     {
         return $this->hasMany(CourseTeachingAssignment::class, 'school_class_id');
     }
+
+    public function courseRegistrations()
+    {
+        return $this->hasMany(CourseRegistration::class, 'school_class_id');
+    }
 }
