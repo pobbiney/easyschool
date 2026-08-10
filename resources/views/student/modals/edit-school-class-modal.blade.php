@@ -10,6 +10,16 @@
         <input type="hidden" name="class_id" id="edit_class_id">
         <div class="row g-3">
             <div class="col-sm-12">
+                <label class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Class Category</label>
+                <select class="form-control form-select" name="class_category_id" id="edit_class_category_id">
+                    <option value="">Select category</option>
+                    @foreach($classCategories as $category)
+                        <option value="{{ $category->id }}">{{ $category->name }}</option>
+                    @endforeach
+                </select>
+                @error('class_category_id') <small class="text-danger">{{ $message }}</small> @enderror
+            </div>
+            <div class="col-sm-12">
                 <label class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Class Name</label>
                 <input type="text" class="form-control" name="name" id="edit_class_name" placeholder="e.g. Primary 1">
                 @error('name') <small class="text-danger">{{ $message }}</small> @enderror
@@ -25,7 +35,7 @@
             <div class="col-12">
                 <div class="d-flex align-items-center justify-content-center gap-3 mt-8">
                     <button type="reset" class="border border-danger-600 bg-hover-danger-200 text-danger-600 text-md px-50 py-11 radius-8">Cancel</button>
-                    <button type="submit" class="btn btn-primary-600 border border-primary-600 text-md px-28 py-12 radius-8">Update</button>
+                    <button type="submit" class="btn btn-primary-600 border border-primary-600 text-md px-28 py-12 radius-8">Update Class</button>
                 </div>
             </div>
         </div>

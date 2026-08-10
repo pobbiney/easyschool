@@ -10,11 +10,17 @@ class SchoolClass extends Model
 
     protected $fillable = [
         'name',
+        'class_category_id',
         'status',
         'class_teacher_id',
         'created_by',
         'updated_by',
     ];
+
+    public function category()
+    {
+        return $this->belongsTo(ClassCategory::class, 'class_category_id');
+    }
 
     public function classTeacher()
     {

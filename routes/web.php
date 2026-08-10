@@ -11,6 +11,7 @@ use App\Http\Controllers\Staff\StaffController;
 use App\Http\Controllers\Student\StudentController;
 use App\Http\Controllers\Student\AcademicYearController;
 use App\Http\Controllers\Student\SchoolClassController;
+use App\Http\Controllers\Student\ClassCategoryController;
 use App\Http\Controllers\Student\ClassTeacherController;
 use App\Http\Controllers\Settings\SchoolSettingController;
 use App\Http\Controllers\Dormitory\DormitoryController;
@@ -86,6 +87,13 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         Route::post('add-school-class-process', 'store')->name('add-school-class-process');
         Route::get('get-school-class-id/{id}', 'show')->name('get-school-class-id');
         Route::post('update-school-class-process', 'update')->name('update-school-class-process');
+    });
+
+   Route::controller(ClassCategoryController::class)->group(function () {
+        Route::get('class-categories', 'index')->name('class-categories');
+        Route::post('add-class-category-process', 'store')->name('add-class-category-process');
+        Route::get('get-class-category-id/{id}', 'show')->name('get-class-category-id');
+        Route::post('update-class-category-process', 'update')->name('update-class-category-process');
     });
 
    Route::controller(ClassTeacherController::class)->group(function () {

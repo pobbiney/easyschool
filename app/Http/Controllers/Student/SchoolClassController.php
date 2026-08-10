@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Models\ClassCategory;
 use App\Models\SchoolClass;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,10 +12,22 @@ class SchoolClassController extends Controller
 {
     public function index()
     {
-        $schoolClasses = SchoolClass::orderBy('name')->get();
+        $schoolClasses = SchoolClass::with('category')
+            ->orderBy('name')
+            ->get();
+
+        $stats = [
+            'total' => $schoolClasses->count(),
+            'active' => $schoolClasses->where('status', 'Active')->count(),
+            'inactive' => $schoolClasses->where('status', 'Inactive')->count(),
+            'categories' => ClassCategory::where('status', 'Active')->count(),
+        ];
 
         return view('student.school-classes', [
             'schoolClasses' => $schoolClasses,
+            'classCategories' => ClassCategory::orderBy('name')->get(),
+            'activeClassCategories' => ClassCategory::where('status', 'Active')->orderBy('name')->get(),
+            'stats' => $stats,
         ]);
     }
 
@@ -22,25 +35,27 @@ class SchoolClassController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:100',
-            'status' => 'required',
+            'class_category_id' => 'required|exists:class_categories,id',
+            'status' => 'required|in:Active,Inactive',
         ]);
 
         if (SchoolClass::where('name', trim($request->name))->count() > 0) {
             return back()->with('message_error', 'This class already exists.');
         }
 
-        $class = new SchoolClass();
-        $class->name = trim($request->name);
-        $class->status = trim($request->status);
-        $class->created_by = Auth::id();
-        $class->save();
+        SchoolClass::create([
+            'name' => trim($request->name),
+            'class_category_id' => $request->class_category_id,
+            'status' => trim($request->status),
+            'created_by' => Auth::id(),
+        ]);
 
         return back()->with('message_success', 'Class added successfully.');
     }
 
     public function show($id)
     {
-        $class = SchoolClass::findOrFail($id);
+        $class = SchoolClass::with('category')->findOrFail($id);
 
         return response()->json($class);
     }
@@ -48,9 +63,10 @@ class SchoolClassController extends Controller
     public function update(Request $request)
     {
         $request->validate([
-            'class_id' => 'required',
+            'class_id' => 'required|exists:school_classes,id',
             'name' => 'required|string|max:100',
-            'status' => 'required',
+            'class_category_id' => 'required|exists:class_categories,id',
+            'status' => 'required|in:Active,Inactive',
         ]);
 
         $class = SchoolClass::findOrFail($request->class_id);
@@ -63,10 +79,12 @@ class SchoolClassController extends Controller
             return back()->with('message_error', 'This class already exists.');
         }
 
-        $class->name = trim($request->name);
-        $class->status = trim($request->status);
-        $class->updated_by = Auth::id();
-        $class->save();
+        $class->update([
+            'name' => trim($request->name),
+            'class_category_id' => $request->class_category_id,
+            'status' => trim($request->status),
+            'updated_by' => Auth::id(),
+        ]);
 
         return back()->with('message_success', 'Class updated successfully.');
     }
