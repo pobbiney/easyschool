@@ -520,6 +520,93 @@
         background: rgba(245, 158, 11, 0.12);
         color: #b45309;
     }
+
+    .teacher-name-cell {
+        display: flex;
+        align-items: center;
+    }
+
+    .teacher-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px 4px 4px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .teacher-pill-avatar {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 10px;
+        flex-shrink: 0;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.55);
+    }
+
+    .teacher-pill-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .teacher-pill-0 {
+        background: rgba(37, 161, 148, 0.14);
+        color: #0f766e;
+    }
+
+    .teacher-pill-1 {
+        background: rgba(99, 102, 241, 0.14);
+        color: #4338ca;
+    }
+
+    .teacher-pill-2 {
+        background: rgba(236, 72, 153, 0.14);
+        color: #be185d;
+    }
+
+    .teacher-pill-3 {
+        background: rgba(245, 158, 11, 0.16);
+        color: #b45309;
+    }
+
+    .teacher-pill-4 {
+        background: rgba(59, 130, 246, 0.14);
+        color: #1d4ed8;
+    }
+
+    .teacher-pill-5 {
+        background: rgba(168, 85, 247, 0.14);
+        color: #7e22ce;
+    }
+
+    .teacher-pill-6 {
+        background: rgba(239, 68, 68, 0.14);
+        color: #b91c1c;
+    }
+
+    .teacher-pill-7 {
+        background: rgba(20, 184, 166, 0.14);
+        color: #0d9488;
+    }
+
+    .no-teacher-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        background: var(--neutral-100, #f3f4f6);
+        color: var(--neutral-500, #6b7280);
+    }
 </style>
 @endsection
 
@@ -846,6 +933,7 @@
                             <tr>
                                 <th>Course / Sub-Course</th>
                                 <th>Class</th>
+                                <th>Teacher</th>
                                 <th>Term</th>
                                 <th>Year</th>
                                 <th>Registered</th>
@@ -853,7 +941,7 @@
                         </thead>
                         <tbody id="viewRegistrationTableBody">
                             <tr id="viewRegistrationPlaceholder">
-                                <td colspan="5">
+                                <td colspan="6">
                                     <div class="registration-empty-state">
                                         <div class="registration-empty-state-icon"><i class="ri-search-line"></i></div>
                                         <h6 class="fw-semibold">Search registered courses</h6>
@@ -1055,6 +1143,24 @@
                         '<td><div class="skeleton-block w-50"></div></td>' +
                         '<td><div class="skeleton-block w-40"></div></td>' +
                         '<td><div class="skeleton-block w-30"></div></td>' +
+                    '</tr>';
+            }
+
+            return rows;
+        }
+
+        function buildViewSkeletonRows(count) {
+            let rows = '';
+
+            for (let i = 0; i < count; i++) {
+                rows +=
+                    '<tr class="skeleton-row">' +
+                        '<td><div class="d-flex align-items-center gap-12"><div class="skeleton-circle"></div><div class="flex-grow-1"><div class="skeleton-block w-50 mb-8"></div><div class="skeleton-block w-30"></div></div></div></td>' +
+                        '<td><div class="skeleton-block w-40"></div></td>' +
+                        '<td><div class="d-flex align-items-center gap-12"><div class="skeleton-circle" style="width:32px;height:32px;border-radius:50%;"></div><div class="skeleton-block w-50"></div></div></td>' +
+                        '<td><div class="skeleton-block w-40"></div></td>' +
+                        '<td><div class="skeleton-block w-30"></div></td>' +
+                        '<td><div class="skeleton-block w-40"></div></td>' +
                     '</tr>';
             }
 
@@ -1275,10 +1381,45 @@
             }
         }
 
+        function teacherPillClass(teacherName) {
+            const paletteSize = 8;
+            let hash = 0;
+            const name = (teacherName || '').trim();
+
+            for (let i = 0; i < name.length; i++) {
+                hash = ((hash << 5) - hash) + name.charCodeAt(i);
+                hash |= 0;
+            }
+
+            return 'teacher-pill-' + (Math.abs(hash) % paletteSize);
+        }
+
+        function teacherAvatarHtml(teacherName, picture) {
+            if (picture) {
+                return '<img src="' + escapeHtml(picture) + '" alt="' + escapeHtml(teacherName) + '">';
+            }
+
+            const parts = (teacherName || '').trim().split(/\s+/);
+            const initials = ((parts[0] || '')[0] || '') + ((parts[1] || '')[0] || '');
+
+            return escapeHtml(initials.toUpperCase());
+        }
+
         function buildRegisteredRow(item) {
             const parentHint = item.parent_name
                 ? '<span class="parent-hint">' + escapeHtml(item.parent_name) + '</span>'
                 : '';
+
+            const teacherCell = item.has_teacher
+                ? (
+                    '<div class="teacher-name-cell">' +
+                        '<span class="teacher-pill ' + teacherPillClass(item.teacher_name) + '">' +
+                            '<span class="teacher-pill-avatar">' + teacherAvatarHtml(item.teacher_name, item.teacher_picture) + '</span>' +
+                            escapeHtml(item.teacher_name) +
+                        '</span>' +
+                    '</div>'
+                )
+                : '<span class="no-teacher-badge"><i class="ri-user-unfollow-line"></i> No teacher assigned</span>';
 
             return (
                 '<tr class="course-registration-row is-registered">' +
@@ -1292,6 +1433,7 @@
                         '</div>' +
                     '</td>' +
                     '<td><span class="meta-badge class-badge"><i class="ri-group-line"></i> ' + escapeHtml(item.class_name) + '</span></td>' +
+                    '<td>' + teacherCell + '</td>' +
                     '<td><span class="meta-badge term-badge"><i class="ri-calendar-event-line"></i> ' + escapeHtml(item.term_name) + '</span></td>' +
                     '<td><span class="meta-badge year-badge"><i class="ri-calendar-2-line"></i> ' + escapeHtml(item.year_name) + '</span></td>' +
                     '<td><span class="category-badge">' + escapeHtml(item.registered_at || '—') + '</span></td>' +
@@ -1305,7 +1447,7 @@
 
             $('#viewRegistrationTableBody').html(
                 '<tr id="viewRegistrationPlaceholder">' +
-                    '<td colspan="5">' +
+                    '<td colspan="6">' +
                         '<div class="registration-empty-state">' +
                             '<div class="registration-empty-state-icon"><i class="' + icon + '"></i></div>' +
                             '<h6 class="fw-semibold">' + escapeHtml(title) + '</h6>' +
@@ -1318,7 +1460,7 @@
 
         function showViewLoadingSkeleton() {
             destroyViewDataTable();
-            $('#viewRegistrationTableBody').html(buildSkeletonRows(6));
+            $('#viewRegistrationTableBody').html(buildViewSkeletonRows(6));
         }
 
         function destroyViewDataTable() {
@@ -1340,7 +1482,7 @@
 
             viewRegistrationTable = new DataTable(tableEl, {
                 pageLength: 10,
-                order: [[4, 'desc']],
+                order: [[5, 'desc']],
             });
 
             $viewSearchInput

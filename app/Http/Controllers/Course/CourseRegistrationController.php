@@ -7,6 +7,7 @@ use App\Models\AcademicTerm;
 use App\Models\AcademicYear;
 use App\Models\Course;
 use App\Models\CourseRegistration;
+use App\Models\CourseTeachingAssignment;
 use App\Models\SchoolClass;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -221,7 +222,7 @@ class CourseRegistrationController extends Controller
 
     private function buildRegisteredPayload(array $filters): array
     {
-        $registrations = CourseRegistration::query()
+        $registrationModels = CourseRegistration::query()
             ->with(['course.parent', 'schoolClass', 'academicTerm', 'academicYear'])
             ->when($filters['school_class_id'] ?? null, function ($query, $classId) {
                 $query->where('school_class_id', $classId);
@@ -233,23 +234,39 @@ class CourseRegistrationController extends Controller
                 $query->where('academic_year_id', $yearId);
             })
             ->orderByDesc('created_at')
-            ->get()
-            ->map(function (CourseRegistration $registration) {
-                $course = $registration->course;
+            ->get();
 
-                return [
-                    'id' => $registration->id,
-                    'course_id' => $course?->id,
-                    'course_name' => $course?->name,
-                    'parent_name' => $course?->parent?->name,
-                    'category' => $course?->category,
-                    'is_sub_course' => $course?->isSubCourse() ?? false,
-                    'class_name' => $registration->schoolClass?->name,
-                    'term_name' => $registration->academicTerm?->name,
-                    'year_name' => $registration->academicYear?->name,
-                    'registered_at' => $registration->created_at?->format('M j, Y'),
-                ];
-            })
+        $courseIds = $registrationModels->pluck('course_id')->unique()->filter()->values();
+        $classIds = $registrationModels->pluck('school_class_id')->unique()->filter()->values();
+
+        $assignments = CourseTeachingAssignment::query()
+            ->with('teacher')
+            ->whereIn('course_id', $courseIds)
+            ->whereIn('school_class_id', $classIds)
+            ->get()
+            ->keyBy(fn (CourseTeachingAssignment $assignment) => "{$assignment->course_id}:{$assignment->school_class_id}");
+
+        $registrations = $registrationModels->map(function (CourseRegistration $registration) use ($assignments) {
+            $course = $registration->course;
+            $assignment = $assignments->get("{$registration->course_id}:{$registration->school_class_id}");
+            $teacher = $assignment?->teacher;
+
+            return [
+                'id' => $registration->id,
+                'course_id' => $course?->id,
+                'course_name' => $course?->name,
+                'parent_name' => $course?->parent?->name,
+                'category' => $course?->category,
+                'is_sub_course' => $course?->isSubCourse() ?? false,
+                'class_name' => $registration->schoolClass?->name,
+                'teacher_name' => $teacher?->full_name,
+                'teacher_picture' => $teacher?->picture ? asset($teacher->picture) : null,
+                'has_teacher' => $assignment !== null,
+                'term_name' => $registration->academicTerm?->name,
+                'year_name' => $registration->academicYear?->name,
+                'registered_at' => $registration->created_at?->format('M j, Y'),
+            ];
+        })
             ->values();
 
         return [
