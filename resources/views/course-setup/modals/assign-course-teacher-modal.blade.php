@@ -64,20 +64,29 @@
 </div>
 
 <div class="modal fade" id="viewCourseTeachersModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content radius-12 border-0">
-            <div class="modal-header border-bottom px-24 py-16">
-                <div>
-                    <h6 class="modal-title fw-semibold mb-4">Assigned Teachers</h6>
-                    <p class="text-sm text-secondary-light mb-0">All teachers assigned to <strong id="view_teachers_course_name">—</strong></p>
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content radius-12 border-0 view-teachers-modal">
+            <div class="view-teachers-header">
+                <span class="view-teachers-header-icon"><i class="ri-team-line"></i></span>
+                <div class="view-teachers-header-content">
+                    <h6 class="modal-title fw-semibold">Assigned Teachers</h6>
+                    <p class="text-sm text-secondary-light mb-0">
+                        <strong id="view_teachers_course_name" class="text-primary-600">—</strong>
+                    </p>
+                    <span class="view-teachers-count-pill">
+                        <i class="ri-user-follow-line"></i>
+                        <span id="viewTeachersCount">0</span> assigned
+                    </span>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-24">
-                <div id="viewTeachersList" class="assigned-teachers-list"></div>
+            <div class="modal-body view-teachers-body p-0">
+                <div id="viewTeachersList" class="view-teachers-list"></div>
             </div>
-            <div class="modal-footer border-top px-24 py-16">
-                <button type="button" class="btn btn-outline-neutral-400" data-bs-dismiss="modal">Close</button>
+            <div class="view-teachers-footer">
+                <button type="button" class="btn btn-pill btn-pill-neutral" data-bs-dismiss="modal">
+                    <i class="ri-close-line"></i> Close
+                </button>
             </div>
         </div>
     </div>
