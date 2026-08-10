@@ -11,57 +11,143 @@ class CourseController extends Controller
 {
     public function getAddCourseView()
     {
-        $listcourse = Course::where('status','Active')->get();
-        return view('course-setup.add-course',['listcourse'=>$listcourse]);
+        $topLevelCourses = Course::topLevel()
+            ->with('subCourses')
+            ->orderBy('name')
+            ->get();
+
+        $stats = [
+            'total' => $topLevelCourses->count(),
+            'subcourses' => Course::whereNotNull('parent_id')->count(),
+            'active' => $topLevelCourses->where('status', 'Active')->count(),
+        ];
+
+        return view('course-setup.add-course', [
+            'topLevelCourses' => $topLevelCourses,
+            'parentCourses' => Course::topLevel()->where('status', 'Active')->orderBy('name')->get(),
+            'stats' => $stats,
+        ]);
     }
 
     public function addCourse(Request $request)
     {
         $request->validate([
-            'name' => 'required',
+            'name' => 'required|string|max:255',
             'status' => 'required',
-            'course_category' => 'required',
-            
+            'course_category' => 'required_without:parent_id',
+            'parent_id' => 'nullable|exists:courses,id',
         ]);
 
-         if(Course::where('name',$request->name)->get()->count() > 0){
+        $parentId = $request->filled('parent_id') ? (int) $request->parent_id : null;
+        $parent = $parentId ? Course::topLevel()->where('id', $parentId)->where('status', 'Active')->first() : null;
 
-            return back()->with('message_error','Course has been added  already');
+        if ($parentId && ! $parent) {
+            return back()->with('message_error', 'Selected parent course is invalid.');
+        }
 
-        }else{
-            $insertCat = new Course();
-            $insertCat->name = trim($request->name);
-            $insertCat->description = trim($request->description);
-            $insertCat->category = trim($request->course_category);
-            $insertCat->status = trim($request->status);
-            $insertCat->created_by       = Auth::id();
-            $insertCat = $insertCat->save();
-            return $insertCat ? back()->with('message_success','Course   added successfully') : back()->with('message_error','Something went wrong, please try again.');
+        if ($this->courseNameExists(trim($request->name), $parentId)) {
+            return back()->with('message_error', 'A course with this name already exists at this level.');
+        }
+
+        $course = new Course();
+        $course->parent_id = $parentId;
+        $course->name = trim($request->name);
+        $course->description = trim($request->description ?? '');
+        $course->category = $parent ? $parent->category : trim($request->course_category);
+        $course->status = trim($request->status);
+        $course->created_by = Auth::id();
+        $course->save();
+
+        return back()->with('message_success', $parentId ? 'Sub-course added successfully.' : 'Course added successfully.');
     }
-    }
 
-    //get Staff details
-      public function getCourseID($id)
+    public function storeSubCourse(Request $request)
     {
-         $data = Course::findOrFail($id);
-          return response()->json($data);
+        $request->validate([
+            'parent_id' => 'required|exists:courses,id',
+            'name' => 'required|string|max:255',
+            'status' => 'required|in:Active,Inactive',
+            'description' => 'nullable|string',
+        ]);
+
+        $parent = Course::topLevel()->where('id', $request->parent_id)->where('status', 'Active')->firstOrFail();
+
+        if ($this->courseNameExists(trim($request->name), $parent->id)) {
+            return back()->with('message_error', 'A sub-course with this name already exists under this course.');
+        }
+
+        Course::create([
+            'parent_id' => $parent->id,
+            'name' => trim($request->name),
+            'description' => trim($request->description ?? ''),
+            'category' => $parent->category,
+            'status' => trim($request->status),
+            'created_by' => Auth::id(),
+        ]);
+
+        return back()->with('message_success', 'Sub-course added successfully.');
+    }
+
+    public function getCourseID($id)
+    {
+        $course = Course::withCount('subCourses')->findOrFail($id);
+
+        return response()->json($course);
     }
 
     public function updateCourse(Request $request)
     {
         $request->validate([
-            'name' => 'required',
+            'course_id' => 'required|exists:courses,id',
+            'name' => 'required|string|max:255',
             'status' => 'required',
-            'course_category' => 'required',
-            
+            'course_category' => 'required_without:parent_id',
+            'parent_id' => 'nullable|exists:courses,id',
         ]);
-            $insertCat = Course::find($request->course_id);
-            $insertCat->name = trim($request->name);
-            $insertCat->description = trim($request->description);
-            $insertCat->category = trim($request->course_category);
-            $insertCat->status = trim($request->status);
-           
-            $insertCat = $insertCat->save();
-            return $insertCat ? back()->with('message_success','Course   updated successfully') : back()->with('message_error','Something went wrong, please try again.');
+
+        $course = Course::findOrFail($request->course_id);
+        $parentId = $request->filled('parent_id') ? (int) $request->parent_id : null;
+
+        if ($parentId === $course->id) {
+            return back()->with('message_error', 'A course cannot be its own parent.');
+        }
+
+        if ($parentId) {
+            $parent = Course::topLevel()->where('id', $parentId)->where('status', 'Active')->first();
+            if (! $parent) {
+                return back()->with('message_error', 'Selected parent course is invalid.');
+            }
+        }
+
+        if ($course->subCourses()->exists() && $parentId) {
+            return back()->with('message_error', 'Courses with sub-courses must remain top-level.');
+        }
+
+        if ($this->courseNameExists(trim($request->name), $parentId, $course->id)) {
+            return back()->with('message_error', 'A course with this name already exists at this level.');
+        }
+
+        $course->parent_id = $parentId;
+        $course->name = trim($request->name);
+        $course->description = trim($request->description ?? '');
+        $course->category = $parentId && isset($parent)
+            ? $parent->category
+            : trim($request->course_category);
+        $course->status = trim($request->status);
+        $course->updated_by = Auth::id();
+        $course->save();
+
+        return back()->with('message_success', 'Course updated successfully.');
+    }
+
+    private function courseNameExists(string $name, ?int $parentId, ?int $ignoreId = null): bool
+    {
+        $query = Course::where('name', $name)->where('parent_id', $parentId);
+
+        if ($ignoreId) {
+            $query->where('id', '!=', $ignoreId);
+        }
+
+        return $query->exists();
     }
 }

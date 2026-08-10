@@ -3,12 +3,14 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Authentication\AuthenticationController;
 use App\Http\Controllers\Course\CourseController;
+use App\Http\Controllers\Course\CourseTeacherController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\UserManagement\UserManagementController;
 use App\Http\Controllers\Staff\StaffController;
 use App\Http\Controllers\Student\StudentController;
 use App\Http\Controllers\Student\AcademicYearController;
 use App\Http\Controllers\Student\SchoolClassController;
+use App\Http\Controllers\Student\ClassTeacherController;
 use App\Http\Controllers\Settings\SchoolSettingController;
 use App\Http\Controllers\Dormitory\DormitoryController;
 
@@ -84,6 +86,13 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         Route::get('get-school-class-id/{id}', 'show')->name('get-school-class-id');
         Route::post('update-school-class-process', 'update')->name('update-school-class-process');
     });
+
+   Route::controller(ClassTeacherController::class)->group(function () {
+        Route::get('class-teacher-assignment', 'index')->name('class-teacher-assignment');
+        Route::get('get-class-teacher-assignment/{id}', 'show')->name('get-class-teacher-assignment');
+        Route::post('assign-class-teacher-process', 'assign')->name('assign-class-teacher-process');
+        Route::post('unassign-class-teacher-process', 'unassign')->name('unassign-class-teacher-process');
+    });
 /* End StudentController*/
 
 /* SchoolSettingController*/
@@ -114,9 +123,15 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
    Route::controller(CourseController::class)->group(function () {
         Route::get('add-course', 'getAddCourseView')->name('add-course');
         Route::post('add-course-process', 'addCourse')->name('add-course-process');
+        Route::post('add-sub-course-process', 'storeSubCourse')->name('add-sub-course-process');
         Route::get('get-course-id/{id}', 'getCourseID')->name('get-course-id');
         Route::post('update-course-process', 'updateCourse')->name('update-course-process');
-    
-        
+    });
+
+   Route::controller(CourseTeacherController::class)->group(function () {
+        Route::get('course-teacher-assignment', 'index')->name('course-teacher-assignment');
+        Route::get('get-course-teacher-assignment/{id}', 'show')->name('get-course-teacher-assignment');
+        Route::post('assign-course-teacher-process', 'assign')->name('assign-course-teacher-process');
+        Route::post('unassign-course-teacher-process', 'unassign')->name('unassign-course-teacher-process');
     });
 /* End CourseController*/
