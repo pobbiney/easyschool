@@ -9,7 +9,10 @@ class Student extends Model
     protected $fillable = [
         'student_id',
         'academic_year',
+        'academic_year_id',
+        'academic_term_id',
         'class_name',
+        'school_class_id',
         'section',
         'roll_number',
         'firstname',
@@ -56,6 +59,31 @@ class Student extends Model
     public function docs()
     {
         return $this->hasMany(StudentDoc::class, 'student_id');
+    }
+
+    public function schoolClass()
+    {
+        return $this->belongsTo(SchoolClass::class, 'school_class_id');
+    }
+
+    public function academicYear()
+    {
+        return $this->belongsTo(AcademicYear::class, 'academic_year_id');
+    }
+
+    public function academicTerm()
+    {
+        return $this->belongsTo(AcademicTerm::class, 'academic_term_id');
+    }
+
+    public function studentBills()
+    {
+        return $this->hasMany(StudentBill::class);
+    }
+
+    public function billPayments()
+    {
+        return $this->hasMany(BillPayment::class);
     }
 
     public function house()

@@ -15,6 +15,10 @@ use App\Http\Controllers\Student\ClassCategoryController;
 use App\Http\Controllers\Student\ClassTeacherController;
 use App\Http\Controllers\Settings\SchoolSettingController;
 use App\Http\Controllers\Dormitory\DormitoryController;
+use App\Http\Controllers\Billing\BillingItemController;
+use App\Http\Controllers\Billing\CategoryBillSetupController;
+use App\Http\Controllers\Billing\StudentBillController;
+use App\Http\Controllers\Billing\BillPaymentController;
 
 Route::get('forgot-password',[AuthenticationController::class,'getForgetPassword'])->name('forgot-password');
 Route::post('forgot-password-process',[AuthenticationController::class,'forgotPass'])->name('forgot-password-process');
@@ -152,3 +156,29 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         Route::post('course-registration-unregister', 'unregister')->name('course-registration-unregister');
     });
 /* End CourseController*/
+
+/* Billing */
+   Route::controller(BillingItemController::class)->group(function () {
+        Route::get('billing-items', 'index')->name('billing-items');
+        Route::post('add-billing-item-process', 'store')->name('add-billing-item-process');
+        Route::get('get-billing-item-id/{id}', 'show')->name('get-billing-item-id');
+        Route::post('update-billing-item-process', 'update')->name('update-billing-item-process');
+    });
+
+   Route::controller(CategoryBillSetupController::class)->group(function () {
+        Route::get('category-bill-setup', 'index')->name('category-bill-setup');
+        Route::get('category-bill-setup-load', 'load')->name('category-bill-setup-load');
+        Route::post('category-bill-setup-save', 'store')->name('category-bill-setup-save');
+    });
+
+   Route::controller(StudentBillController::class)->group(function () {
+        Route::get('student-bills', 'index')->name('student-bills');
+        Route::get('get-student-bills/{id}', 'show')->name('get-student-bills');
+        Route::get('get-student-outstanding-bills/{id}', 'outstanding')->name('get-student-outstanding-bills');
+    });
+
+   Route::controller(BillPaymentController::class)->group(function () {
+        Route::post('record-bill-payment-process', 'store')->name('record-bill-payment-process');
+        Route::get('bill-payment-receipt/{id}', 'receipt')->name('bill-payment-receipt');
+    });
+/* End Billing */
