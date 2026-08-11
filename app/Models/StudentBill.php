@@ -10,6 +10,8 @@ class StudentBill extends Model
         'student_id',
         'category_bill_setup_id',
         'billing_item_id',
+        'academic_year_id',
+        'academic_term_id',
         'amount_due',
         'amount_paid',
         'balance',
@@ -35,6 +37,16 @@ class StudentBill extends Model
     public function billingItem()
     {
         return $this->belongsTo(BillingItem::class, 'billing_item_id');
+    }
+
+    public function academicYear()
+    {
+        return $this->belongsTo(AcademicYear::class, 'academic_year_id');
+    }
+
+    public function academicTerm()
+    {
+        return $this->belongsTo(AcademicTerm::class, 'academic_term_id');
     }
 
     public function allocations()

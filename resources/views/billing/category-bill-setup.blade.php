@@ -583,6 +583,8 @@
     const loadUrl = @json(route('category-bill-setup-load'));
     const saveUrl = @json(route('category-bill-setup-save'));
     const csrfToken = @json(csrf_token());
+    const defaultAcademicYearId = @json($defaultAcademicYearId);
+    const defaultAcademicTermId = @json($defaultAcademicTermId);
 
     let loadedItems = [];
     let activeRequest = null;
@@ -806,6 +808,8 @@
         $('#setupResult').addClass('d-none');
     });
 
+    if (defaultAcademicYearId) { $('#filter_academic_year_id').val(String(defaultAcademicYearId)); }
+    if (defaultAcademicTermId) { $('#filter_academic_term_id').val(String(defaultAcademicTermId)); }
     updateFilterState();
 </script>
 @endsection

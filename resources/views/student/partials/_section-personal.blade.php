@@ -1,4 +1,14 @@
-@php $student = $student ?? null; @endphp
+@php
+    $student = $student ?? null;
+    $selectedYearId = old('academic_year_id');
+    if ($selectedYearId === null) {
+        $selectedYearId = $student?->academic_year_id ?? ($defaultAcademicYearId ?? '');
+    }
+    $selectedTermId = old('academic_term_id');
+    if ($selectedTermId === null) {
+        $selectedTermId = $student?->academic_term_id ?? ($defaultAcademicTermId ?? '');
+    }
+@endphp
 <div class="row gy-3">
     <div class="col-xxl-3 col-xl-4 col-sm-6">
         <label class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Student ID <span class="text-danger-600">*</span></label>
@@ -8,9 +18,9 @@
     <div class="col-xxl-3 col-xl-4 col-sm-6">
         <label class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Academic Year <span class="text-danger-600">*</span></label>
         <select name="academic_year_id" class="form-control form-select wizard-required">
-            <option value="" disabled {{ old('academic_year_id', $student?->academic_year_id ?? '') ? '' : 'selected' }}>Select Academic Year</option>
+            <option value="" disabled {{ $selectedYearId ? '' : 'selected' }}>Select Academic Year</option>
             @forelse($academicYears ?? [] as $year)
-                <option value="{{ $year->id }}" {{ old('academic_year_id', $student?->academic_year_id ?? '') == $year->id ? 'selected' : '' }}>{{ $year->name }}</option>
+                <option value="{{ $year->id }}" {{ (string) $selectedYearId === (string) $year->id ? 'selected' : '' }}>{{ $year->name }}</option>
             @empty
                 <option value="" disabled>No academic years found — add them first</option>
             @endforelse
@@ -20,9 +30,9 @@
     <div class="col-xxl-3 col-xl-4 col-sm-6">
         <label class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Academic Term <span class="text-danger-600">*</span></label>
         <select name="academic_term_id" class="form-control form-select wizard-required">
-            <option value="" disabled {{ old('academic_term_id', $student?->academic_term_id ?? '') ? '' : 'selected' }}>Select Academic Term</option>
+            <option value="" disabled {{ $selectedTermId ? '' : 'selected' }}>Select Academic Term</option>
             @forelse($academicTerms ?? [] as $term)
-                <option value="{{ $term->id }}" {{ old('academic_term_id', $student?->academic_term_id ?? '') == $term->id ? 'selected' : '' }}>{{ $term->name }}</option>
+                <option value="{{ $term->id }}" {{ (string) $selectedTermId === (string) $term->id ? 'selected' : '' }}>{{ $term->name }}</option>
             @empty
                 <option value="" disabled>No academic terms found</option>
             @endforelse

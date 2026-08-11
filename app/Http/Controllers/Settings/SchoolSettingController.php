@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
+use App\Models\AcademicTerm;
+use App\Models\AcademicYear;
 use App\Models\SchoolSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +17,9 @@ class SchoolSettingController extends Controller
 
         return view('settings.school-settings', [
             'school' => $school,
+            'academicYears' => AcademicYear::where('status', 'Active')->orderBy('name', 'desc')->get(),
+            'academicTerms' => AcademicTerm::where('status', 'Active')->orderBy('sort_order')->get(),
+            'focusAcademicSession' => request()->routeIs('academic-session'),
         ]);
     }
 
@@ -34,6 +39,24 @@ class SchoolSettingController extends Controller
             'website' => 'nullable|string|max:255',
             'motto' => 'nullable|string|max:255',
             'logo' => 'nullable|image|max:2048',
+            'default_academic_year_id' => [
+                'required',
+                'exists:academic_years,id',
+                function ($attribute, $value, $fail) {
+                    if (! AcademicYear::where('id', $value)->where('status', 'Active')->exists()) {
+                        $fail('The selected academic year must be active.');
+                    }
+                },
+            ],
+            'default_academic_term_id' => [
+                'required',
+                'exists:academic_terms,id',
+                function ($attribute, $value, $fail) {
+                    if (! AcademicTerm::where('id', $value)->where('status', 'Active')->exists()) {
+                        $fail('The selected academic term must be active.');
+                    }
+                },
+            ],
         ]);
 
         $school = SchoolSetting::current();
@@ -43,6 +66,8 @@ class SchoolSettingController extends Controller
         $school->phone = trim($request->phone);
         $school->email = $request->email;
         $school->website = $request->website;
+        $school->default_academic_year_id = $request->default_academic_year_id;
+        $school->default_academic_term_id = $request->default_academic_term_id;
         $school->updated_by = Auth::id();
 
         if ($request->hasFile('logo')) {

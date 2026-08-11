@@ -974,6 +974,8 @@
         const registerUrl = @json(route('course-registration-register'));
         const unregisterUrl = @json(route('course-registration-unregister'));
         const csrfToken = @json(csrf_token());
+        const defaultAcademicYearId = @json($defaultAcademicYearId);
+        const defaultAcademicTermId = @json($defaultAcademicTermId);
 
         let registrationTable = null;
         let viewRegistrationTable = null;
@@ -1323,6 +1325,14 @@
 
         $('.registration-filter').on('change', loadCourses);
 
+        if (defaultAcademicYearId) {
+            $('#filter_academic_year_id').val(String(defaultAcademicYearId));
+            $('#view_filter_academic_year_id').val(String(defaultAcademicYearId));
+        }
+        if (defaultAcademicTermId) {
+            $('#filter_academic_term_id').val(String(defaultAcademicTermId));
+            $('#view_filter_academic_term_id').val(String(defaultAcademicTermId));
+        }
         updateSelectionSummary();
 
         function setViewLoading(isLoading) {

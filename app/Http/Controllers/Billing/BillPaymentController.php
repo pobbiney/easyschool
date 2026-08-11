@@ -14,6 +14,24 @@ use Illuminate\Support\Facades\DB;
 
 class BillPaymentController extends Controller
 {
+    public function cashier($id)
+    {
+        $student = Student::with(['schoolClass.category'])->findOrFail($id);
+        $bills = $this->outstandingBillsForStudent($student);
+        $totalOutstanding = $bills->sum('balance');
+
+        if ($bills->isEmpty()) {
+            return redirect()->route('student-bills')
+                ->with('message_error', $student->full_name.' has no outstanding bills.');
+        }
+
+        return view('billing.record-payment', [
+            'student' => $student,
+            'bills' => $bills,
+            'totalOutstanding' => $totalOutstanding,
+        ]);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -147,6 +165,27 @@ class BillPaymentController extends Controller
         }
 
         return $allocations;
+    }
+
+    private function outstandingBillsForStudent(Student $student)
+    {
+        return StudentBill::query()
+            ->with(['billingItem', 'setup.academicTerm', 'setup.academicYear'])
+            ->where('student_id', $student->id)
+            ->where('balance', '>', 0)
+            ->get()
+            ->sortByDesc(fn (StudentBill $bill) => $bill->billingItem?->is_compulsory ? 1 : 0)
+            ->values()
+            ->map(fn (StudentBill $bill) => [
+                'id' => $bill->id,
+                'item_name' => $bill->billingItem?->name,
+                'is_compulsory' => (bool) $bill->billingItem?->is_compulsory,
+                'term_name' => $bill->setup?->academicTerm?->name,
+                'year_name' => $bill->setup?->academicYear?->name,
+                'amount_due' => (float) $bill->amount_due,
+                'amount_paid' => (float) $bill->amount_paid,
+                'balance' => (float) $bill->balance,
+            ]);
     }
 
     private function generateReceiptNumber(): string

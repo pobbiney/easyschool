@@ -86,6 +86,11 @@ class CategoryBillSetupController extends Controller
         try {
             $syncStats = DB::transaction(function () use ($validated) {
             $amountsByItem = collect($validated['amounts'])->keyBy('billing_item_id');
+
+            if ($amountsByItem->keys()->count() !== $amountsByItem->keys()->unique()->count()) {
+                throw new \InvalidArgumentException('Each billing item can only be added once per category bill setup.');
+            }
+
             $compulsoryItems = BillingItem::query()
                 ->whereIn('id', $amountsByItem->keys())
                 ->where('is_compulsory', true)
@@ -101,7 +106,13 @@ class CategoryBillSetupController extends Controller
                 }
             }
 
-            $setup = CategoryBillSetup::firstOrNew([
+            $existingSetup = CategoryBillSetup::query()
+                ->where('class_category_id', $validated['class_category_id'])
+                ->where('academic_term_id', $validated['academic_term_id'])
+                ->where('academic_year_id', $validated['academic_year_id'])
+                ->first();
+
+            $setup = $existingSetup ?? new CategoryBillSetup([
                 'class_category_id' => $validated['class_category_id'],
                 'academic_term_id' => $validated['academic_term_id'],
                 'academic_year_id' => $validated['academic_year_id'],
