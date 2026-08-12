@@ -52,8 +52,13 @@ class Student extends Model
         'dormitory_id',
         'bed_id',
         'status',
+        'credit_balance',
         'created_by',
         'updated_by',
+    ];
+
+    protected $casts = [
+        'credit_balance' => 'decimal:2',
     ];
 
     public function docs()
@@ -84,6 +89,11 @@ class Student extends Model
     public function billPayments()
     {
         return $this->hasMany(BillPayment::class);
+    }
+
+    public function creditTransactions()
+    {
+        return $this->hasMany(StudentBillCreditTransaction::class);
     }
 
     public function house()

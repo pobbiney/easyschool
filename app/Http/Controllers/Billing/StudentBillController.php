@@ -9,6 +9,7 @@ use App\Models\BillPayment;
 use App\Models\BillPaymentAllocation;
 use App\Models\ClassCategory;
 use App\Models\SchoolClass;
+use App\Models\SchoolSetting;
 use App\Models\Student;
 use App\Models\StudentBill;
 use App\Support\AcademicPeriodDefaults;
@@ -122,8 +123,75 @@ class StudentBillController extends Controller
     {
         $yearId = AcademicPeriodDefaults::yearId($request);
         $termId = AcademicPeriodDefaults::termId($request);
+        $rows = $this->buildLedgerRows($request, $yearId, $termId);
+        $allBills = StudentBill::query()->get();
 
-        $students = Student::query()
+        return view('billing.student-bills', [
+            'rows' => $rows,
+            'classCategories' => ClassCategory::where('status', 'Active')->orderBy('name')->get(),
+            'academicTerms' => AcademicTerm::where('status', 'Active')->orderBy('sort_order')->get(),
+            'academicYears' => AcademicYear::where('status', 'Active')->orderBy('name', 'desc')->get(),
+            'schoolClasses' => SchoolClass::where('status', 'Active')->orderBy('name')->get(),
+            'filters' => $this->ledgerFilters($request, $yearId, $termId),
+            'stats' => [
+                'students' => $rows->count(),
+                'total_due' => $allBills->sum('amount_due'),
+                'total_paid' => $allBills->sum('amount_paid'),
+                'outstanding' => $allBills->sum('balance'),
+            ],
+        ]);
+    }
+
+    public function printLedger(Request $request)
+    {
+        $yearId = AcademicPeriodDefaults::yearId($request);
+        $termId = AcademicPeriodDefaults::termId($request);
+        $rows = $this->buildLedgerRows($request, $yearId, $termId);
+        $filters = $this->ledgerFilters($request, $yearId, $termId);
+
+        return view('billing.print-student-bills-ledger', [
+            'rows' => $rows,
+            'filters' => $filters,
+            'filterLabels' => $this->ledgerFilterLabels($filters),
+            'school' => SchoolSetting::current(),
+            'printedAt' => now(),
+        ]);
+    }
+
+    public function printStatement(Request $request, $id)
+    {
+        $student = Student::with(['schoolClass.category', 'academicYear', 'academicTerm'])->findOrFail($id);
+        $yearId = AcademicPeriodDefaults::yearId($request);
+        $termId = AcademicPeriodDefaults::termId($request);
+
+        $bills = $this->billsForPeriodQuery($student->id, $yearId, $termId)
+            ->orderBy('id')
+            ->get();
+
+        $balance = (float) $bills->sum('balance');
+        $creditBalance = (float) $student->credit_balance;
+
+        $summary = [
+            'total_due' => $bills->sum('amount_due'),
+            'total_paid' => $bills->sum('amount_paid'),
+            'balance' => $balance,
+            'credit_balance' => $creditBalance,
+            'net_payable' => max(round($balance - $creditBalance, 2), 0),
+        ];
+
+        return view('billing.print-student-bill-statement', [
+            'student' => $student,
+            'bills' => $bills,
+            'summary' => $summary,
+            'filterLabels' => $this->ledgerFilterLabels($this->ledgerFilters($request, $yearId, $termId)),
+            'school' => SchoolSetting::current(),
+            'printedAt' => now(),
+        ]);
+    }
+
+    private function buildLedgerRows(Request $request, ?int $yearId, ?int $termId)
+    {
+        return Student::query()
             ->with(['schoolClass.category', 'academicYear', 'academicTerm'])
             ->where('status', 'Active')
             ->when($termId, fn ($q, $v) => $q->where('academic_term_id', $v))
@@ -158,6 +226,7 @@ class StudentBillController extends Controller
                 $totalDue = $bills->sum('amount_due');
                 $totalPaid = $bills->sum('amount_paid');
                 $balance = $bills->sum('balance');
+                $creditBalance = (float) $student->credit_balance;
 
                 $status = 'No Bills';
                 if ($bills->isNotEmpty()) {
@@ -175,36 +244,51 @@ class StudentBillController extends Controller
                     'total_due' => $totalDue,
                     'total_paid' => $totalPaid,
                     'balance' => $balance,
+                    'credit_balance' => $creditBalance,
                     'status' => $status,
                 ];
             })
-            ->when($request->status, function ($collection) use ($request) {
+            ->when($request->status === 'Has Credit', fn ($collection) => $collection->filter(
+                fn ($row) => $row->credit_balance > 0
+            ))
+            ->when($request->status && $request->status !== 'Has Credit', function ($collection) use ($request) {
                 return $collection->filter(fn ($row) => $row->status === $request->status);
             })
             ->values();
+    }
 
-        $allBills = StudentBill::query()->get();
+    private function ledgerFilters(Request $request, ?int $yearId, ?int $termId): array
+    {
+        return [
+            'academic_term_id' => $request->has('academic_term_id') ? $request->input('academic_term_id') : ($termId ?? ''),
+            'academic_year_id' => $request->has('academic_year_id') ? $request->input('academic_year_id') : ($yearId ?? ''),
+            'class_category_id' => $request->input('class_category_id', ''),
+            'school_class_id' => $request->input('school_class_id', ''),
+            'status' => $request->input('status', ''),
+        ];
+    }
 
-        return view('billing.student-bills', [
-            'rows' => $students,
-            'classCategories' => ClassCategory::where('status', 'Active')->orderBy('name')->get(),
-            'academicTerms' => AcademicTerm::where('status', 'Active')->orderBy('sort_order')->get(),
-            'academicYears' => AcademicYear::where('status', 'Active')->orderBy('name', 'desc')->get(),
-            'schoolClasses' => SchoolClass::where('status', 'Active')->orderBy('name')->get(),
-            'filters' => [
-                'academic_term_id' => $request->has('academic_term_id') ? $request->input('academic_term_id') : ($termId ?? ''),
-                'academic_year_id' => $request->has('academic_year_id') ? $request->input('academic_year_id') : ($yearId ?? ''),
-                'class_category_id' => $request->input('class_category_id', ''),
-                'school_class_id' => $request->input('school_class_id', ''),
-                'status' => $request->input('status', ''),
-            ],
-            'stats' => [
-                'students' => $students->count(),
-                'total_due' => $allBills->sum('amount_due'),
-                'total_paid' => $allBills->sum('amount_paid'),
-                'outstanding' => $allBills->sum('balance'),
-            ],
-        ]);
+    private function ledgerFilterLabels(array $filters): array
+    {
+        $labels = [];
+
+        if ($filters['academic_term_id']) {
+            $labels[] = AcademicTerm::find($filters['academic_term_id'])?->name.' Term';
+        }
+        if ($filters['academic_year_id']) {
+            $labels[] = AcademicYear::find($filters['academic_year_id'])?->name;
+        }
+        if ($filters['class_category_id']) {
+            $labels[] = ClassCategory::find($filters['class_category_id'])?->name;
+        }
+        if ($filters['school_class_id']) {
+            $labels[] = SchoolClass::find($filters['school_class_id'])?->name;
+        }
+        if ($filters['status']) {
+            $labels[] = $filters['status'];
+        }
+
+        return array_values(array_filter($labels));
     }
 
     public function show(Request $request, $id)
@@ -241,6 +325,7 @@ class StudentBillController extends Controller
                 'total_due' => $bills->sum('amount_due'),
                 'total_paid' => $bills->sum('amount_paid'),
                 'balance' => $bills->sum('balance'),
+                'credit_balance' => (float) $student->credit_balance,
             ],
         ]);
     }

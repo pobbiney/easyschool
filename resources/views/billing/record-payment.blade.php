@@ -8,7 +8,7 @@
 
 @section('css')
 <style>
-    .fc-page { --fc-teal: #25A194; --fc-indigo: #6366f1; --fc-dark: #0f172a; min-height: calc(100vh - 120px); }
+    .fc-page { --fc-teal: #25A194; --fc-indigo: #6366f1; --fc-dark: #0f172a; --fc-red: #dc2626; min-height: calc(100vh - 120px); }
 
     .fc-topbar {
         display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px;
@@ -28,126 +28,54 @@
     .fc-clock i { color: #34d399; }
 
     .fc-profile {
-        position: relative;
-        border-radius: 20px;
-        margin-bottom: 20px;
-        background: #fff;
-        border: 1px solid #e5e7eb;
-        overflow: hidden;
-        box-shadow: 0 8px 30px rgba(15,23,42,.06);
+        position: relative; border-radius: 20px; margin-bottom: 20px; background: #fff;
+        border: 1px solid #e5e7eb; overflow: hidden; box-shadow: 0 8px 30px rgba(15,23,42,.06);
     }
-    .fc-profile-accent {
-        height: 5px;
-        background: linear-gradient(90deg, var(--fc-teal), var(--fc-indigo));
-    }
+    .fc-profile-accent { height: 5px; background: linear-gradient(90deg, var(--fc-teal), var(--fc-indigo)); }
     .fc-profile-inner {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: space-between;
-        gap: 24px;
-        padding: 24px 28px;
+        display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+        gap: 24px; padding: 24px 28px;
     }
-    .fc-profile-student {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        min-width: 0;
-        flex: 1;
-    }
+    .fc-profile-student { display: flex; align-items: center; gap: 20px; min-width: 0; flex: 1; }
     .fc-profile-photo {
-        width: 96px;
-        height: 96px;
-        border-radius: 18px;
-        flex-shrink: 0;
-        overflow: hidden;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 28px;
-        font-weight: 800;
-        color: #fff;
+        width: 96px; height: 96px; border-radius: 18px; flex-shrink: 0; overflow: hidden;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 28px; font-weight: 800; color: #fff;
         background: linear-gradient(135deg, var(--fc-teal), #17897e);
-        border: 4px solid rgba(37,161,148,.12);
-        box-shadow: 0 8px 24px rgba(37,161,148,.22);
+        border: 4px solid rgba(37,161,148,.12); box-shadow: 0 8px 24px rgba(37,161,148,.22);
     }
-    .fc-profile-photo img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
+    .fc-profile-photo img { width: 100%; height: 100%; object-fit: cover; }
     .fc-profile-meta { min-width: 0; }
     .fc-profile-eyebrow {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: .06em;
-        color: var(--fc-teal);
-        margin-bottom: 8px;
+        display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: .06em; color: var(--fc-teal); margin-bottom: 8px;
     }
     .fc-profile-name {
-        font-size: 28px;
-        font-weight: 800;
-        color: #111827;
-        margin: 0 0 6px;
-        letter-spacing: -.02em;
-        line-height: 1.15;
+        font-size: 28px; font-weight: 800; color: #111827; margin: 0 0 6px;
+        letter-spacing: -.02em; line-height: 1.15;
     }
-    .fc-profile-id {
-        font-size: 14px;
-        color: #6b7280;
-        margin: 0 0 14px;
-        font-weight: 500;
-    }
+    .fc-profile-id { font-size: 14px; color: #6b7280; margin: 0 0 14px; font-weight: 500; }
     .fc-tags { display: flex; flex-wrap: wrap; gap: 8px; }
     .fc-tag {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 7px 12px;
-        border-radius: 999px;
-        font-size: 12px;
-        font-weight: 600;
-        color: #374151;
-        background: #f9fafb;
-        border: 1px solid #e5e7eb;
+        display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px;
+        border-radius: 999px; font-size: 12px; font-weight: 600; color: #374151;
+        background: #f9fafb; border: 1px solid #e5e7eb;
     }
     .fc-tag i { color: var(--fc-teal); font-size: 14px; }
 
     .fc-profile-total {
-        flex-shrink: 0;
-        min-width: 220px;
-        padding: 20px 22px;
-        border-radius: 16px;
-        background: linear-gradient(135deg, #fff7ed, #fffbeb);
-        border: 1px solid #fde68a;
-        text-align: center;
-        box-shadow: 0 4px 16px rgba(245,158,11,.08);
+        flex-shrink: 0; min-width: 220px; padding: 20px 22px; border-radius: 16px;
+        background: linear-gradient(135deg, #fff7ed, #fffbeb); border: 1px solid #fde68a;
+        text-align: center; box-shadow: 0 4px 16px rgba(245,158,11,.08);
     }
     .fc-profile-total-lbl {
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: .07em;
-        color: #b45309;
-        margin-bottom: 8px;
+        font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+        color: #b45309; margin-bottom: 8px;
     }
     .fc-profile-total-val {
-        font-size: 34px;
-        font-weight: 800;
-        color: #dc2626;
-        letter-spacing: -.03em;
-        line-height: 1;
+        font-size: 34px; font-weight: 800; color: #dc2626; letter-spacing: -.03em; line-height: 1;
     }
-    .fc-profile-total-sub {
-        font-size: 12px;
-        color: #92400e;
-        margin-top: 8px;
-        font-weight: 600;
-    }
+    .fc-profile-total-sub { font-size: 12px; color: #92400e; margin-top: 8px; font-weight: 600; }
 
     @media (max-width: 768px) {
         .fc-profile-inner { padding: 20px; }
@@ -198,12 +126,17 @@
         border-color: rgba(37,161,148,.4); background: linear-gradient(135deg, rgba(37,161,148,.06), rgba(99,102,241,.04));
         box-shadow: 0 0 0 1px rgba(37,161,148,.15), 0 4px 16px rgba(37,161,148,.08);
     }
+    .fc-line.is-required.is-selected { border-left: 3px solid #f59e0b; }
+    .fc-line.is-locked.is-selected:hover { transform: none; }
+
     .fc-check {
         width: 24px; height: 24px; border-radius: 8px; flex-shrink: 0;
         border: 2px solid #d1d5db; display: inline-flex; align-items: center; justify-content: center;
         font-size: 14px; color: transparent; transition: all .12s;
     }
     .fc-line.is-selected .fc-check { background: linear-gradient(135deg, var(--fc-teal), #1d8a80); border-color: var(--fc-teal); color: #fff; }
+    .fc-line.is-required.is-selected .fc-check { background: #f59e0b; border-color: #f59e0b; }
+
     .fc-line-icon {
         width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
         display: inline-flex; align-items: center; justify-content: center; font-size: 20px;
@@ -265,9 +198,7 @@
         font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
         color: #6b7280; margin-bottom: 7px; display: block;
     }
-    .fc-field .form-control {
-        border-radius: 12px; min-height: 46px; font-size: 14px; border-color: #e5e7eb;
-    }
+    .fc-field .form-control { border-radius: 12px; min-height: 46px; font-size: 14px; border-color: #e5e7eb; }
     .fc-field .form-control:focus { border-color: var(--fc-teal); box-shadow: 0 0 0 3px rgba(37,161,148,.12); }
     .fc-amt-wrap { position: relative; }
     .fc-amt-prefix {
@@ -290,24 +221,39 @@
     }
     .fc-method.is-active i { color: var(--fc-teal); }
     .fc-method.is-active span { color: var(--fc-teal); }
+    .fc-method.is-disabled { opacity: .4; cursor: not-allowed; pointer-events: none; }
 
     .fc-ref-field { display: none; }
     .fc-ref-field.is-visible { display: block; }
 
+    .fc-credit-box {
+        background: #f0fdf4; border: 1px solid #dcfce7; border-radius: 12px;
+        padding: 12px 14px; margin-bottom: 14px;
+    }
+    .fc-credit-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .fc-credit-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: #15803d; }
+    .fc-credit-val { font-size: 16px; font-weight: 800; color: #15803d; }
+    .fc-credit-note { font-size: 11px; color: #6b7280; margin: 8px 0 0; line-height: 1.4; }
+
+    .fc-excess-option {
+        background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px;
+        padding: 10px 12px; margin-bottom: 14px;
+    }
+    .fc-excess-option label { font-size: 12px; color: #92400e; margin: 0; cursor: pointer; }
+    .fc-surplus-hint { font-size: 11px; color: #b45309; margin-top: 6px; }
+
     .fc-submit-wrap { padding: 0 18px 20px; }
     .fc-submit {
         width: 100%; min-height: 56px; border: none; border-radius: 14px;
-        background: linear-gradient(135deg, var(--fc-teal), #1d8a80 50%, var(--fc-indigo));
-        color: #fff; font-size: 16px; font-weight: 800; letter-spacing: .02em;
+        background: var(--fc-red); color: #fff; font-size: 16px; font-weight: 800; letter-spacing: .02em;
         display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-        box-shadow: 0 8px 24px rgba(37,161,148,.35); transition: transform .12s, box-shadow .12s;
+        box-shadow: 0 8px 24px rgba(220,38,38,.3); transition: transform .12s, box-shadow .12s, background .12s;
     }
-    .fc-submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(37,161,148,.4); color: #fff; }
+    .fc-submit:hover:not(:disabled) { transform: translateY(-2px); background: #b91c1c; box-shadow: 0 12px 28px rgba(220,38,38,.35); color: #fff; }
     .fc-submit:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
 
-    .fc-hint {
-        text-align: center; font-size: 11px; color: #9ca3af; margin-top: 10px;
-    }
+    .fc-hint { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 10px; }
+    .fc-no-bills { padding: 40px 20px; text-align: center; color: #9ca3af; font-size: 14px; }
 </style>
 @endsection
 
@@ -365,14 +311,23 @@
                     <h6><i class="ri-shopping-cart-2-line"></i> Outstanding items <span class="fc-count" id="fc_selected_count">{{ $bills->count() }} selected</span></h6>
                     <div class="fc-actions">
                         <button type="button" class="fc-mini-btn" id="fc_select_all">Select all</button>
-                        <button type="button" class="fc-mini-btn" id="fc_clear_all">Clear</button>
+                        <button type="button" class="fc-mini-btn" id="fc_clear_all">Clear optional</button>
                     </div>
                 </div>
                 <div class="fc-lines" id="fc_bill_lines">
-                    @foreach($bills as $bill)
+                    @forelse($bills as $bill)
                         @php $period = collect([$bill['term_name'], $bill['year_name']])->filter()->join(' · '); @endphp
-                        <div class="fc-line is-selected" data-bill-id="{{ $bill['id'] }}" data-balance="{{ $bill['balance'] }}">
-                            <span class="fc-check"><i class="ri-check-line"></i></span>
+                        <div class="fc-line is-selected {{ $bill['is_compulsory'] ? 'is-required is-locked' : '' }}"
+                             data-bill-id="{{ $bill['id'] }}"
+                             data-balance="{{ $bill['balance'] }}"
+                             data-compulsory="{{ $bill['is_compulsory'] ? '1' : '0' }}">
+                            <span class="fc-check">
+                                @if($bill['is_compulsory'])
+                                    <i class="ri-lock-fill"></i>
+                                @else
+                                    <i class="ri-check-line"></i>
+                                @endif
+                            </span>
                             <div class="fc-line-icon"><i class="ri-bill-line"></i></div>
                             <div class="fc-line-info">
                                 <div class="fc-line-name">
@@ -386,12 +341,22 @@
                                 <div class="fc-line-due">balance</div>
                             </div>
                         </div>
-                    @endforeach
+                    @empty
+                        <div class="fc-no-bills">
+                            @if(($creditBalance ?? 0) > 0)
+                                No outstanding bills. Credit balance: <strong>₵{{ number_format($creditBalance, 2) }}</strong>
+                            @else
+                                All bills are paid for this student.
+                            @endif
+                        </div>
+                    @endforelse
                 </div>
+                @if($bills->isNotEmpty())
                 <div class="fc-cart-foot">
                     <div class="fc-cart-row"><span>Selected total</span><span id="fc_cart_subtotal">₵{{ number_format($totalOutstanding, 2) }}</span></div>
                     <div class="fc-cart-row total"><span>Amount to collect</span><span id="fc_cart_total">₵{{ number_format($totalOutstanding, 2) }}</span></div>
                 </div>
+                @endif
             </div>
 
             <div class="fc-terminal">
@@ -412,12 +377,39 @@
                             <button type="button" class="fc-quick-btn" data-fc-quick="clear">Clear</button>
                         </div>
 
+                        <div class="fc-credit-box" id="fc_credit_box">
+                            <div class="fc-credit-top">
+                                <div>
+                                    <div class="fc-credit-label">Remaining credit</div>
+                                    <div class="fc-credit-val" id="fc_credit_balance_display">₵{{ number_format($creditBalance ?? 0, 2) }}</div>
+                                </div>
+                                @if(($creditBalance ?? 0) > 0)
+                                <div class="form-check form-switch m-0">
+                                    <input class="form-check-input" type="checkbox" id="fc_use_credit">
+                                    <label class="form-check-label" for="fc_use_credit">Use credit</label>
+                                </div>
+                                @endif
+                            </div>
+                            @if(($creditBalance ?? 0) > 0)
+                            <div class="fc-field mb-0" id="fc_credit_amount_field" style="display:none;">
+                                <label>Credit to apply</label>
+                                <div class="fc-amt-wrap">
+                                    <span class="fc-amt-prefix">₵</span>
+                                    <input type="number" min="0" step="0.01" id="fc_credit_applied" class="form-control" value="0">
+                                </div>
+                            </div>
+                            @else
+                            <p class="fc-credit-note mb-0">Overpaying any bill saves the extra amount here. It can be applied to reduce the next payment.</p>
+                            @endif
+                        </div>
+
                         <div class="fc-field">
-                            <label>Amount to pay</label>
+                            <label id="fc_amount_label">Amount to collect</label>
                             <div class="fc-amt-wrap">
                                 <span class="fc-amt-prefix">₵</span>
-                                <input type="number" min="0.01" step="0.01" name="amount" id="fc_payment_amount" class="form-control" value="{{ number_format($totalOutstanding, 2, '.', '') }}" required>
+                                <input type="number" min="0" step="0.01" name="amount" id="fc_payment_amount" class="form-control" value="{{ number_format($totalOutstanding, 2, '.', '') }}" inputmode="decimal" autocomplete="off">
                             </div>
+                            <p class="fc-surplus-hint" id="fc_surplus_hint" style="display:none;"></p>
                         </div>
 
                         <div class="fc-field" id="fc_tendered_field">
@@ -428,13 +420,20 @@
                             </div>
                         </div>
 
+                        <div class="fc-excess-option" id="fc_excess_credit_wrap" style="display:none;">
+                            <div class="form-check m-0">
+                                <input class="form-check-input" type="checkbox" id="fc_save_excess_as_credit" checked>
+                                <label class="form-check-label" for="fc_save_excess_as_credit" id="fc_save_excess_label">
+                                    Save excess received as remaining credit
+                                </label>
+                            </div>
+                        </div>
+
                         <div class="fc-field">
                             <label>Payment method</label>
                             <div class="fc-methods">
                                 <div class="fc-method is-active" data-method="Cash"><i class="ri-money-dollar-box-line"></i><span>Cash</span></div>
-                                <div class="fc-method" data-method="Mobile Money"><i class="ri-smartphone-line"></i><span>MoMo</span></div>
-                                <div class="fc-method" data-method="Bank"><i class="ri-bank-line"></i><span>Bank</span></div>
-                                <div class="fc-method" data-method="Cheque"><i class="ri-file-paper-2-line"></i><span>Cheque</span></div>
+                                <div class="fc-method {{ ($paystackConfigured ?? false) ? '' : 'is-disabled' }}" data-method="Paystack" @if(!($paystackConfigured ?? false)) title="Paystack is not configured" @endif><i class="ri-bank-card-line"></i><span>Paystack</span></div>
                             </div>
                         </div>
 
@@ -468,11 +467,73 @@
 @endsection
 
 @section('scripts')
+<script src="https://js.paystack.co/v1/inline.js"></script>
 <script>
     const paymentUrl = @json(route('record-bill-payment-process'));
+    const paystackInitializeUrl = @json(route('paystack-bill-payment-initialize'));
+    const paystackVerifyUrl = @json(route('paystack-bill-payment-verify'));
+    const paystackPublicKey = @json($paystackPublicKey ?? '');
+    const paystackConfigured = @json($paystackConfigured ?? false);
     const studentBillsUrl = @json(route('student-bills'));
     const billData = @json($bills->values());
+    const hasOutstandingBills = @json($hasOutstandingBills ?? $bills->isNotEmpty());
     let selectedIds = new Set(billData.map(function(b){ return b.id; }));
+
+    function isCompulsoryBill(id) {
+        const bill = billData.find(function(b){ return b.id === id; });
+        return !!(bill && bill.is_compulsory);
+    }
+
+    function compulsoryBillIds() {
+        return billData.filter(function(b){ return b.is_compulsory; }).map(function(b){ return b.id; });
+    }
+
+    function ensureCompulsorySelected() {
+        compulsoryBillIds().forEach(function(id) {
+            selectedIds.add(id);
+        });
+        syncLineSelectionClasses();
+    }
+
+    function syncLineSelectionClasses() {
+        $('.fc-line').each(function() {
+            const id = parseInt($(this).data('bill-id'), 10);
+            const isSelected = selectedIds.has(id);
+            const isRequired = $(this).data('compulsory') === 1 || $(this).data('compulsory') === '1';
+            $(this).toggleClass('is-selected', isSelected);
+            if (isRequired) {
+                $(this).addClass('is-required');
+                if (isSelected) {
+                    $(this).addClass('is-locked');
+                }
+            }
+        });
+    }
+
+    function resolveEffectivePayAmount(payAmount, tendered, total, method) {
+        payAmount = parseFloat(payAmount || 0);
+        tendered = parseFloat(tendered || 0);
+        total = parseFloat(total || 0);
+
+        if (method === 'Cash' && $('#fc_save_excess_as_credit').is(':checked') && tendered > total + 0.009) {
+            return Math.max(payAmount, tendered);
+        }
+
+        return payAmount;
+    }
+
+    function syncPayAmountFromTendered() {
+        if ($('#fc_payment_method').val() !== 'Cash' || !$('#fc_save_excess_as_credit').is(':checked')) {
+            return;
+        }
+
+        const total = selectedTotal();
+        const tendered = parseFloat($('#fc_amount_tendered').val() || 0);
+
+        if (total > 0 && tendered > total + 0.009) {
+            $('#fc_payment_amount').val(tendered.toFixed(2));
+        }
+    }
 
     function formatMoney(value) {
         return parseFloat(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -486,8 +547,21 @@
         return selectedBills().reduce(function(sum, b){ return sum + parseFloat(b.balance || 0); }, 0);
     }
 
-    function buildAllocations(paymentAmount) {
-        let remaining = parseFloat(paymentAmount || 0);
+    const creditBalance = parseFloat(@json($creditBalance ?? 0));
+
+    function creditAppliedAmount() {
+        if (!$('#fc_use_credit').length || !$('#fc_use_credit').is(':checked')) {
+            return 0;
+        }
+        return parseFloat($('#fc_credit_applied').val() || 0);
+    }
+
+    function totalFundingAmount() {
+        return parseFloat($('#fc_payment_amount').val() || 0) + creditAppliedAmount();
+    }
+
+    function buildAllocations(totalApplied) {
+        let remaining = parseFloat(totalApplied || 0);
         const allocations = [];
         selectedBills().forEach(function(bill) {
             if (remaining <= 0) return;
@@ -500,62 +574,139 @@
         return allocations;
     }
 
+    function syncPaymentAmountWithSelection(forceFullAmount) {
+        const total = selectedTotal();
+        const $paymentAmount = $('#fc_payment_amount');
+        const currentPay = parseFloat($paymentAmount.val() || 0);
+
+        if (forceFullAmount) {
+            $paymentAmount.val(total > 0 ? total.toFixed(2) : '');
+            $('#fc_amount_tendered').val(total > 0 ? total.toFixed(2) : '');
+            return;
+        }
+
+        if (total <= 0) {
+            $paymentAmount.val('');
+            return;
+        }
+
+        if (!Number.isFinite(currentPay) || currentPay <= 0) {
+            $paymentAmount.val(total.toFixed(2));
+            return;
+        }
+    }
+
     function updateDisplay() {
         const total = selectedTotal();
-        const payAmount = parseFloat($('#fc_payment_amount').val() || 0);
+        const enteredPayAmount = parseFloat($('#fc_payment_amount').val() || 0);
+        const creditApplied = creditAppliedAmount();
         const tendered = parseFloat($('#fc_amount_tendered').val() || 0);
         const method = $('#fc_payment_method').val();
-        const change = method === 'Cash' && tendered > payAmount ? tendered - payAmount : 0;
+        const payAmount = resolveEffectivePayAmount(enteredPayAmount, tendered, total, method);
+        const totalApplied = payAmount + creditApplied;
+        const saveExcessAsCredit = method === 'Cash' && $('#fc_save_excess_as_credit').is(':checked');
+        const excessReceived = method === 'Cash' ? Math.max(tendered - total, 0) : 0;
+        const change = method === 'Cash' && !saveExcessAsCredit && tendered > payAmount ? tendered - payAmount : 0;
+        const surplus = Math.max(totalApplied - total, 0);
+        const creditToApply = creditAppliedAmount();
+        const netToCollect = Math.max(total - Math.min(creditBalance, total), 0);
 
-        $('#fc_display_amount').text('₵' + formatMoney(payAmount));
+        $('#fc_display_amount').text('₵' + formatMoney(totalApplied));
         $('#fc_selected_count').text(selectedBills().length + ' selected');
         $('#fc_cart_subtotal').text('₵' + formatMoney(total));
-        $('#fc_cart_total').text('₵' + formatMoney(total));
-        $('#fc_display_change').text(change > 0 ? '₵' + formatMoney(change) : '—');
-        $('#fc_submit_btn').prop('disabled', payAmount <= 0 || selectedBills().length === 0);
+        $('#fc_cart_total').text('₵' + formatMoney(Math.min(totalApplied, total)));
+        $('#fc_display_change').text(change > 0 ? '₵' + formatMoney(change) : (surplus > 0.009 ? '₵0.00 credit' : '—'));
+
+        if (!hasOutstandingBills) {
+            $('#fc_submit_btn').prop('disabled', true);
+        } else {
+            $('#fc_submit_btn').prop('disabled', totalApplied <= 0 || selectedBills().length === 0);
+        }
+
+        if (surplus > 0.009) {
+            $('#fc_surplus_hint').text('₵' + formatMoney(surplus) + ' will be saved as remaining credit and shown on the bill printout.').show();
+        } else {
+            $('#fc_surplus_hint').hide();
+        }
+
+        if (method === 'Cash' && excessReceived > 0.009) {
+            $('#fc_excess_credit_wrap').show();
+            $('#fc_save_excess_label').text(
+                saveExcessAsCredit
+                    ? 'Save ₵' + formatMoney(excessReceived) + ' excess as remaining credit'
+                    : 'Return ₵' + formatMoney(excessReceived) + ' excess as change to customer'
+            );
+        } else {
+            $('#fc_excess_credit_wrap').hide();
+        }
+
+        if ($('#fc_use_credit').is(':checked')) {
+            $('#fc_amount_label').text('Cash to collect');
+        } else {
+            $('#fc_amount_label').text('Amount to collect');
+        }
 
         if (method === 'Cash') {
             $('#fc_ref_field').removeClass('is-visible');
             $('#fc_tendered_field').show();
+        } else if (method === 'Paystack') {
+            $('#fc_ref_field').removeClass('is-visible');
+            $('#fc_tendered_field').hide();
         } else {
             $('#fc_ref_field').addClass('is-visible');
             $('#fc_tendered_field').hide();
         }
+
+        const isPaystack = method === 'Paystack';
+        $('#fc_submit_btn').html(isPaystack
+            ? '<i class="ri-secure-payment-line"></i> Pay with Paystack'
+            : '<i class="ri-printer-line"></i> Complete payment & print receipt');
     }
 
     $('.fc-line').on('click', function() {
         const id = parseInt($(this).data('bill-id'), 10);
+        const isRequired = $(this).data('compulsory') === 1 || $(this).data('compulsory') === '1';
+
         if (selectedIds.has(id)) {
+            if (isRequired) {
+                showAppToast('error', 'Required bill items cannot be removed.');
+                return;
+            }
             selectedIds.delete(id);
-            $(this).removeClass('is-selected');
         } else {
             selectedIds.add(id);
-            $(this).addClass('is-selected');
         }
-        const total = selectedTotal();
-        $('#fc_payment_amount').val(total > 0 ? total.toFixed(2) : '');
-        $('#fc_amount_tendered').val(total > 0 ? total.toFixed(2) : '');
+        syncLineSelectionClasses();
+        syncPaymentAmountWithSelection(false);
         updateDisplay();
     });
 
     $('#fc_select_all').on('click', function() {
         selectedIds = new Set(billData.map(function(b){ return b.id; }));
-        $('.fc-line').addClass('is-selected');
-        const total = selectedTotal();
-        $('#fc_payment_amount').val(total.toFixed(2));
-        $('#fc_amount_tendered').val(total.toFixed(2));
+        syncLineSelectionClasses();
+        syncPaymentAmountWithSelection(true);
         updateDisplay();
     });
 
     $('#fc_clear_all').on('click', function() {
-        selectedIds.clear();
-        $('.fc-line').removeClass('is-selected');
-        $('#fc_payment_amount').val('');
-        $('#fc_amount_tendered').val('');
+        selectedIds = new Set(compulsoryBillIds());
+        syncLineSelectionClasses();
+        const total = selectedTotal();
+        if (total > 0) {
+            $('#fc_payment_amount').val(total.toFixed(2));
+            $('#fc_amount_tendered').val(total.toFixed(2));
+        } else {
+            $('#fc_payment_amount').val('');
+            $('#fc_amount_tendered').val('');
+        }
         updateDisplay();
     });
 
     $('.fc-method').on('click', function() {
+        if ($(this).hasClass('is-disabled')) {
+            return;
+        }
+
         $('.fc-method').removeClass('is-active');
         $(this).addClass('is-active');
         $('#fc_payment_method').val($(this).data('method'));
@@ -566,8 +717,7 @@
         const action = $(this).data('fc-quick');
         const total = selectedTotal();
         if (action === 'full') {
-            $('#fc_payment_amount').val(total.toFixed(2));
-            $('#fc_amount_tendered').val(total.toFixed(2));
+            syncPaymentAmountWithSelection(true);
         } else if (action === 'half') {
             const half = (total / 2).toFixed(2);
             $('#fc_payment_amount').val(half);
@@ -579,30 +729,64 @@
         updateDisplay();
     });
 
-    $('#fc_payment_amount, #fc_amount_tendered').on('input', updateDisplay);
-
-    $('#recordPaymentForm').on('submit', function(e) {
-        e.preventDefault();
-        const payAmount = parseFloat($('#fc_payment_amount').val() || 0);
-        const allocations = buildAllocations(payAmount);
-
-        if (!allocations.length) {
-            showAppToast('error', 'Select at least one bill to pay.');
-            return;
+    $('#fc_payment_amount').on('input', updateDisplay);
+    $('#fc_amount_tendered').on('input', function() {
+        syncPayAmountFromTendered();
+        updateDisplay();
+    });
+    $('#fc_credit_applied').on('input', updateDisplay);
+    $('#fc_save_excess_as_credit').on('change', function() {
+        if (!$(this).is(':checked')) {
+            const total = selectedTotal();
+            const currentPay = parseFloat($('#fc_payment_amount').val() || 0);
+            if (total > 0 && currentPay > total + 0.009) {
+                $('#fc_payment_amount').val(total.toFixed(2));
+            }
+        } else {
+            syncPayAmountFromTendered();
         }
+        updateDisplay();
+    });
+    $('#fc_payment_amount').on('focus', function() {
+        $(this).select();
+    });
 
-        const total = selectedTotal();
-        if (payAmount > total + 0.009) {
-            showAppToast('error', 'Payment amount cannot exceed selected bills total (₵' + formatMoney(total) + ').');
-            return;
+    $('#fc_use_credit').on('change', function() {
+        const checked = $(this).is(':checked');
+        $('#fc_credit_amount_field').toggle(checked);
+        if (checked) {
+            const defaultCredit = Math.min(creditBalance, selectedTotal()).toFixed(2);
+            $('#fc_credit_applied').val(defaultCredit);
+            const cashNeeded = Math.max(selectedTotal() - parseFloat(defaultCredit), 0).toFixed(2);
+            $('#fc_payment_amount').val(cashNeeded);
+            $('#fc_amount_tendered').val(cashNeeded);
+        } else {
+            $('#fc_credit_applied').val('0');
+            const total = selectedTotal();
+            $('#fc_payment_amount').val(total > 0 ? total.toFixed(2) : '');
+            $('#fc_amount_tendered').val(total > 0 ? total.toFixed(2) : '');
         }
+        updateDisplay();
+    });
 
-        const payload = $(this).serializeArray();
-        allocations.forEach(function(a, i) {
-            payload.push({ name: 'allocations[' + i + '][student_bill_id]', value: a.student_bill_id });
-            payload.push({ name: 'allocations[' + i + '][amount]', value: a.amount });
-        });
+    function resetSubmitButton() {
+        const method = $('#fc_payment_method').val();
+        const isPaystack = method === 'Paystack';
+        $('#fc_submit_btn').prop('disabled', false).html(isPaystack
+            ? '<i class="ri-secure-payment-line"></i> Pay with Paystack'
+            : '<i class="ri-printer-line"></i> Complete payment & print receipt');
+    }
 
+    function openPaymentDocuments(res) {
+        if (res.receipt_url) {
+            window.open(res.receipt_url, '_blank');
+        }
+        if (res.statement_url && (parseFloat(res.credit_generated || 0) > 0 || parseFloat(res.credit_balance || 0) > 0)) {
+            window.open(res.statement_url, '_blank');
+        }
+    }
+
+    function submitManualPayment(payload) {
         const $btn = $('#fc_submit_btn');
         $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Processing...');
 
@@ -612,14 +796,152 @@
             data: $.param(payload),
             success: function(res) {
                 showAppToast('success', res.message || 'Payment recorded.');
-                if (res.receipt_url) { window.open(res.receipt_url, '_blank'); }
+                openPaymentDocuments(res);
                 setTimeout(function(){ window.location.href = studentBillsUrl; }, 900);
             },
             error: function(xhr) {
                 showAppToast('error', xhr.responseJSON?.message || 'Unable to record payment.');
-                $btn.prop('disabled', false).html('<i class="ri-printer-line"></i> Complete payment & print receipt');
+                resetSubmitButton();
             }
         });
+    }
+
+    function verifyPaystackPayment(reference) {
+        const $btn = $('#fc_submit_btn');
+        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Verifying payment...');
+
+        $.ajax({
+            url: paystackVerifyUrl,
+            method: 'POST',
+            data: {
+                _token: $('input[name="_token"]').val(),
+                reference: reference
+            },
+            success: function(res) {
+                showAppToast('success', res.message || 'Paystack payment verified.');
+                openPaymentDocuments(res);
+                setTimeout(function(){ window.location.href = studentBillsUrl; }, 900);
+            },
+            error: function(xhr) {
+                showAppToast('error', xhr.responseJSON?.message || 'Unable to verify Paystack payment.');
+                resetSubmitButton();
+            }
+        });
+    }
+
+    function startPaystackPayment(payAmount, creditApplied, allocations) {
+        const $btn = $('#fc_submit_btn');
+        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Initializing Paystack...');
+
+        const payload = [
+            { name: '_token', value: $('input[name="_token"]').val() },
+            { name: 'student_id', value: $('input[name="student_id"]').val() },
+            { name: 'amount', value: payAmount.toFixed(2) },
+            { name: 'credit_applied', value: creditApplied.toFixed(2) }
+        ];
+
+        allocations.forEach(function(a, i) {
+            payload.push({ name: 'allocations[' + i + '][student_bill_id]', value: a.student_bill_id });
+            payload.push({ name: 'allocations[' + i + '][amount]', value: a.amount });
+        });
+
+        $.ajax({
+            url: paystackInitializeUrl,
+            method: 'POST',
+            data: $.param(payload),
+            success: function(res) {
+                if (res.paid_with_credit_only) {
+                    showAppToast('success', res.message || 'Payment completed using credit.');
+                    openPaymentDocuments(res);
+                    setTimeout(function(){ window.location.href = studentBillsUrl; }, 900);
+                    return;
+                }
+
+                if (typeof PaystackPop === 'undefined') {
+                    showAppToast('error', 'Paystack checkout could not be loaded.');
+                    resetSubmitButton();
+                    return;
+                }
+
+                const handler = PaystackPop.setup({
+                    key: res.public_key || paystackPublicKey,
+                    email: res.email,
+                    label: res.label || undefined,
+                    amount: res.amount,
+                    currency: res.currency || 'GHS',
+                    ref: res.reference,
+                    callback: function(response) {
+                        verifyPaystackPayment(response.reference);
+                    },
+                    onClose: function() {
+                        showAppToast('error', 'Paystack payment was cancelled.');
+                        resetSubmitButton();
+                    }
+                });
+
+                $btn.html('<i class="ri-secure-payment-line"></i> Opening Paystack...');
+                handler.openIframe();
+            },
+            error: function(xhr) {
+                showAppToast('error', xhr.responseJSON?.message || 'Unable to initialize Paystack payment.');
+                resetSubmitButton();
+            }
+        });
+    }
+
+    $('#recordPaymentForm').on('submit', function(e) {
+        e.preventDefault();
+
+        if (!hasOutstandingBills) {
+            showAppToast('error', 'This student has no outstanding bills to pay.');
+            return;
+        }
+
+        const enteredPayAmount = parseFloat($('#fc_payment_amount').val() || 0);
+        const tendered = parseFloat($('#fc_amount_tendered').val() || 0);
+        const total = selectedTotal();
+        const method = $('#fc_payment_method').val();
+        const payAmount = resolveEffectivePayAmount(enteredPayAmount, tendered, total, method);
+        const creditApplied = creditAppliedAmount();
+        const totalApplied = payAmount + creditApplied;
+        const allocations = buildAllocations(totalApplied);
+
+        if (!allocations.length) {
+            showAppToast('error', 'Select at least one bill to pay.');
+            return;
+        }
+
+        if (totalApplied <= 0) {
+            showAppToast('error', 'Enter a payment amount or apply credit.');
+            return;
+        }
+
+        if (creditApplied > creditBalance + 0.009) {
+            showAppToast('error', 'Credit applied exceeds available credit balance.');
+            return;
+        }
+
+        if (method === 'Paystack') {
+            if (!paystackConfigured) {
+                showAppToast('error', 'Paystack is not configured.');
+                return;
+            }
+
+            startPaystackPayment(payAmount, creditApplied, allocations);
+            return;
+        }
+
+        const payload = $(this).serializeArray().filter(function(item) {
+            return item.name !== 'amount';
+        });
+        payload.push({ name: 'amount', value: payAmount.toFixed(2) });
+        payload.push({ name: 'credit_applied', value: creditApplied.toFixed(2) });
+        allocations.forEach(function(a, i) {
+            payload.push({ name: 'allocations[' + i + '][student_bill_id]', value: a.student_bill_id });
+            payload.push({ name: 'allocations[' + i + '][amount]', value: a.amount });
+        });
+
+        submitManualPayment(payload);
     });
 
     setInterval(function() {
@@ -627,6 +949,7 @@
         $('#fc_clock').text(now.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }));
     }, 30000);
 
+    ensureCompulsorySelected();
     updateDisplay();
 </script>
 @endsection

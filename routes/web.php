@@ -183,6 +183,8 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
 
    Route::controller(StudentBillController::class)->group(function () {
         Route::get('student-bills', 'index')->name('student-bills');
+        Route::get('student-bills/print', 'printLedger')->name('student-bills-print');
+        Route::get('student-bills/print/{id}', 'printStatement')->name('student-bill-print');
         Route::get('edit-student-bills', 'editIndex')->name('edit-student-bills');
         Route::get('edit-student-bills-search', 'search')->name('edit-student-bills-search');
         Route::get('get-student-bills/{id}', 'show')->name('get-student-bills');
@@ -193,6 +195,9 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
    Route::controller(BillPaymentController::class)->group(function () {
         Route::get('record-bill-payment/{id}', 'cashier')->name('record-bill-payment');
         Route::post('record-bill-payment-process', 'store')->name('record-bill-payment-process');
+        Route::post('paystack/bill-payment/initialize', 'initializePaystack')->name('paystack-bill-payment-initialize');
+        Route::post('paystack/bill-payment/verify', 'verifyPaystack')->name('paystack-bill-payment-verify');
+        Route::post('paystack/webhook', 'webhook')->name('paystack-webhook')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
         Route::get('bill-payment-receipt/{id}', 'receipt')->name('bill-payment-receipt');
     });
 /* End Billing */
