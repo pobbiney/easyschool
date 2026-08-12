@@ -185,6 +185,8 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         Route::get('student-bills', 'index')->name('student-bills');
         Route::get('student-bills/print', 'printLedger')->name('student-bills-print');
         Route::get('student-bills/print/{id}', 'printStatement')->name('student-bill-print');
+        Route::get('print-bills', 'printBillsIndex')->name('print-bills');
+        Route::get('print-class-bills/output', 'printClassStatements')->name('print-class-bills-output');
         Route::get('edit-student-bills', 'editIndex')->name('edit-student-bills');
         Route::get('edit-student-bills-search', 'search')->name('edit-student-bills-search');
         Route::get('get-student-bills/{id}', 'show')->name('get-student-bills');

@@ -22,6 +22,11 @@ class SchoolClass extends Model
         return $this->belongsTo(ClassCategory::class, 'class_category_id');
     }
 
+    public function students()
+    {
+        return $this->hasMany(Student::class, 'school_class_id');
+    }
+
     public function classTeacher()
     {
         return $this->belongsTo(Staff::class, 'class_teacher_id');
