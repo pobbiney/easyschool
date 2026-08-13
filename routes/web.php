@@ -39,7 +39,8 @@ Route::post('reset-otp-process/{id}',[AuthenticationController::class,'resetOtp'
 /** End of Frontend */
 
 /* Backend*/
-Route::get('/',[AuthenticationController::class,'getAdminLoginPage'])->name('admin-login');
+Route::get('/', [AuthenticationController::class, 'getAdminLoginPage'])->name('admin-login');
+Route::get('login', fn () => redirect('/'))->name('login');
 Route::get('dashboard',[DashboardController::class,'index'])->name('dashboard');
  
 Route::get('user-profile',[AuthenticationController::class,'getUserProfile'])->name('user-profile');

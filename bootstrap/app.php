@@ -11,6 +11,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->redirectGuestsTo(fn () => route('admin-login'));
+
         $middleware->alias([
             'teacher' => \App\Http\Middleware\EnsureTeacher::class,
             'teacher.owns.class' => \App\Http\Middleware\EnsureTeacherOwnsClass::class,
