@@ -5,13 +5,13 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Controller;
 use App\Models\SchoolClass;
 use App\Models\Staff;
+use App\Support\TeacherCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class ClassTeacherController extends Controller
 {
-    private const TEACHER_CATEGORY_ID = 2;
 
     public function index()
     {
@@ -101,7 +101,7 @@ class ClassTeacherController extends Controller
         return Staff::query()
             ->where('staff.status', 'Active')
             ->whereHas('user', function ($query) {
-                $query->where('user_cat', self::TEACHER_CATEGORY_ID)
+                $query->where('user_cat', TeacherCategory::id())
                     ->where('status', 'Active');
             })
             ->orderBy('staff.surname')

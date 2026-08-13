@@ -20,6 +20,14 @@ use App\Http\Controllers\Billing\BillingItemController;
 use App\Http\Controllers\Billing\CategoryBillSetupController;
 use App\Http\Controllers\Billing\StudentBillController;
 use App\Http\Controllers\Billing\BillPaymentController;
+use App\Http\Controllers\TeacherManagement\TeacherDirectoryController;
+use App\Http\Controllers\TeacherManagement\GradingSchemeController;
+use App\Http\Controllers\Teacher\DashboardController as TeacherDashboardController;
+use App\Http\Controllers\Teacher\ClassWorkspaceController;
+use App\Http\Controllers\Teacher\CourseWorkspaceController;
+use App\Http\Controllers\Teacher\AssessmentController;
+use App\Http\Controllers\Teacher\AttendanceController;
+use App\Http\Controllers\Teacher\GradebookController;
 
 Route::get('forgot-password',[AuthenticationController::class,'getForgetPassword'])->name('forgot-password');
 Route::post('forgot-password-process',[AuthenticationController::class,'forgotPass'])->name('forgot-password-process');
@@ -203,3 +211,52 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         Route::get('bill-payment-receipt/{id}', 'receipt')->name('bill-payment-receipt');
     });
 /* End Billing */
+
+/* Teacher Management */
+   Route::controller(TeacherDirectoryController::class)->group(function () {
+        Route::get('teacher-directory', 'index')->name('teacher-directory');
+    });
+
+   Route::controller(GradingSchemeController::class)->group(function () {
+        Route::get('grading-scheme', 'index')->name('grading-scheme');
+        Route::post('add-grading-scheme-process', 'store')->name('add-grading-scheme-process');
+        Route::post('update-grading-scheme-process', 'update')->name('update-grading-scheme-process');
+        Route::post('delete-grading-scheme-process', 'destroy')->name('delete-grading-scheme-process');
+    });
+/* End Teacher Management */
+
+/* Teacher Portal */
+   Route::controller(TeacherDashboardController::class)->group(function () {
+        Route::get('teacher-dashboard', 'index')->name('teacher-dashboard');
+    });
+
+   Route::controller(ClassWorkspaceController::class)->group(function () {
+        Route::get('teacher/classes/{class}', 'show')->name('teacher-class-workspace');
+    });
+
+   Route::controller(CourseWorkspaceController::class)->group(function () {
+        Route::get('teacher/courses/{course}/classes/{class}', 'show')->name('teacher-course-workspace');
+    });
+
+   Route::controller(AssessmentController::class)->group(function () {
+        Route::get('teacher-assessments', 'hub')->name('teacher-assessments');
+        Route::get('teacher/classes/{class}/assessments', 'classIndex')->name('teacher-class-assessments');
+        Route::get('teacher/courses/{course}/classes/{class}/assessments', 'courseIndex')->name('teacher-course-assessments');
+        Route::post('teacher-assessments-process', 'store')->name('teacher-assessments-process');
+        Route::get('teacher/assessments/{assessment}/scores', 'scores')->name('teacher-assessment-scores');
+        Route::post('teacher/assessments/{assessment}/scores', 'saveScores')->name('teacher-assessment-scores-process');
+    });
+
+   Route::controller(AttendanceController::class)->group(function () {
+        Route::get('teacher-attendance', 'hub')->name('teacher-attendance');
+        Route::get('teacher/classes/{class}/attendance', 'index')->name('teacher-class-attendance');
+        Route::post('teacher/classes/{class}/attendance', 'store')->name('teacher-class-attendance-process');
+    });
+
+   Route::controller(GradebookController::class)->group(function () {
+        Route::get('teacher-gradebook', 'hub')->name('teacher-gradebook');
+        Route::get('teacher/classes/{class}/gradebook', 'index')->name('teacher-class-gradebook');
+        Route::get('teacher/students/{student}/report-card/print', 'printReportCard')->name('teacher-report-card-print');
+        Route::get('teacher/classes/{class}/report-cards/print', 'printClassReportCards')->name('teacher-class-report-cards-print');
+    });
+/* End Teacher Portal */

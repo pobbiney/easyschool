@@ -1,4 +1,4 @@
-@php $pageName = "course"; $subpageName = "course-teacher-assignment"; @endphp
+@php $pageName = "teacher-management"; $subpageName = "course-teacher-assignment"; @endphp
 
 @extends('layouts.app')
 
