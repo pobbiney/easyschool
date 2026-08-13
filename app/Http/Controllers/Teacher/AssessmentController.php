@@ -121,19 +121,15 @@ class AssessmentController extends Controller implements HasMiddleware
             'due_date' => 'nullable|date',
             'assessment_date' => 'nullable|date',
             'school_class_id' => 'required|exists:school_classes,id',
-            'course_id' => 'nullable|exists:courses,id',
+            'course_id' => 'required|exists:courses,id',
             'max_score' => 'required|numeric|min:1|max:9999',
             'status' => 'required|in:'.implode(',', AcademicAssessment::STATUSES),
         ]);
 
-        $courseId = $validated['course_id'] ?? null;
-        $this->teacherAccess->assertCanAccessClass($staffId, (int) $validated['school_class_id'], $courseId ? (int) $courseId : null, $request);
+        $courseId = (int) $validated['course_id'];
+        $this->teacherAccess->assertCanAccessClass($staffId, (int) $validated['school_class_id'], $courseId, $request);
 
-        if (! $courseId && ! $this->teacherAccess->ownsHomeroomClass($staffId, (int) $validated['school_class_id'])) {
-            return back()->with('message_error', 'Only class teachers can create homeroom-wide assessments.');
-        }
-
-        if ($courseId && ! $this->teacherAccess->ownsSubjectAssignment($staffId, (int) $courseId, (int) $validated['school_class_id'], AcademicPeriodDefaults::yearId($request), AcademicPeriodDefaults::termId($request))
+        if (! $this->teacherAccess->ownsSubjectAssignment($staffId, $courseId, (int) $validated['school_class_id'], AcademicPeriodDefaults::yearId($request), AcademicPeriodDefaults::termId($request))
             && ! $this->teacherAccess->ownsHomeroomClass($staffId, (int) $validated['school_class_id'])) {
             return back()->with('message_error', 'You are not assigned to teach this course in this class.');
         }

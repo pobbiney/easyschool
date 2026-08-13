@@ -1,5 +1,4 @@
 @php
-    $homeroomClassIds = collect($homeroomClasses ?? [])->pluck('id')->map(fn ($id) => (string) $id)->values();
     $courseOptionsForJs = collect($subjectAssignments ?? [])->map(function ($a) {
         return [
             'class_id' => (string) $a->school_class_id,
@@ -34,7 +33,6 @@
 @endphp
 
 <div class="modal fade" id="createAssessmentModal" tabindex="-1"
-    data-homeroom-classes='@json($homeroomClassIds)'
     data-courses='@json($courseOptionsForJs)'
     data-default-class="{{ $defaultClassIdJs }}"
     data-default-course="{{ $defaultCourseIdJs }}"
@@ -89,14 +87,12 @@
                         @endif
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Course <span class="text-secondary-light fw-normal">(optional for homeroom)</span></label>
+                        <label class="form-label">Course</label>
                         @if($lockCourse && $defaultCourseIdJs)
                             <input type="hidden" name="course_id" value="{{ $defaultCourseIdJs }}">
                             <select class="form-select" id="assessment_course_id" disabled></select>
                         @else
-                            <select name="course_id" class="form-select" id="assessment_course_id">
-                                <option value="">Homeroom activity</option>
-                            </select>
+                            <select name="course_id" class="form-select" required id="assessment_course_id"></select>
                         @endif
                         <div class="form-text" id="assessment_course_hint">Courses update when you change the class.</div>
                     </div>
@@ -145,7 +141,6 @@
             return;
         }
 
-        const homeroomClassIds = parseJsonAttr(modal, 'data-homeroom-classes', '[]');
         const allCourses = parseJsonAttr(modal, 'data-courses', '[]');
         const defaultClass = modal.getAttribute('data-default-class') || '';
         const defaultCourse = modal.getAttribute('data-default-course') || '';
@@ -159,10 +154,6 @@
             return classSelect.value;
         }
 
-        function isHomeroomClass(classId) {
-            return homeroomClassIds.includes(String(classId));
-        }
-
         function coursesForClass(classId) {
             return allCourses.filter(function (c) {
                 return c.class_id === String(classId);
@@ -171,7 +162,6 @@
 
         function rebuildCourseSelect(preferredCourseId) {
             const classId = currentClassId();
-            const homeroom = isHomeroomClass(classId);
             const courses = coursesForClass(classId);
 
             if (lockCourse) {
@@ -190,11 +180,28 @@
 
             courseSelect.innerHTML = '';
 
-            if (homeroom) {
-                const homeroomOpt = document.createElement('option');
-                homeroomOpt.value = '';
-                homeroomOpt.textContent = 'Homeroom activity';
-                courseSelect.appendChild(homeroomOpt);
+            if (! classId) {
+                const placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.textContent = 'Select a class first';
+                placeholder.disabled = true;
+                placeholder.selected = true;
+                courseSelect.appendChild(placeholder);
+                courseSelect.required = false;
+                hint.textContent = 'Select a class first to see available courses.';
+                return;
+            }
+
+            if (courses.length === 0) {
+                const emptyOpt = document.createElement('option');
+                emptyOpt.value = '';
+                emptyOpt.textContent = '— No subjects —';
+                emptyOpt.disabled = true;
+                emptyOpt.selected = true;
+                courseSelect.appendChild(emptyOpt);
+                courseSelect.required = false;
+                hint.textContent = 'No subject assignments for this class.';
+                return;
             }
 
             courses.forEach(function (course) {
@@ -204,36 +211,18 @@
                 courseSelect.appendChild(opt);
             });
 
+            courseSelect.required = true;
+
             const pick = preferredCourseId || defaultCourse;
             const options = Array.from(courseSelect.options);
 
             if (pick && options.some(function (o) { return o.value === String(pick); })) {
                 courseSelect.value = String(pick);
-            } else if (homeroom) {
-                courseSelect.value = '';
-            } else if (courses.length > 0) {
+            } else {
                 courseSelect.value = courses[0].course_id;
             }
 
-            if (! classId) {
-                hint.textContent = 'Select a class first to see available courses.';
-            } else if (homeroom && courses.length > 0) {
-                hint.textContent = 'Homeroom activity applies to the whole class, or pick a subject you teach.';
-            } else if (homeroom) {
-                hint.textContent = 'Homeroom activity applies to the whole class.';
-            } else if (courses.length > 0) {
-                hint.textContent = courses.length + ' subject' + (courses.length === 1 ? '' : 's') + ' available for this class.';
-            } else {
-                hint.textContent = 'No subject assignments for this class.';
-                if (! homeroom) {
-                    const emptyOpt = document.createElement('option');
-                    emptyOpt.value = '';
-                    emptyOpt.textContent = '— No subjects —';
-                    emptyOpt.disabled = true;
-                    emptyOpt.selected = true;
-                    courseSelect.appendChild(emptyOpt);
-                }
-            }
+            hint.textContent = courses.length + ' subject' + (courses.length === 1 ? '' : 's') + ' available for this class.';
         }
 
         if (! lockClass) {
