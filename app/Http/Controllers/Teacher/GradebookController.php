@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Teacher;
 
 use App\Http\Controllers\Controller;
+use App\Models\AcademicTerm;
+use App\Models\AcademicYear;
 use App\Models\SchoolClass;
 use App\Models\SchoolSetting;
 use App\Models\Student;
@@ -27,11 +29,37 @@ class GradebookController extends Controller implements HasMiddleware
     public function hub(Request $request)
     {
         $staffId = $this->teacherAccess->staffId();
-        $homeroomClasses = $this->teacherAccess->homeroomClasses($staffId);
+        $yearId = AcademicPeriodDefaults::yearId($request);
+        $termId = AcademicPeriodDefaults::termId($request);
+
+        $homeroomClasses = $this->teacherAccess->homeroomClasses($staffId)
+            ->loadCount(['students' => fn ($query) => $query->where('status', 'Active')]);
+
+        if ($yearId && $termId) {
+            $homeroomClasses->each(function (SchoolClass $class) use ($yearId, $termId) {
+                $gradebook = $this->gradebook->classGradebook($class->id, $yearId, $termId);
+                $gradedRows = $gradebook['term_averages']->filter(fn ($row) => $row['average_percentage'] !== null);
+
+                $class->gradebook_preview = [
+                    'subjects' => $gradebook['course_summaries']->count(),
+                    'types' => $gradebook['course_summaries']->sum(fn ($summary) => $summary['type_columns']->count()),
+                    'tests' => $gradebook['assessments']->count(),
+                    'graded' => $gradedRows->count(),
+                    'students' => $gradebook['term_averages']->count(),
+                    'class_average' => $gradedRows->isNotEmpty()
+                        ? round($gradedRows->avg('average_percentage'), 0)
+                        : null,
+                ];
+            });
+        }
 
         return view('teacher.gradebook-hub', [
             'homeroomClasses' => $homeroomClasses,
-            'period' => AcademicPeriodDefaults::forFrontend(),
+            ...$this->gradebookPageData($request),
+            'stats' => [
+                'classes' => $homeroomClasses->count(),
+                'students' => $homeroomClasses->sum('students_count'),
+            ],
         ]);
     }
 
@@ -49,10 +77,21 @@ class GradebookController extends Controller implements HasMiddleware
 
         $data = $this->gradebook->classGradebook($class->id, $yearId, $termId);
 
+        $gradedRows = $data['term_averages']->filter(fn ($row) => $row['average_percentage'] !== null);
+
         return view('teacher.gradebook', [
             'schoolClass' => $class,
             'gradebook' => $data,
-            'period' => AcademicPeriodDefaults::forFrontend(),
+            ...$this->gradebookPageData($request),
+            'stats' => [
+                'students' => $data['term_averages']->count(),
+                'subjects' => $data['course_summaries']->count(),
+                'assessments' => $data['assessments']->count(),
+                'graded_students' => $gradedRows->count(),
+                'class_average' => $gradedRows->isNotEmpty()
+                    ? round($gradedRows->avg('average_percentage'), 0)
+                    : null,
+            ],
         ]);
     }
 
@@ -68,9 +107,9 @@ class GradebookController extends Controller implements HasMiddleware
 
         return view('teacher.print-report-card', [
             'report' => $report,
-            'school' => SchoolSetting::current(),
+            'school' => SchoolSetting::current()->fresh(),
             'printedAt' => now(),
-            'period' => AcademicPeriodDefaults::forFrontend(),
+            'period' => AcademicPeriodDefaults::forFrontend($request),
         ]);
     }
 
@@ -88,9 +127,18 @@ class GradebookController extends Controller implements HasMiddleware
         return view('teacher.print-class-report-cards', [
             'reports' => $reports,
             'className' => $class->name,
-            'school' => SchoolSetting::current(),
+            'school' => SchoolSetting::current()->fresh(),
             'printedAt' => now(),
-            'period' => AcademicPeriodDefaults::forFrontend(),
+            'period' => AcademicPeriodDefaults::forFrontend($request),
         ]);
+    }
+
+    private function gradebookPageData(Request $request): array
+    {
+        return [
+            'period' => AcademicPeriodDefaults::forFrontend($request),
+            'academicYears' => AcademicYear::query()->where('status', 'Active')->orderByDesc('name')->get(),
+            'academicTerms' => AcademicTerm::query()->where('status', 'Active')->orderBy('sort_order')->get(),
+        ];
     }
 }

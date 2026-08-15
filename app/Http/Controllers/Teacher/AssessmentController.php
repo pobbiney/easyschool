@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Teacher;
 use App\Http\Controllers\Controller;
 use App\Models\AcademicAssessment;
 use App\Models\AssessmentScore;
+use App\Models\AssessmentType;
+use App\Models\AcademicTerm;
+use App\Models\AcademicYear;
 use App\Models\Course;
 use App\Models\GradingScheme;
 use App\Models\SchoolClass;
@@ -30,6 +33,36 @@ class AssessmentController extends Controller implements HasMiddleware
 
     public function hub(Request $request)
     {
+        return $this->renderHub($request, 'pending');
+    }
+
+    public function records(Request $request)
+    {
+        return $this->renderHub($request, 'records');
+    }
+
+    public function classIndex(Request $request, SchoolClass $class)
+    {
+        return $this->renderIndex($request, $class, null, 'pending');
+    }
+
+    public function courseIndex(Request $request, Course $course, SchoolClass $class)
+    {
+        return $this->renderIndex($request, $class, $course, 'pending');
+    }
+
+    public function classRecords(Request $request, SchoolClass $class)
+    {
+        return $this->renderIndex($request, $class, null, 'records');
+    }
+
+    public function courseRecords(Request $request, Course $course, SchoolClass $class)
+    {
+        return $this->renderIndex($request, $class, $course, 'records');
+    }
+
+    private function renderHub(Request $request, string $scope)
+    {
         $staffId = $this->teacherAccess->staffId();
         $yearId = AcademicPeriodDefaults::yearId($request);
         $termId = AcademicPeriodDefaults::termId($request);
@@ -37,23 +70,28 @@ class AssessmentController extends Controller implements HasMiddleware
         $homeroomClasses = $this->teacherAccess->homeroomClasses($staffId);
         $subjectAssignments = $this->teacherAccess->subjectAssignments($staffId, $yearId, $termId);
 
-        $assessments = AcademicAssessment::query()
-            ->with(['schoolClass', 'course', 'scores'])
-            ->where('staff_id', $staffId)
-            ->when($yearId, fn ($q) => $q->where('academic_year_id', $yearId))
-            ->when($termId, fn ($q) => $q->where('academic_term_id', $termId))
-            ->orderByDesc('created_at')
-            ->get();
+        $assessments = $this->teacherAssessmentsQuery($request, $scope)->get();
 
         $publishedCount = $assessments->where('status', 'published')->count();
         $draftCount = $assessments->where('status', 'draft')->count();
         $scoredEntries = $assessments->sum(fn ($a) => $a->scores->whereNotNull('score')->count());
 
-        return view('teacher.assessments-hub', [
+        $pendingCount = $scope === 'pending'
+            ? $assessments->count()
+            : $this->teacherAssessmentsQuery($request, 'pending')->count();
+
+        $recordsCount = $scope === 'records'
+            ? $assessments->count()
+            : $this->teacherAssessmentsQuery($request, 'records')->count();
+
+        $view = $scope === 'records' ? 'teacher.assessment-records' : 'teacher.assessments-hub';
+
+        return view($view, [
             'homeroomClasses' => $homeroomClasses,
             'subjectAssignments' => $subjectAssignments,
             'assessments' => $assessments,
-            'period' => AcademicPeriodDefaults::forFrontend(),
+            'assessmentTypes' => $this->activeAssessmentTypes(),
+            ...$this->assessmentPageData($request),
             'stats' => [
                 'total' => $assessments->count(),
                 'published' => $publishedCount,
@@ -61,21 +99,13 @@ class AssessmentController extends Controller implements HasMiddleware
                 'homeroom_slots' => $homeroomClasses->count(),
                 'subject_slots' => $subjectAssignments->count(),
                 'scores_entered' => $scoredEntries,
+                'pending' => $pendingCount,
+                'records' => $recordsCount,
             ],
         ]);
     }
 
-    public function classIndex(Request $request, SchoolClass $class)
-    {
-        return $this->renderIndex($request, $class, null);
-    }
-
-    public function courseIndex(Request $request, Course $course, SchoolClass $class)
-    {
-        return $this->renderIndex($request, $class, $course);
-    }
-
-    private function renderIndex(Request $request, SchoolClass $class, ?Course $course = null)
+    private function renderIndex(Request $request, SchoolClass $class, ?Course $course = null, string $scope = 'pending')
     {
         $staffId = $this->teacherAccess->staffId();
         $yearId = AcademicPeriodDefaults::yearId($request);
@@ -83,31 +113,61 @@ class AssessmentController extends Controller implements HasMiddleware
 
         $this->teacherAccess->assertCanAccessClass($staffId, $class->id, $course?->id, $request);
 
-        $assessments = AcademicAssessment::query()
-            ->with(['schoolClass', 'course', 'scores'])
-            ->where('staff_id', $staffId)
-            ->where('school_class_id', $class->id)
-            ->when($course, fn ($q) => $q->where('course_id', $course->id))
-            ->when($yearId, fn ($q) => $q->where('academic_year_id', $yearId))
-            ->when($termId, fn ($q) => $q->where('academic_term_id', $termId))
+        $assessments = $this->teacherAssessmentsQuery($request, $scope, $class->id, $course?->id)
             ->orderByDesc('assessment_date')
-            ->orderByDesc('created_at')
             ->get();
 
         $homeroomClasses = $this->teacherAccess->homeroomClasses($staffId);
         $subjectAssignments = $this->teacherAccess->subjectAssignments($staffId, $yearId, $termId);
 
+        $pendingCount = $scope === 'pending'
+            ? $assessments->count()
+            : $this->teacherAssessmentsQuery($request, 'pending', $class->id, $course?->id)->count();
+
+        $recordsCount = $scope === 'records'
+            ? $assessments->count()
+            : $this->teacherAssessmentsQuery($request, 'records', $class->id, $course?->id)->count();
+
         return view('teacher.assessments', [
             'assessments' => $assessments,
             'schoolClass' => $class,
             'course' => $course,
-            'period' => AcademicPeriodDefaults::forFrontend(),
+            ...$this->assessmentPageData($request),
             'homeroomClasses' => $homeroomClasses,
             'subjectAssignments' => $subjectAssignments,
+            'assessmentTypes' => $this->activeAssessmentTypes(),
             'defaultClassId' => $class->id,
             'defaultCourseId' => $course?->id,
             'lockClass' => true,
+            'scope' => $scope,
+            'stats' => [
+                'pending' => $pendingCount,
+                'records' => $recordsCount,
+            ],
         ]);
+    }
+
+    private function teacherAssessmentsQuery(Request $request, string $scope, ?int $classId = null, ?int $courseId = null)
+    {
+        $staffId = $this->teacherAccess->staffId();
+        $yearId = AcademicPeriodDefaults::yearId($request);
+        $termId = AcademicPeriodDefaults::termId($request);
+
+        $query = AcademicAssessment::query()
+            ->with(['schoolClass', 'course', 'scores', 'assessmentType', 'academicYear', 'academicTerm'])
+            ->where('staff_id', $staffId)
+            ->when($yearId, fn ($q) => $q->where('academic_year_id', $yearId))
+            ->when($termId, fn ($q) => $q->where('academic_term_id', $termId))
+            ->when($classId, fn ($q) => $q->where('school_class_id', $classId))
+            ->when($courseId, fn ($q) => $q->where('course_id', $courseId));
+
+        if ($scope === 'records') {
+            $query->withRecordedScores();
+        } else {
+            $query->withoutRecordedScores();
+        }
+
+        return $query->orderByDesc('created_at');
     }
 
     public function store(Request $request)
@@ -115,7 +175,7 @@ class AssessmentController extends Controller implements HasMiddleware
         $staffId = $this->teacherAccess->staffId();
 
         $validated = $request->validate([
-            'type' => 'required|in:'.implode(',', AcademicAssessment::TYPES),
+            'type' => 'required|in:'.implode(',', AssessmentType::activeSlugs()),
             'title' => 'required|string|max:200',
             'description' => 'nullable|string|max:2000',
             'due_date' => 'nullable|date',
@@ -167,10 +227,11 @@ class AssessmentController extends Controller implements HasMiddleware
         $existingScores = $assessment->scores()->get()->keyBy('student_id');
 
         return view('teacher.assessment-scores', [
-            'assessment' => $assessment->load(['schoolClass', 'course']),
+            'assessment' => $assessment->load(['schoolClass', 'course', 'assessmentType', 'academicYear', 'academicTerm']),
             'students' => $students,
             'existingScores' => $existingScores,
             'gradingSchemes' => GradingScheme::orderByDesc('min_percentage')->get(),
+            'period' => AcademicPeriodDefaults::forFrontend(request()),
             'stats' => [
                 'total' => $students->count(),
                 'scored' => $existingScores->filter(fn ($s) => $s->score !== null)->count(),
@@ -194,6 +255,10 @@ class AssessmentController extends Controller implements HasMiddleware
             'scores.*.student_id' => 'required|exists:students,id',
             'scores.*.score' => 'nullable|numeric|min:0|max:'.$assessment->max_score,
             'scores.*.remarks' => 'nullable|string|max:500',
+        ], [
+            'scores.*.score.min' => 'Score cannot be negative.',
+            'scores.*.score.max' => 'Score cannot exceed the maximum of '.number_format((float) $assessment->max_score, 2).'.',
+            'scores.*.score.numeric' => 'Please enter a valid score.',
         ]);
 
         DB::transaction(function () use ($request, $assessment) {
@@ -218,5 +283,47 @@ class AssessmentController extends Controller implements HasMiddleware
         });
 
         return back()->with('message_success', 'Scores saved successfully.');
+    }
+
+    public function destroy(AcademicAssessment $assessment)
+    {
+        $staffId = $this->teacherAccess->staffId();
+
+        if ((int) $assessment->staff_id !== (int) $staffId) {
+            abort(403, 'You can only delete assessments you created.');
+        }
+
+        $this->teacherAccess->assertCanAccessClass(
+            $staffId,
+            $assessment->school_class_id,
+            $assessment->course_id,
+            request()
+        );
+
+        if ($assessment->hasRecordedScores()) {
+            return back()->with('message_error', 'This assessment cannot be deleted because marks have already been entered.');
+        }
+
+        $assessment->delete();
+
+        return back()->with('message_success', 'Assessment deleted successfully.');
+    }
+
+    private function activeAssessmentTypes()
+    {
+        return AssessmentType::query()
+            ->active()
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function assessmentPageData(Request $request): array
+    {
+        return [
+            'period' => AcademicPeriodDefaults::forFrontend($request),
+            'academicYears' => AcademicYear::query()->where('status', 'Active')->orderByDesc('name')->get(),
+            'academicTerms' => AcademicTerm::query()->where('status', 'Active')->orderBy('sort_order')->get(),
+        ];
     }
 }

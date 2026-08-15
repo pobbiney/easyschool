@@ -18,6 +18,9 @@
             <a href="{{ route('academic-terms') }}" class="btn btn-outline-primary-600 d-flex align-items-center gap-6">
                 <i class="ri-calendar-event-line"></i> Academic Terms
             </a>
+            <a href="{{ route('assessment-types') }}" class="btn btn-outline-primary-600 d-flex align-items-center gap-6">
+                <i class="ri-file-list-3-line"></i> Assessment Types
+            </a>
             <a href="{{ route('academic-session') }}" class="btn btn-outline-primary-600 d-flex align-items-center gap-6">
                 <i class="ri-calendar-2-line"></i> Set Current Session
             </a>

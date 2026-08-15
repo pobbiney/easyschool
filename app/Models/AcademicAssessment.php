@@ -6,8 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class AcademicAssessment extends Model
 {
-    public const TYPES = ['homework', 'class_test', 'exam', 'class_assignment'];
-
     public const STATUSES = ['draft', 'published'];
 
     protected $fillable = [
@@ -63,14 +61,42 @@ class AcademicAssessment extends Model
         return $this->hasMany(AssessmentScore::class, 'academic_assessment_id');
     }
 
+    public function assessmentType()
+    {
+        return $this->belongsTo(AssessmentType::class, 'type', 'slug');
+    }
+
     public function typeLabel(): string
     {
-        return match ($this->type) {
-            'homework' => 'Homework',
-            'class_test' => 'Class Test',
-            'exam' => 'Exam',
-            'class_assignment' => 'Class Assignment',
-            default => ucfirst(str_replace('_', ' ', $this->type)),
-        };
+        if ($this->relationLoaded('assessmentType') && $this->assessmentType) {
+            return $this->assessmentType->name;
+        }
+
+        $name = AssessmentType::query()->where('slug', $this->type)->value('name');
+
+        if ($name) {
+            return $name;
+        }
+
+        return ucfirst(str_replace('_', ' ', (string) $this->type));
+    }
+
+    public function hasRecordedScores(): bool
+    {
+        if ($this->relationLoaded('scores')) {
+            return $this->scores->contains(fn (AssessmentScore $score) => $score->score !== null);
+        }
+
+        return $this->scores()->whereNotNull('score')->exists();
+    }
+
+    public function scopeWithRecordedScores($query)
+    {
+        return $query->whereHas('scores', fn ($q) => $q->whereNotNull('score'));
+    }
+
+    public function scopeWithoutRecordedScores($query)
+    {
+        return $query->whereDoesntHave('scores', fn ($q) => $q->whereNotNull('score'));
     }
 }

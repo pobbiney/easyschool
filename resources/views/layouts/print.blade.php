@@ -41,6 +41,10 @@
             position: relative;
         }
 
+        .print-sheet .report-card-page + .report-card-page {
+            margin-top: 28px;
+        }
+
         .print-sheet::before {
             content: "";
             display: block;

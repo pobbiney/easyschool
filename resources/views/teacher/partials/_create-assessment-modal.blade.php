@@ -1,4 +1,6 @@
 @php
+    use App\Models\AssessmentType;
+
     $courseOptionsForJs = collect($subjectAssignments ?? [])->map(function ($a) {
         return [
             'class_id' => (string) $a->school_class_id,
@@ -30,6 +32,10 @@
             'homeroom' => $homeroomIds->has($defaultClassId),
         ]);
     }
+
+    $assessmentTypeOptions = isset($assessmentTypes) && $assessmentTypes->isNotEmpty()
+        ? $assessmentTypes
+        : AssessmentType::query()->active()->orderBy('sort_order')->orderBy('name')->get();
 @endphp
 
 <div class="modal fade" id="createAssessmentModal" tabindex="-1"
@@ -41,19 +47,38 @@
     <div class="modal-dialog modal-lg">
         <form action="{{ route('teacher-assessments-process') }}" method="POST" class="modal-content">
             @csrf
+            @if(!empty($period['year_id']))
+                <input type="hidden" name="academic_year_id" value="{{ $period['year_id'] }}">
+            @endif
+            @if(!empty($period['term_id']))
+                <input type="hidden" name="academic_term_id" value="{{ $period['term_id'] }}">
+            @endif
             <div class="modal-header">
                 <h5 class="modal-title">Create Assessment</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
+                @if(!empty($period['year_name']) && !empty($period['term_name']))
+                    <div class="alert alert-info py-10 px-14 mb-16 d-flex align-items-center gap-8">
+                        <i class="ri-calendar-line"></i>
+                        <span>This assessment will be recorded for <strong>{{ $period['year_name'] }} · {{ $period['term_name'] }}</strong></span>
+                    </div>
+                @endif
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label">Type</label>
-                        <select name="type" class="form-select" required>
-                            @foreach(\App\Models\AcademicAssessment::TYPES as $type)
-                                <option value="{{ $type }}">{{ ucwords(str_replace('_', ' ', $type)) }}</option>
+                        <select name="type" class="form-select" required @disabled($assessmentTypeOptions->isEmpty())>
+                            <option value="" disabled @selected(! old('type'))>Select assessment type</option>
+                            @foreach($assessmentTypeOptions as $assessmentType)
+                                <option value="{{ $assessmentType->slug }}"
+                                    data-total-score="{{ $assessmentType->total_score }}"
+                                    data-max-number="{{ $assessmentType->max_number }}"
+                                    @selected(old('type') === $assessmentType->slug)>{{ $assessmentType->name }}</option>
                             @endforeach
                         </select>
+                        @if($assessmentTypeOptions->isEmpty())
+                            <div class="form-text text-danger-600">No assessment types found. Add them under <a href="{{ route('assessment-types') }}">Settings → Assessment Types</a>.</div>
+                        @endif
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Status</label>
@@ -98,7 +123,7 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Max Score</label>
-                        <input type="number" name="max_score" class="form-control" value="100" min="1" required>
+                        <input type="number" name="max_score" id="assessment_max_score" class="form-control" value="{{ old('max_score', $assessmentTypeOptions->first()?->total_score ?? 100) }}" min="1" required>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Assessment Date</label>
@@ -241,10 +266,35 @@
         rebuildCourseSelect(defaultCourse);
     }
 
+    function initAssessmentTypeDefaults() {
+        const typeSelect = document.querySelector('#createAssessmentModal select[name="type"]');
+        const maxScoreInput = document.getElementById('assessment_max_score');
+
+        if (! typeSelect || ! maxScoreInput) {
+            return;
+        }
+
+        function applyTypeDefaults() {
+            const option = typeSelect.options[typeSelect.selectedIndex];
+            const totalScore = option?.dataset?.totalScore;
+
+            if (totalScore) {
+                maxScoreInput.value = totalScore;
+            }
+        }
+
+        typeSelect.addEventListener('change', applyTypeDefaults);
+        applyTypeDefaults();
+    }
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initAssessmentClassCourseFilter);
+        document.addEventListener('DOMContentLoaded', function () {
+            initAssessmentClassCourseFilter();
+            initAssessmentTypeDefaults();
+        });
     } else {
         initAssessmentClassCourseFilter();
+        initAssessmentTypeDefaults();
     }
 })();
 </script>

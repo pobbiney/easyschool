@@ -3,9 +3,8 @@
 namespace App\Services;
 
 use App\Models\AcademicAssessment;
-use App\Models\AssessmentScore;
+use App\Models\AssessmentType;
 use App\Models\ClassAttendance;
-use App\Models\Course;
 use App\Models\Student;
 use Illuminate\Support\Collection;
 
@@ -15,15 +14,26 @@ class GradebookService
 
     public function classGradebook(int $classId, int $yearId, int $termId): array
     {
+        $assessmentTypes = AssessmentType::query()
+            ->active()
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get()
+            ->keyBy('slug');
+
         $assessments = AcademicAssessment::query()
-            ->with(['course', 'scores'])
+            ->with(['course', 'scores', 'assessmentType'])
             ->where('school_class_id', $classId)
             ->where('academic_year_id', $yearId)
             ->where('academic_term_id', $termId)
-            ->where('status', 'published')
+            ->where(function ($query) {
+                $query->where('status', 'published')
+                    ->orWhereHas('scores', fn ($scoreQuery) => $scoreQuery->whereNotNull('score'));
+            })
             ->orderBy('course_id')
             ->orderBy('type')
             ->orderBy('assessment_date')
+            ->orderBy('id')
             ->get();
 
         $students = Student::query()
@@ -35,52 +45,53 @@ class GradebookService
 
         $byCourse = $assessments->groupBy(fn ($a) => $a->course_id ?? 0);
 
-        $courseSummaries = $byCourse->map(function (Collection $courseAssessments, $courseId) use ($students) {
+        $courseSummaries = $byCourse->map(function (Collection $courseAssessments, $courseId) use ($students, $assessmentTypes) {
             $course = $courseId ? $courseAssessments->first()->course : null;
 
-            $studentRows = $students->map(function (Student $student) use ($courseAssessments) {
-                $percentages = $courseAssessments->map(function (AcademicAssessment $assessment) use ($student) {
-                    $score = $assessment->scores->firstWhere('student_id', $student->id);
+            $typeColumns = $this->buildTypeColumns($courseAssessments, $assessmentTypes);
 
-                    return $score && $score->score !== null
-                        ? $this->grading->gradeScore((float) $score->score, (float) $assessment->max_score)['percentage']
-                        : null;
-                })->filter(fn ($p) => $p !== null);
+            $studentRows = $students->map(function (Student $student) use ($typeColumns, $assessmentTypes) {
+                $typeScores = $typeColumns->mapWithKeys(function (array $column) use ($student) {
+                    $aggregate = $this->aggregateTypeScore(
+                        $column['assessments'],
+                        $student->id,
+                        $column['type']
+                    );
 
-                $average = $percentages->isNotEmpty()
-                    ? round($percentages->avg(), 2)
-                    : null;
+                    return [$column['type']->slug => $aggregate];
+                });
+
+                $average = $this->calculateFinalPercentageFromTypeScores($typeScores, $assessmentTypes);
 
                 return [
                     'student' => $student,
+                    'type_scores' => $typeScores,
                     'average_percentage' => $average,
                     'letter_grade' => $this->grading->letterGradeForPercentage($average),
-                    'assessment_scores' => $courseAssessments->mapWithKeys(function (AcademicAssessment $assessment) use ($student) {
-                        $score = $assessment->scores->firstWhere('student_id', $student->id);
-
-                        return [$assessment->id => $score];
-                    }),
                 ];
             });
 
             return [
                 'course' => $course,
                 'course_name' => $course?->name ?? 'Homeroom Activities',
+                'type_columns' => $typeColumns,
                 'assessments' => $courseAssessments,
                 'students' => $studentRows,
             ];
         })->values();
 
-        $termAverages = $students->map(function (Student $student) use ($assessments) {
-            $percentages = $assessments->map(function (AcademicAssessment $assessment) use ($student) {
-                $score = $assessment->scores->firstWhere('student_id', $student->id);
+        $termAverages = $students->map(function (Student $student) use ($courseSummaries) {
+            $subjectFinals = $courseSummaries
+                ->map(function ($summary) use ($student) {
+                    $row = $summary['students']->firstWhere('student.id', $student->id);
 
-                return $score && $score->score !== null
-                    ? $this->grading->gradeScore((float) $score->score, (float) $assessment->max_score)['percentage']
-                    : null;
-            })->filter(fn ($p) => $p !== null);
+                    return $row['average_percentage'] ?? null;
+                })
+                ->filter(fn ($percentage) => $percentage !== null);
 
-            $average = $percentages->isNotEmpty() ? round($percentages->avg(), 2) : null;
+            $average = $subjectFinals->isNotEmpty()
+                ? round($subjectFinals->avg(), 0)
+                : null;
 
             return [
                 'student' => $student,
@@ -98,7 +109,47 @@ class GradebookService
 
     public function studentReportCard(Student $student, int $yearId, int $termId): array
     {
+        $student->loadMissing('schoolClass');
         $gradebook = $this->classGradebook((int) $student->school_class_id, $yearId, $termId);
+
+        $assessmentTypes = AssessmentType::query()
+            ->active()
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get()
+            ->keyBy('slug');
+
+        $subjectPositionsByCourse = [];
+
+        foreach ($gradebook['course_summaries'] as $summary) {
+            $rankings = $summary['students']->map(function (array $row) use ($summary, $assessmentTypes) {
+                $components = $this->subjectComponents(
+                    $summary['assessments'],
+                    $row['student']->id,
+                    $assessmentTypes
+                );
+
+                return [
+                    'student_id' => $row['student']->id,
+                    'total_score' => $components['total_score'],
+                ];
+            })->filter(fn (array $item) => $item['total_score'] !== null);
+
+            $subjectPositionsByCourse[$summary['course_name']] = $this->assignCompetitionPositions(
+                $rankings,
+                'total_score'
+            );
+        }
+
+        $classPositions = $this->assignCompetitionPositions(
+            $gradebook['term_averages']
+                ->filter(fn (array $row) => ($row['average_percentage'] ?? null) !== null)
+                ->map(fn (array $row) => [
+                    'student_id' => $row['student']->id,
+                    'average_percentage' => $row['average_percentage'],
+                ]),
+            'average_percentage'
+        );
 
         $attendance = ClassAttendance::query()
             ->where('student_id', $student->id)
@@ -116,32 +167,221 @@ class GradebookService
 
         $termAverage = $gradebook['term_averages']->firstWhere('student.id', $student->id);
 
-        $subjectGrades = $gradebook['course_summaries']->map(function ($summary) use ($student) {
-            $row = $summary['students']->firstWhere('student.id', $student->id);
+        $subjectGrades = $gradebook['course_summaries']
+            ->map(function (array $summary) use ($student, $assessmentTypes, $subjectPositionsByCourse) {
+                $components = $this->subjectComponents(
+                    $summary['assessments'],
+                    $student->id,
+                    $assessmentTypes
+                );
 
-            return [
-                'course_name' => $summary['course_name'],
-                'average_percentage' => $row['average_percentage'] ?? null,
-                'letter_grade' => $row['letter_grade'] ?? null,
-                'assessments' => $summary['assessments']->map(function (AcademicAssessment $assessment) use ($row) {
-                    $score = $row['assessment_scores'][$assessment->id] ?? null;
-
-                    return [
-                        'title' => $assessment->title,
-                        'type' => $assessment->typeLabel(),
-                        'score' => $score?->score,
-                        'max_score' => $assessment->max_score,
-                        'letter_grade' => $score?->letter_grade,
-                    ];
-                }),
-            ];
-        });
+                return [
+                    'course_name' => $summary['course_name'],
+                    'class_score' => $components['class_score'],
+                    'exam_score' => $components['exam_score'],
+                    'total_score' => $components['total_score'],
+                    'average_percentage' => $components['total_score'],
+                    'position' => $subjectPositionsByCourse[$summary['course_name']][$student->id] ?? null,
+                    'remark' => $components['remark'],
+                    'letter_grade' => $components['letter_grade'],
+                ];
+            })
+            ->sortBy('course_name')
+            ->values();
 
         return [
             'student' => $student,
             'term_average' => $termAverage,
             'subject_grades' => $subjectGrades,
             'attendance' => $attendanceSummary,
+            'class_position' => $classPositions[$student->id] ?? null,
+            'students_on_roll' => $gradebook['term_averages']->count(),
+            'roll_number' => $student->roll_number,
         ];
+    }
+
+    private function buildTypeColumns(Collection $courseAssessments, Collection $assessmentTypes): Collection
+    {
+        return $courseAssessments
+            ->groupBy('type')
+            ->map(function (Collection $assessments, string $typeSlug) use ($assessmentTypes) {
+                $type = $assessmentTypes->get($typeSlug);
+
+                if (! $type) {
+                    return null;
+                }
+
+                return [
+                    'type' => $type,
+                    'assessments' => $assessments->values(),
+                    'assessment_count' => $assessments->count(),
+                ];
+            })
+            ->filter()
+            ->sortBy(fn (array $column) => [$column['type']->sort_order, $column['type']->name])
+            ->values();
+    }
+
+    /**
+     * Average all test marks for a type, scored against the type total_score from assessment_types.
+     */
+    private function aggregateTypeScore(Collection $assessments, int $studentId, AssessmentType $type): ?array
+    {
+        $rawScores = collect();
+        $breakdown = [];
+
+        foreach ($assessments as $assessment) {
+            $score = $assessment->scores->firstWhere('student_id', $studentId);
+
+            if (! $score || $score->score === null) {
+                continue;
+            }
+
+            $rawScores->push((float) $score->score);
+            $breakdown[] = [
+                'title' => $assessment->title,
+                'score' => (float) $score->score,
+            ];
+        }
+
+        if ($rawScores->isEmpty()) {
+            return null;
+        }
+
+        $averageScore = $rawScores->avg();
+        $totalScore = (float) $type->total_score;
+        $percentage = $totalScore > 0 ? ($averageScore / $totalScore) * 100 : null;
+
+        return [
+            'average_score' => round($averageScore, 2),
+            'total_score' => $totalScore,
+            'percentage' => $percentage !== null ? round($percentage, 2) : null,
+            'letter_grade' => $this->grading->letterGradeForPercentage($percentage),
+            'test_count' => $rawScores->count(),
+            'breakdown' => $breakdown,
+        ];
+    }
+
+    /**
+     * Final mark = (avg class_assessment type % / 2) + (avg examination_assessment type % / 2)
+     */
+    private function calculateFinalPercentageFromTypeScores(Collection $typeScores, Collection $assessmentTypes): ?float
+    {
+        $classPercentages = collect();
+        $examinationPercentages = collect();
+
+        foreach ($typeScores as $slug => $aggregate) {
+            if (! $aggregate || $aggregate['percentage'] === null) {
+                continue;
+            }
+
+            $type = $assessmentTypes->get($slug);
+
+            if (! $type) {
+                continue;
+            }
+
+            if ($type->category === AssessmentType::CATEGORY_CLASS) {
+                $classPercentages->push($aggregate['percentage']);
+            } elseif ($type->category === AssessmentType::CATEGORY_EXAMINATION) {
+                $examinationPercentages->push($aggregate['percentage']);
+            }
+        }
+
+        $classComponent = $classPercentages->isNotEmpty()
+            ? $classPercentages->avg() / 2
+            : null;
+
+        $examinationComponent = $examinationPercentages->isNotEmpty()
+            ? $examinationPercentages->avg() / 2
+            : null;
+
+        if ($classComponent === null && $examinationComponent === null) {
+            return null;
+        }
+
+        return round(($classComponent ?? 0) + ($examinationComponent ?? 0), 0);
+    }
+
+    /**
+     * Class score (out of 50) + exam score (out of 50) = total (out of 100).
+     */
+    private function subjectComponents(Collection $courseAssessments, int $studentId, Collection $assessmentTypes): array
+    {
+        $typeColumns = $this->buildTypeColumns($courseAssessments, $assessmentTypes);
+
+        $typeScores = $typeColumns->mapWithKeys(function (array $column) use ($studentId) {
+            $aggregate = $this->aggregateTypeScore(
+                $column['assessments'],
+                $studentId,
+                $column['type']
+            );
+
+            return [$column['type']->slug => $aggregate];
+        });
+
+        $classPercentages = collect();
+        $examinationPercentages = collect();
+
+        foreach ($typeScores as $slug => $aggregate) {
+            if (! $aggregate || $aggregate['percentage'] === null) {
+                continue;
+            }
+
+            $type = $assessmentTypes->get($slug);
+
+            if (! $type) {
+                continue;
+            }
+
+            if ($type->category === AssessmentType::CATEGORY_CLASS) {
+                $classPercentages->push($aggregate['percentage']);
+            } elseif ($type->category === AssessmentType::CATEGORY_EXAMINATION) {
+                $examinationPercentages->push($aggregate['percentage']);
+            }
+        }
+
+        $classScore = $classPercentages->isNotEmpty()
+            ? (int) round($classPercentages->avg() / 2, 0)
+            : null;
+
+        $examScore = $examinationPercentages->isNotEmpty()
+            ? (int) round($examinationPercentages->avg() / 2, 0)
+            : null;
+
+        if ($classScore === null && $examScore === null) {
+            $total = null;
+        } else {
+            $total = (int) round(($classScore ?? 0) + ($examScore ?? 0), 0);
+        }
+
+        return [
+            'class_score' => $classScore,
+            'exam_score' => $examScore,
+            'total_score' => $total,
+            'letter_grade' => $this->grading->letterGradeForPercentage($total),
+            'remark' => $this->grading->remarkForPercentage($total),
+        ];
+    }
+
+    private function assignCompetitionPositions(Collection $items, string $valueKey): array
+    {
+        $sorted = $items->sortByDesc($valueKey)->values();
+        $positions = [];
+        $position = 0;
+        $lastValue = null;
+
+        foreach ($sorted as $index => $item) {
+            $value = $item[$valueKey];
+
+            if ($lastValue === null || $value != $lastValue) {
+                $position = $index + 1;
+                $lastValue = $value;
+            }
+
+            $positions[$item['student_id']] = $position;
+        }
+
+        return $positions;
     }
 }

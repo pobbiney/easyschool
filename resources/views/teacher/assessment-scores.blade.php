@@ -1,14 +1,25 @@
 @php
     $pageName = "teacher-portal";
-    $subpageName = "teacher-assessments";
+    $hasRecords = $assessment->hasRecordedScores();
+    $subpageName = $hasRecords ? 'teacher-assessment-records' : 'teacher-assessments';
     $typePillClass = fn (?string $type) => 'ac-pill-' . ($type ?: 'slate');
     $gradePillClass = fn (?string $grade) => match (strtoupper(trim((string) $grade)[0] ?? '')) {
         'A' => 'ac-pill-grade-a', 'B' => 'ac-pill-grade-b', 'C' => 'ac-pill-grade-c',
         'D' => 'ac-pill-grade-d', 'F' => 'ac-pill-grade-f', default => 'ac-pill-slate',
     };
-    $backUrl = $assessment->course_id
-        ? route('teacher-course-assessments', [$assessment->course_id, $assessment->school_class_id])
-        : route('teacher-class-assessments', $assessment->school_class_id);
+    $periodQuery = array_filter([
+        'academic_year_id' => $assessment->academic_year_id,
+        'academic_term_id' => $assessment->academic_term_id,
+    ], fn ($value) => $value !== null && $value !== '');
+    $backUrl = $hasRecords
+        ? ($assessment->course_id
+            ? route('teacher-course-assessment-records', array_merge(['course' => $assessment->course_id, 'class' => $assessment->school_class_id], $periodQuery))
+            : route('teacher-class-assessment-records', array_merge(['class' => $assessment->school_class_id], $periodQuery)))
+        : ($assessment->course_id
+            ? route('teacher-course-assessments', array_merge(['course' => $assessment->course_id, 'class' => $assessment->school_class_id], $periodQuery))
+            : route('teacher-class-assessments', array_merge(['class' => $assessment->school_class_id], $periodQuery)));
+    $hubUrl = $hasRecords ? route('teacher-assessment-records', $periodQuery) : route('teacher-assessments', $periodQuery);
+    $hubLabel = $hasRecords ? 'Assessment Records' : 'Assessments';
     $gradingSchemesJson = $gradingSchemes->map(function ($s) {
         return [
             'min' => (float) $s->min_percentage,
@@ -28,10 +39,27 @@
         display: grid;
         grid-template-columns: repeat(4, 1fr);
         gap: 16px;
-        margin-bottom: 24px;
+        margin-bottom: 0;
     }
     @media (max-width: 991px) { .sc-meta-grid { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 575px) { .sc-meta-grid { grid-template-columns: 1fr; } }
+
+    .sc-sticky-stats {
+        position: sticky;
+        top: 4.5rem;
+        z-index: 8;
+        margin-bottom: 24px;
+        padding: 8px 0 16px;
+        background: rgba(245, 246, 250, 0.96);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid rgba(229, 231, 235, 0.85);
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+    }
+
+    [data-theme="dark"] .sc-sticky-stats {
+        background: rgba(17, 24, 39, 0.96);
+        border-bottom-color: rgba(55, 65, 81, 0.85);
+    }
 
     .sc-score-panel {
         border: 1px solid var(--neutral-200, #e5e7eb);
@@ -98,6 +126,12 @@
     .sc-score-input:focus {
         border-color: #25A194;
         box-shadow: 0 0 0 3px rgba(37, 161, 148, 0.12);
+    }
+
+    .sc-score-input.is-invalid {
+        border-color: #ef4444;
+        background: rgba(239, 68, 68, 0.04);
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
     }
 
     .sc-score-max {
@@ -174,13 +208,13 @@
         <div>
             <h1 class="fw-semibold mb-4 h6 text-primary-light">TEACHER PORTAL</h1>
             <div>
-                <a href="{{ route('teacher-assessments') }}" class="text-secondary-light hover-text-primary hover-underline">Assessments</a>
+                <a href="{{ $hubUrl }}" class="text-secondary-light hover-text-primary hover-underline">{{ $hubLabel }}</a>
                 <a href="{{ $backUrl }}" class="text-secondary-light hover-text-primary hover-underline"> / {{ $assessment->schoolClass?->name }}</a>
                 <span class="text-secondary-light"> / Score Entry</span>
             </div>
         </div>
         <a href="{{ $backUrl }}" class="btn btn-outline-primary-600 d-flex align-items-center gap-6">
-            <i class="ri-arrow-left-line"></i> Back to Assessments
+            <i class="ri-arrow-left-line"></i> Back to {{ $hasRecords ? 'Records' : 'Assessments' }}
         </a>
     </div>
 
@@ -196,6 +230,9 @@
                     <span class="ac-pill {{ $typePillClass($assessment->type) }}">{{ $assessment->typeLabel() }}</span>
                     <span class="ac-pill ac-pill-teal"><i class="ri-home-smile-line"></i> {{ $assessment->schoolClass?->name }}</span>
                     <span class="ac-pill ac-pill-indigo"><i class="ri-book-2-line"></i> {{ $assessment->course?->name ?? 'Homeroom' }}</span>
+                    @if($assessment->academicTerm?->name)
+                        <span class="ac-pill ac-pill-indigo"><i class="ri-calendar-line"></i> {{ $assessment->academicYear?->name }} · {{ $assessment->academicTerm->name }}</span>
+                    @endif
                     <span class="ac-pill ac-pill-{{ $assessment->status === 'published' ? 'published' : 'draft' }}">{{ ucfirst($assessment->status) }}</span>
                     @if($assessment->assessment_date)
                         <span class="ac-pill ac-pill-slate"><i class="ri-calendar-line"></i> {{ $assessment->assessment_date->format('d M Y') }}</span>
@@ -210,7 +247,8 @@
         </div>
     </div>
 
-    <div class="sc-meta-grid">
+    <div class="sc-sticky-stats">
+        <div class="sc-meta-grid">
         <div class="ac-stat-card">
             <div class="d-flex align-items-center justify-content-between gap-3">
                 <div>
@@ -248,6 +286,7 @@
             </div>
         </div>
     </div>
+    </div>
 
     <form action="{{ route('teacher-assessment-scores-process', $assessment) }}" method="POST" id="scoreEntryForm">
         @csrf
@@ -255,7 +294,7 @@
             <div class="sc-score-toolbar">
                 <div>
                     <h6 class="text-lg fw-semibold mb-4">Enter Scores</h6>
-                    <p class="text-sm text-secondary-light mb-0">Type a score for each student. Letter grades update automatically from your grading scheme.</p>
+                    <p class="text-sm text-secondary-light mb-0">Type a score for each student (0 to {{ number_format($assessment->max_score, 0) }}). Letter grades update automatically from your grading scheme.</p>
                 </div>
                 <div class="m-0">
                     <input type="text" id="scStudentSearch" class="form-control radius-4" placeholder="Filter students..." style="min-width:220px;">
@@ -366,6 +405,44 @@
         return match ? match.grade : null;
     }
 
+    function scoreValidationMessage(score) {
+        if (score === null || isNaN(score)) {
+            return 'Please enter a valid score.';
+        }
+        if (score < 0) {
+            return 'Score cannot be negative. Enter a value from 0 to ' + maxScore + '.';
+        }
+        if (score > maxScore) {
+            return 'Score cannot exceed the maximum of ' + maxScore + '.';
+        }
+        return null;
+    }
+
+    function validateScoreInput(input, showToast) {
+        const val = input.value.trim();
+        if (val === '') {
+            input.classList.remove('is-invalid');
+            input.setCustomValidity('');
+            return true;
+        }
+
+        const score = parseFloat(val);
+        const message = scoreValidationMessage(score);
+
+        if (message) {
+            input.classList.add('is-invalid');
+            input.setCustomValidity(message);
+            if (showToast && typeof showAppToast === 'function') {
+                showAppToast('error', message);
+            }
+            return false;
+        }
+
+        input.classList.remove('is-invalid');
+        input.setCustomValidity('');
+        return true;
+    }
+
     function updateRow(input) {
         const rowId = input.dataset.row;
         const val = input.value.trim();
@@ -373,6 +450,14 @@
         const pctEl = document.getElementById('pct-' + rowId);
         const gradeEl = document.getElementById('grade-' + rowId);
         const row = input.closest('tr');
+
+        if (score !== null && !isNaN(score) && scoreValidationMessage(score)) {
+            pctEl.textContent = '';
+            gradeEl.textContent = '—';
+            gradeEl.className = 'ac-pill ac-pill-slate';
+            row.classList.remove('is-scored');
+            return;
+        }
 
         if (score === null || isNaN(score)) {
             pctEl.textContent = '';
@@ -406,9 +491,33 @@
 
     document.querySelectorAll('.sc-live-score').forEach(input => {
         input.addEventListener('input', function () {
+            validateScoreInput(this, false);
             updateRow(this);
             refreshStats();
         });
+        input.addEventListener('blur', function () {
+            validateScoreInput(this, true);
+        });
+    });
+
+    document.getElementById('scoreEntryForm')?.addEventListener('submit', function (event) {
+        const inputs = Array.from(document.querySelectorAll('.sc-live-score'));
+        let firstInvalid = null;
+
+        inputs.forEach(input => {
+            if (!validateScoreInput(input, false) && !firstInvalid) {
+                firstInvalid = input;
+            }
+        });
+
+        if (firstInvalid) {
+            event.preventDefault();
+            validateScoreInput(firstInvalid, true);
+            firstInvalid.focus();
+            if (typeof showAppToast === 'function') {
+                showAppToast('error', 'Fix invalid scores before saving. Each score must be between 0 and ' + maxScore + '.');
+            }
+        }
     });
 
     document.getElementById('scStudentSearch')?.addEventListener('input', function () {

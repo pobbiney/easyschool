@@ -21,6 +21,9 @@
             <a href="{{ route('academic-session') }}" class="btn btn-outline-primary-600 d-flex align-items-center gap-6">
                 <i class="ri-calendar-2-line"></i> Set Current Session
             </a>
+            <a href="{{ route('assessment-types') }}" class="btn btn-outline-primary-600 d-flex align-items-center gap-6">
+                <i class="ri-file-list-3-line"></i> Assessment Types
+            </a>
             <button type="button" class="my-sidebar-btn btn btn-primary-600 d-flex align-items-center gap-6">
                 <span class="d-flex text-md"><i class="ri-add-large-line"></i></span>
                 Add Academic Term

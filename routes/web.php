@@ -16,6 +16,7 @@ use App\Http\Controllers\Student\ClassCategoryController;
 use App\Http\Controllers\Student\ClassTeacherController;
 use App\Http\Controllers\Student\StudentClassAssignmentController;
 use App\Http\Controllers\Settings\SchoolSettingController;
+use App\Http\Controllers\Settings\AssessmentTypeController;
 use App\Http\Controllers\Dormitory\DormitoryController;
 use App\Http\Controllers\Billing\BillingItemController;
 use App\Http\Controllers\Billing\CategoryBillSetupController;
@@ -102,6 +103,14 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         Route::post('add-academic-term-process', 'store')->name('add-academic-term-process');
         Route::get('get-academic-term-id/{id}', 'show')->name('get-academic-term-id');
         Route::post('update-academic-term-process', 'update')->name('update-academic-term-process');
+    });
+
+   Route::controller(AssessmentTypeController::class)->group(function () {
+        Route::get('assessment-types', 'index')->name('assessment-types');
+        Route::post('add-assessment-type-process', 'store')->name('add-assessment-type-process');
+        Route::get('get-assessment-type-id/{id}', 'show')->name('get-assessment-type-id');
+        Route::post('update-assessment-type-process', 'update')->name('update-assessment-type-process');
+        Route::post('delete-assessment-type-process', 'destroy')->name('delete-assessment-type-process');
     });
 
    Route::controller(SchoolClassController::class)->group(function () {
@@ -251,11 +260,15 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
 
    Route::controller(AssessmentController::class)->group(function () {
         Route::get('teacher-assessments', 'hub')->name('teacher-assessments');
+        Route::get('teacher-assessment-records', 'records')->name('teacher-assessment-records');
         Route::get('teacher/classes/{class}/assessments', 'classIndex')->name('teacher-class-assessments');
+        Route::get('teacher/classes/{class}/assessment-records', 'classRecords')->name('teacher-class-assessment-records');
         Route::get('teacher/courses/{course}/classes/{class}/assessments', 'courseIndex')->name('teacher-course-assessments');
+        Route::get('teacher/courses/{course}/classes/{class}/assessment-records', 'courseRecords')->name('teacher-course-assessment-records');
         Route::post('teacher-assessments-process', 'store')->name('teacher-assessments-process');
         Route::get('teacher/assessments/{assessment}/scores', 'scores')->name('teacher-assessment-scores');
         Route::post('teacher/assessments/{assessment}/scores', 'saveScores')->name('teacher-assessment-scores-process');
+        Route::delete('teacher/assessments/{assessment}', 'destroy')->name('teacher-assessments-delete');
     });
 
    Route::controller(AttendanceController::class)->group(function () {
