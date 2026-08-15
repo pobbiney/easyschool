@@ -13,6 +13,9 @@ class Student extends Model
         'academic_term_id',
         'class_name',
         'school_class_id',
+        'last_promotion_from_class_id',
+        'last_promotion_type',
+        'last_promoted_at',
         'section',
         'roll_number',
         'firstname',
@@ -59,6 +62,7 @@ class Student extends Model
 
     protected $casts = [
         'credit_balance' => 'decimal:2',
+        'last_promoted_at' => 'datetime',
     ];
 
     public function docs()
@@ -69,6 +73,11 @@ class Student extends Model
     public function schoolClass()
     {
         return $this->belongsTo(SchoolClass::class, 'school_class_id');
+    }
+
+    public function lastPromotionFromClass()
+    {
+        return $this->belongsTo(SchoolClass::class, 'last_promotion_from_class_id');
     }
 
     public function academicYear()

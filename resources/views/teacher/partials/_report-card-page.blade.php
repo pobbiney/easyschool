@@ -336,7 +336,7 @@
             </div>
             <div class="terminal-report__field">
                 <span class="terminal-report__label">Promoted To:</span>
-                <span class="terminal-report__value"></span>
+                <span class="terminal-report__value">{{ strtoupper($report['promotion_label'] ?? '') }}</span>
             </div>
         </div>
 

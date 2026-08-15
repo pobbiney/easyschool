@@ -15,8 +15,10 @@ use App\Http\Controllers\Student\SchoolClassController;
 use App\Http\Controllers\Student\ClassCategoryController;
 use App\Http\Controllers\Student\ClassTeacherController;
 use App\Http\Controllers\Student\StudentClassAssignmentController;
+use App\Http\Controllers\Student\StudentPromotionController;
 use App\Http\Controllers\Settings\SchoolSettingController;
 use App\Http\Controllers\Settings\AssessmentTypeController;
+use App\Http\Controllers\Settings\PromotionSettingController;
 use App\Http\Controllers\Dormitory\DormitoryController;
 use App\Http\Controllers\Billing\BillingItemController;
 use App\Http\Controllers\Billing\CategoryBillSetupController;
@@ -113,6 +115,11 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         Route::post('delete-assessment-type-process', 'destroy')->name('delete-assessment-type-process');
     });
 
+   Route::controller(PromotionSettingController::class)->group(function () {
+        Route::get('promotion-settings', 'index')->name('promotion-settings');
+        Route::post('update-promotion-settings-process', 'update')->name('update-promotion-settings-process');
+    });
+
    Route::controller(SchoolClassController::class)->group(function () {
         Route::get('school-classes', 'index')->name('school-classes');
         Route::post('add-school-class-process', 'store')->name('add-school-class-process');
@@ -142,6 +149,12 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         Route::get('student-class-assignment-bulk-candidates', 'bulkCandidates')->name('student-class-assignment-bulk-candidates');
         Route::post('assign-student-class-process', 'assign')->name('assign-student-class-process');
         Route::post('assign-student-class-bulk-process', 'bulkAssign')->name('assign-student-class-bulk-process');
+    });
+
+   Route::controller(StudentPromotionController::class)->group(function () {
+        Route::get('student-promotion', 'index')->name('student-promotion');
+        Route::get('student-promotion/classes/{class}', 'show')->name('student-promotion-class');
+        Route::post('student-promotion/classes/{class}/promote', 'promote')->name('student-promotion-process');
     });
 /* End StudentController*/
 

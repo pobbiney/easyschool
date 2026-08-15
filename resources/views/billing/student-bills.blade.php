@@ -297,7 +297,7 @@
 @endsection
 @section('content')
 <div class="dashboard-main-body sb-page">
-    <div class="breadcrumb d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
+    <div class="page-header breadcrumb d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
         <div>
             <h1 class="fw-semibold mb-4 h6 text-primary-light">BILL MANAGEMENT</h1>
             <div><a href="{{ route('dashboard') }}" class="text-secondary-light hover-text-primary hover-underline">Dashboard</a><span class="text-secondary-light"> / Student Bills</span></div>

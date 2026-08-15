@@ -5,7 +5,7 @@
     ], fn ($value) => $value !== null && $value !== '');
 @endphp
 
-<form method="GET" action="{{ url()->current() }}" class="ah-period-filter d-flex flex-wrap align-items-end gap-3" id="ahPeriodFilter">
+<form method="GET" action="{{ $periodFilterAction ?? url()->current() }}" class="ah-period-filter d-flex flex-wrap align-items-end gap-3" id="ahPeriodFilter">
     @foreach(request()->except(['academic_year_id', 'academic_term_id', 'page']) as $key => $value)
         @if(is_array($value))
             @foreach($value as $item)
@@ -42,14 +42,16 @@
 </form>
 
 <script>
-(function () {
+document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('ahPeriodFilter');
-    if (!form) return;
+    if (!form) {
+        return;
+    }
 
     form.querySelectorAll('select').forEach(function (select) {
         select.addEventListener('change', function () {
             form.submit();
         });
     });
-})();
+});
 </script>

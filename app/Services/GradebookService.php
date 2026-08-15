@@ -6,6 +6,7 @@ use App\Models\AcademicAssessment;
 use App\Models\AssessmentType;
 use App\Models\ClassAttendance;
 use App\Models\Student;
+use App\Models\StudentPromotionLog;
 use Illuminate\Support\Collection;
 
 class GradebookService
@@ -189,6 +190,9 @@ class GradebookService
             ->sortBy('course_name')
             ->values();
 
+        $promotion = $this->resolvePromotion($student, $subjectGrades);
+        $promotion = $this->applyPromotionLogLabel($student, $yearId, $termId, $promotion);
+
         return [
             'student' => $student,
             'term_average' => $termAverage,
@@ -197,7 +201,101 @@ class GradebookService
             'class_position' => $classPositions[$student->id] ?? null,
             'students_on_roll' => $gradebook['term_averages']->count(),
             'roll_number' => $student->roll_number,
+            'aggregate_total_score' => $promotion['aggregate_total_score'],
+            'promotion_minimum_mark' => $promotion['promotion_minimum_mark'],
+            'is_promoted' => $promotion['is_promoted'],
+            'promoted_to' => $promotion['promoted_to'],
+            'promotion_label' => $promotion['promotion_label'],
         ];
+    }
+
+    /**
+     * Sum all subject total scores and compare against the class promotion minimum.
+     */
+    private function resolvePromotion(Student $student, Collection $subjectGrades): array
+    {
+        $schoolClass = $student->schoolClass;
+
+        if (! $schoolClass) {
+            return $this->emptyPromotionResult(null);
+        }
+
+        $scoredSubjects = $subjectGrades->filter(fn (array $subject) => $subject['total_score'] !== null);
+        $aggregateTotal = $scoredSubjects->isNotEmpty()
+            ? (int) $scoredSubjects->sum('total_score')
+            : null;
+
+        $minimum = $schoolClass->promotion_minimum_mark;
+        $nextClass = $schoolClass->nextActiveClass();
+
+        if (! $nextClass) {
+            if ($minimum !== null && $aggregateTotal !== null && $aggregateTotal < $minimum) {
+                return $this->emptyPromotionResult($aggregateTotal, $minimum, false, null, 'Repeat');
+            }
+
+            return $this->emptyPromotionResult($aggregateTotal, $minimum);
+        }
+
+        if ($minimum === null) {
+            return $this->emptyPromotionResult($aggregateTotal, null, true, $nextClass->name, $nextClass->name);
+        }
+
+        if ($aggregateTotal === null) {
+            return $this->emptyPromotionResult(null, $minimum, false, null, 'Repeat');
+        }
+
+        $isPromoted = $aggregateTotal >= $minimum;
+
+        return $this->emptyPromotionResult(
+            $aggregateTotal,
+            $minimum,
+            $isPromoted,
+            $isPromoted ? $nextClass->name : null,
+            $isPromoted ? $nextClass->name : 'Repeat'
+        );
+    }
+
+    private function emptyPromotionResult(
+        ?int $aggregateTotal,
+        ?int $minimum = null,
+        ?bool $isPromoted = null,
+        ?string $promotedTo = null,
+        ?string $promotionLabel = null
+    ): array {
+        return [
+            'aggregate_total_score' => $aggregateTotal,
+            'promotion_minimum_mark' => $minimum,
+            'is_promoted' => $isPromoted,
+            'promoted_to' => $promotedTo,
+            'promotion_label' => $promotionLabel,
+        ];
+    }
+
+    private function applyPromotionLogLabel(Student $student, int $yearId, int $termId, array $promotion): array
+    {
+        $log = StudentPromotionLog::query()
+            ->with('toClass')
+            ->where('student_id', $student->id)
+            ->where('academic_year_id', $yearId)
+            ->where('academic_term_id', $termId)
+            ->first();
+
+        if (! $log || ! $log->toClass) {
+            return $promotion;
+        }
+
+        $label = $log->toClass->name;
+
+        if ($log->isConditional()) {
+            $label .= ' (Conditional Promotion)';
+        }
+
+        $promotion['promoted_to'] = $log->toClass->name;
+        $promotion['promotion_label'] = $label;
+        $promotion['is_promoted'] = true;
+        $promotion['promotion_type'] = $log->promotion_type;
+
+        return $promotion;
     }
 
     private function buildTypeColumns(Collection $courseAssessments, Collection $assessmentTypes): Collection

@@ -38,6 +38,23 @@
             $child[] = $row_links;
         }
     }
+
+    $flatMenuPageIds = ['teacher-portal'];
+    $flatMenuLinkOrder = [
+        'teacher-dashboard',
+        'teacher-attendance',
+        'teacher-assessments',
+        'teacher-assessment-records',
+        'teacher-gradebook',
+    ];
+    $flatMenuLinkIcons = [
+        'teacher-dashboard' => 'ri-dashboard-3-line',
+        'teacher-attendance' => 'ri-calendar-check-line',
+        'teacher-assessments' => 'ri-file-edit-line',
+        'teacher-assessment-records' => 'ri-file-list-3-line',
+        'teacher-gradebook' => 'ri-book-read-line',
+    ];
+    $hasTeacherDashboard = collect($child)->contains(fn ($sub) => $sub->link_url === 'teacher-dashboard');
 @endphp
 
 <!-- meta tags and other links -->
@@ -74,6 +91,7 @@
   <link rel="stylesheet" href="{{asset('assets/css/lib/calendar.css')}}">
   <!-- main css -->
   <link rel="stylesheet" href="{{asset('assets/css/style.css')}}">
+  @include('partials._page-header-styles')
        
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -408,14 +426,33 @@ body.swal2-toast-shown .swal2-container .swal2-popup {
   <!-- User Info end -->
   <div class="sidebar-menu-area">
     <ul class="sidebar-menu" id="sidebar-menu">
-      <li  >
-        <a href="{{route('dashboard')}}">
+      @if (! $hasTeacherDashboard)
+      <li>
+        <a href="{{ route('dashboard') }}">
           <i class="ri-home-4-line"></i>
-          <span class="col menu-name @if ($pageName == "dashboard") active  @endif">Dashboard </span>
+          <span class="col menu-name @if ($pageName == 'dashboard') active @endif">Dashboard</span>
         </a>
-        
       </li>
+      @endif
        @foreach ($parents as $parent)
+        @if (in_array($parent->page_id, $flatMenuPageIds, true))
+          @php
+            $flatChildren = collect($child)
+                ->filter(fn ($sub) => $sub->link_parent == $parent->link_id)
+                ->sortBy(fn ($sub) => array_search($sub->link_url, $flatMenuLinkOrder, true) !== false
+                    ? array_search($sub->link_url, $flatMenuLinkOrder, true)
+                    : 999)
+                ->values();
+          @endphp
+          @foreach ($flatChildren as $sub)
+      <li>
+        <a href="{{ route($sub->link_url) }}" class="@if ($subpageName == $sub->page_id_sub) active-page @endif @if ($subpageName == $sub->page_id_sub) active @endif">
+          <i class="{{ $sub->link_image ?: ($flatMenuLinkIcons[$sub->link_url] ?? 'ri-circle-line') }}"></i>
+          <span>{{ $sub->link_name }}</span>
+        </a>
+      </li>
+          @endforeach
+        @else
       <li class="dropdown @if ($pageName == $parent->page_id) active  @endif">
         <a href="javascript:void(0)">
           <i class="{{$parent->link_image}}"></i>
@@ -434,6 +471,7 @@ body.swal2-toast-shown .swal2-container .swal2-popup {
 			 @endforeach
         </ul>
       </li>
+        @endif
        @endforeach
   
     </ul>

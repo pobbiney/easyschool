@@ -12,6 +12,7 @@ class SchoolClass extends Model
         'name',
         'class_category_id',
         'status',
+        'promotion_minimum_mark',
         'class_teacher_id',
         'created_by',
         'updated_by',
@@ -30,6 +31,31 @@ class SchoolClass extends Model
     public function classTeacher()
     {
         return $this->belongsTo(Staff::class, 'class_teacher_id');
+    }
+
+    /**
+     * Next active class in the same category (natural name order), or null if this is the highest.
+     */
+    public function nextActiveClass(): ?self
+    {
+        if (! $this->class_category_id) {
+            return null;
+        }
+
+        $classes = static::query()
+            ->where('status', 'Active')
+            ->where('class_category_id', $this->class_category_id)
+            ->get()
+            ->sort(fn (self $a, self $b) => strnatcasecmp($a->name, $b->name))
+            ->values();
+
+        $index = $classes->search(fn (self $class) => $class->id === $this->id);
+
+        if ($index === false) {
+            return null;
+        }
+
+        return $classes->get($index + 1);
     }
 
     public function courseTeachingAssignments()

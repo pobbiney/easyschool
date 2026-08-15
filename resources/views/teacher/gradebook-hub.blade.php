@@ -466,7 +466,7 @@
 
 @section('content')
 <div class="dashboard-main-body">
-    <div class="breadcrumb d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
+    <div class="page-header breadcrumb d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
         <div>
             <h1 class="fw-semibold mb-4 h6 text-primary-light">TEACHER PORTAL</h1>
             <div>
