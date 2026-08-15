@@ -786,6 +786,19 @@
         }
     }
 
+    function showSmsFeedback(res) {
+        if (!res || !res.sms) {
+            return;
+        }
+
+        if (res.sms.sent) {
+            showAppToast('success', res.sms.message || 'SMS sent to parent.');
+            return;
+        }
+
+        showAppToast('error', res.sms.message || 'SMS could not be sent to parent.');
+    }
+
     function submitManualPayment(payload) {
         const $btn = $('#fc_submit_btn');
         $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Processing...');
@@ -796,6 +809,7 @@
             data: $.param(payload),
             success: function(res) {
                 showAppToast('success', res.message || 'Payment recorded.');
+                showSmsFeedback(res);
                 openPaymentDocuments(res);
                 setTimeout(function(){ window.location.href = studentBillsUrl; }, 900);
             },
@@ -819,6 +833,7 @@
             },
             success: function(res) {
                 showAppToast('success', res.message || 'Paystack payment verified.');
+                showSmsFeedback(res);
                 openPaymentDocuments(res);
                 setTimeout(function(){ window.location.href = studentBillsUrl; }, 900);
             },
@@ -852,6 +867,7 @@
             success: function(res) {
                 if (res.paid_with_credit_only) {
                     showAppToast('success', res.message || 'Payment completed using credit.');
+                    showSmsFeedback(res);
                     openPaymentDocuments(res);
                     setTimeout(function(){ window.location.href = studentBillsUrl; }, 900);
                     return;

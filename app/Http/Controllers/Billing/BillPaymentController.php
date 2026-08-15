@@ -10,6 +10,7 @@ use App\Models\SchoolSetting;
 use App\Models\Student;
 use App\Models\StudentBill;
 use App\Models\StudentBillCreditTransaction;
+use App\Services\Billing\BillPaymentSmsService;
 use App\Services\Billing\PaystackService;
 use App\Services\Billing\StudentBillCreditService;
 use Illuminate\Http\Request;
@@ -24,6 +25,7 @@ class BillPaymentController extends Controller
     public function __construct(
         private PaystackService $paystackService,
         private StudentBillCreditService $creditService,
+        private BillPaymentSmsService $billPaymentSmsService,
     ) {}
 
     public function cashier($id)
@@ -103,7 +105,9 @@ class BillPaymentController extends Controller
             return $this->errorResponse($request, 'Unable to record payment. Please try again.', 500);
         }
 
-        return $this->successResponse($request, $payment, 'Payment recorded successfully.');
+        $sms = $this->notifyParentBySms($payment);
+
+        return $this->successResponse($request, $payment, 'Payment recorded successfully.', $sms);
     }
 
     public function initializePaystack(Request $request)
@@ -172,6 +176,8 @@ class BillPaymentController extends Controller
                     'bill_payment_id' => $payment->id,
                 ]);
 
+                $sms = $this->notifyParentBySms($payment);
+
                 return response()->json([
                     'message' => 'Payment completed using credit balance.',
                     'payment_id' => $payment->id,
@@ -181,6 +187,7 @@ class BillPaymentController extends Controller
                     'credit_balance' => round((float) $payment->student->credit_balance, 2),
                     'credit_generated' => round((float) $payment->credit_generated, 2),
                     'paid_with_credit_only' => true,
+                    'sms' => $sms,
                 ]);
             } catch (InvalidArgumentException $e) {
                 return $this->errorResponse($request, $e->getMessage(), 422);
@@ -234,7 +241,9 @@ class BillPaymentController extends Controller
             return $this->errorResponse($request, $e->getMessage(), 422);
         }
 
-        return $this->successResponse($request, $payment, 'Paystack payment verified successfully.');
+        $sms = $this->notifyParentBySms($payment);
+
+        return $this->successResponse($request, $payment, 'Paystack payment verified successfully.', $sms);
     }
 
     public function webhook(Request $request)
@@ -347,6 +356,8 @@ class BillPaymentController extends Controller
                 'bill_payment_id' => $payment->id,
             ]);
 
+            $this->notifyParentBySms($payment);
+
             return $payment;
         });
     }
@@ -445,6 +456,21 @@ class BillPaymentController extends Controller
         }
 
         return $payment->load(['student', 'allocations.studentBill.billingItem']);
+    }
+
+    private function notifyParentBySms(BillPayment $payment): array
+    {
+        try {
+            return $this->billPaymentSmsService->sendPaymentConfirmation($payment);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return [
+                'sent' => false,
+                'phone' => null,
+                'message' => 'Unable to send SMS notification.',
+            ];
+        }
     }
 
     private function resolveAllocations(
@@ -604,7 +630,7 @@ class BillPaymentController extends Controller
         return 'easyschool.com';
     }
 
-    private function successResponse(Request $request, BillPayment $payment, string $message)
+    private function successResponse(Request $request, BillPayment $payment, string $message, ?array $sms = null)
     {
         if ($request->expectsJson()) {
             $payment->loadMissing('student');
@@ -617,11 +643,18 @@ class BillPaymentController extends Controller
                 'statement_url' => route('student-bill-print', $payment->student_id),
                 'credit_balance' => round((float) $payment->student->credit_balance, 2),
                 'credit_generated' => round((float) $payment->credit_generated, 2),
+                'sms' => $sms,
             ]);
         }
 
-        return redirect()->route('bill-payment-receipt', $payment->id)
+        $redirect = redirect()->route('bill-payment-receipt', $payment->id)
             ->with('message_success', $message);
+
+        if ($sms) {
+            $redirect->with('payment_sms_status', $sms);
+        }
+
+        return $redirect;
     }
 
     private function errorResponse(Request $request, string $message, int $status = 422)

@@ -12,6 +12,7 @@ use App\Models\StudentDoc;
 use App\Services\Billing\StudentBillSyncService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class StudentClassAssignmentController extends Controller
 {
@@ -147,16 +148,11 @@ class StudentClassAssignmentController extends Controller
         $schoolClass = SchoolClass::findOrFail($validated['school_class_id']);
         $academicYear = AcademicYear::findOrFail($validated['academic_year_id']);
 
-        $student->school_class_id = $schoolClass->id;
-        $student->class_name = $schoolClass->name;
-        $student->academic_year_id = $academicYear->id;
-        $student->academic_year = $academicYear->name;
-        $student->academic_term_id = $validated['academic_term_id'];
-        $student->updated_by = Auth::id();
-        $student->save();
-
-        $syncStats = app(StudentBillSyncService::class)->syncForStudent(
-            $student->fresh(['schoolClass.category'])
+        $syncStats = $this->assignStudentToClass(
+            $student,
+            $schoolClass,
+            $academicYear,
+            (int) $validated['academic_term_id']
         );
 
         $preview = app(StudentBillSyncService::class)->previewSetupForEnrollment(
@@ -191,6 +187,146 @@ class StudentClassAssignmentController extends Controller
         }
 
         return back()->with('message_success', $message);
+    }
+
+    public function bulkCandidates(Request $request)
+    {
+        $validated = $request->validate([
+            'q' => 'nullable|string|max:100',
+            'school_class_id' => 'nullable|exists:school_classes,id',
+            'unassigned_only' => 'nullable|boolean',
+        ]);
+
+        $query = trim($validated['q'] ?? '');
+        $unassignedOnly = $request->boolean('unassigned_only');
+
+        $students = Student::query()
+            ->with(['schoolClass.category'])
+            ->where('status', 'Active')
+            ->when($unassignedOnly, fn ($q) => $q->whereNull('school_class_id'))
+            ->when($validated['school_class_id'] ?? null, fn ($q, $v) => $q->where('school_class_id', $v))
+            ->when($query !== '', function ($q) use ($query) {
+                $q->where(function ($inner) use ($query) {
+                    $inner->where('student_id', 'like', "%{$query}%")
+                        ->orWhere('firstname', 'like', "%{$query}%")
+                        ->orWhere('othername', 'like', "%{$query}%")
+                        ->orWhere('surname', 'like', "%{$query}%")
+                        ->orWhere('class_name', 'like', "%{$query}%");
+                });
+            })
+            ->orderBy('surname')
+            ->orderBy('firstname')
+            ->limit(500)
+            ->get()
+            ->map(fn (Student $student) => array_merge($this->searchResultPayload($student), [
+                'school_class_id' => $student->school_class_id,
+                'academic_year_id' => $student->academic_year_id,
+                'academic_term_id' => $student->academic_term_id,
+            ]));
+
+        return response()->json([
+            'students' => $students,
+            'total' => $students->count(),
+        ]);
+    }
+
+    public function bulkAssign(Request $request)
+    {
+        $validated = $request->validate([
+            'student_ids' => 'required|array|min:1|max:500',
+            'student_ids.*' => 'integer|exists:students,id',
+            'school_class_id' => 'required|exists:school_classes,id',
+            'academic_year_id' => 'required|exists:academic_years,id',
+            'academic_term_id' => 'required|exists:academic_terms,id',
+        ]);
+
+        $schoolClass = SchoolClass::findOrFail($validated['school_class_id']);
+        $academicYear = AcademicYear::findOrFail($validated['academic_year_id']);
+        $termId = (int) $validated['academic_term_id'];
+
+        $assigned = 0;
+        $skipped = [];
+        $syncTotals = ['bills_created' => 0, 'bills_updated' => 0];
+
+        DB::transaction(function () use (
+            $validated,
+            $schoolClass,
+            $academicYear,
+            $termId,
+            &$assigned,
+            &$skipped,
+            &$syncTotals
+        ) {
+            foreach (array_unique($validated['student_ids']) as $studentId) {
+                $student = Student::find($studentId);
+
+                if (! $student || $student->status !== 'Active') {
+                    $skipped[] = [
+                        'id' => (int) $studentId,
+                        'reason' => 'Student is not active or was not found.',
+                    ];
+
+                    continue;
+                }
+
+                $syncStats = $this->assignStudentToClass($student, $schoolClass, $academicYear, $termId);
+                $syncTotals['bills_created'] += $syncStats['bills_created'];
+                $syncTotals['bills_updated'] += $syncStats['bills_updated'];
+                $assigned++;
+            }
+        });
+
+        $preview = app(StudentBillSyncService::class)->previewSetupForEnrollment(
+            (int) $validated['school_class_id'],
+            (int) $validated['academic_year_id'],
+            (int) $validated['academic_term_id']
+        );
+
+        $message = sprintf(
+            '%d student(s) assigned to %s (%s).',
+            $assigned,
+            $schoolClass->name,
+            $academicYear->name
+        );
+
+        if ($skipped) {
+            $message .= sprintf(' %d skipped.', count($skipped));
+        }
+
+        if ($preview['setup_found']) {
+            $message .= sprintf(
+                ' %d bill(s) created, %d updated in total.',
+                $syncTotals['bills_created'],
+                $syncTotals['bills_updated']
+            );
+        }
+
+        return response()->json([
+            'message' => $message,
+            'assigned' => $assigned,
+            'skipped' => $skipped,
+            'sync_stats' => $syncTotals,
+            'preview' => $preview,
+        ]);
+    }
+
+    private function assignStudentToClass(
+        Student $student,
+        SchoolClass $schoolClass,
+        AcademicYear $academicYear,
+        int $termId
+    ): array {
+        $student->school_class_id = $schoolClass->id;
+        $student->class_name = $schoolClass->name;
+        $student->academic_year_id = $academicYear->id;
+        $student->academic_year = $academicYear->name;
+        $student->academic_term_id = $termId;
+        $student->updated_by = Auth::id();
+        $student->save();
+
+        return app(StudentBillSyncService::class)->syncForStudent(
+            $student->fresh(['schoolClass.category'])
+        );
     }
 
     private function searchResultPayload(Student $student): array

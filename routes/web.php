@@ -10,6 +10,7 @@ use App\Http\Controllers\UserManagement\UserManagementController;
 use App\Http\Controllers\Staff\StaffController;
 use App\Http\Controllers\Student\StudentController;
 use App\Http\Controllers\Student\AcademicYearController;
+use App\Http\Controllers\Student\AcademicTermController;
 use App\Http\Controllers\Student\SchoolClassController;
 use App\Http\Controllers\Student\ClassCategoryController;
 use App\Http\Controllers\Student\ClassTeacherController;
@@ -96,6 +97,13 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         Route::post('update-academic-year-process', 'update')->name('update-academic-year-process');
     });
 
+   Route::controller(AcademicTermController::class)->group(function () {
+        Route::get('academic-terms', 'index')->name('academic-terms');
+        Route::post('add-academic-term-process', 'store')->name('add-academic-term-process');
+        Route::get('get-academic-term-id/{id}', 'show')->name('get-academic-term-id');
+        Route::post('update-academic-term-process', 'update')->name('update-academic-term-process');
+    });
+
    Route::controller(SchoolClassController::class)->group(function () {
         Route::get('school-classes', 'index')->name('school-classes');
         Route::post('add-school-class-process', 'store')->name('add-school-class-process');
@@ -122,7 +130,9 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         Route::get('student-class-assignment-search', 'search')->name('student-class-assignment-search');
         Route::get('get-student-class-assignment/{id}', 'show')->name('get-student-class-assignment');
         Route::get('student-class-assignment-preview', 'preview')->name('student-class-assignment-preview');
+        Route::get('student-class-assignment-bulk-candidates', 'bulkCandidates')->name('student-class-assignment-bulk-candidates');
         Route::post('assign-student-class-process', 'assign')->name('assign-student-class-process');
+        Route::post('assign-student-class-bulk-process', 'bulkAssign')->name('assign-student-class-bulk-process');
     });
 /* End StudentController*/
 

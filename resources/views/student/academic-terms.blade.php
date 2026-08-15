@@ -1,4 +1,4 @@
-@php $pageName = "settings"; $subpageName = "academic-years"; @endphp
+@php $pageName = "settings"; $subpageName = "academic-terms"; @endphp
 
 @extends('layouts.app')
 
@@ -11,19 +11,19 @@
             <h1 class="fw-semibold mb-4 h6 text-primary-light">SETTINGS</h1>
             <div>
                 <a href="{{ route('dashboard') }}" class="text-secondary-light hover-text-primary hover-underline">Dashboard</a>
-                <span class="text-secondary-light"> / Settings / Academic Years</span>
+                <span class="text-secondary-light"> / Settings / Academic Terms</span>
             </div>
         </div>
         <div class="d-flex flex-wrap gap-2">
-            <a href="{{ route('academic-terms') }}" class="btn btn-outline-primary-600 d-flex align-items-center gap-6">
-                <i class="ri-calendar-event-line"></i> Academic Terms
+            <a href="{{ route('academic-years') }}" class="btn btn-outline-primary-600 d-flex align-items-center gap-6">
+                <i class="ri-calendar-line"></i> Academic Years
             </a>
             <a href="{{ route('academic-session') }}" class="btn btn-outline-primary-600 d-flex align-items-center gap-6">
                 <i class="ri-calendar-2-line"></i> Set Current Session
             </a>
             <button type="button" class="my-sidebar-btn btn btn-primary-600 d-flex align-items-center gap-6">
                 <span class="d-flex text-md"><i class="ri-add-large-line"></i></span>
-                Add Academic Year
+                Add Academic Term
             </button>
         </div>
     </div>
@@ -42,26 +42,28 @@
                         <thead>
                             <tr>
                                 <th>#</th>
-                                <th>Academic Year</th>
+                                <th>Academic Term</th>
+                                <th>Order</th>
                                 <th>Status</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($academicYears as $year)
+                            @foreach($academicTerms as $term)
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
-                                <td><span class="text-primary-600 fw-semibold">{{ $year->name }}</span></td>
+                                <td><span class="text-primary-600 fw-semibold">{{ $term->name }}</span></td>
+                                <td>{{ $term->sort_order }}</td>
                                 <td>
-                                    @if($year->status == 'Active')
+                                    @if($term->status == 'Active')
                                         <span class="bg-success-100 text-success-600 px-24 py-4 radius-4 fw-medium text-sm">Active</span>
                                     @else
-                                        <span class="bg-danger-100 text-danger-600 px-24 py-4 radius-4 fw-medium text-sm">{{ $year->status }}</span>
+                                        <span class="bg-danger-100 text-danger-600 px-24 py-4 radius-4 fw-medium text-sm">{{ $term->status }}</span>
                                     @endif
                                 </td>
                                 <td>
-                                    <button type="button" data-url="{{ route('get-academic-year-id', $year->id) }}"
-                                        class="edit-sidebar-btn btn btn-sm btn-outline-primary-600 show-year-edit">
+                                    <button type="button" data-url="{{ route('get-academic-term-id', $term->id) }}"
+                                        class="edit-sidebar-btn btn btn-sm btn-outline-primary-600 show-term-edit">
                                         <i class="ri-edit-2-line"></i> Edit
                                     </button>
                                 </td>
@@ -75,8 +77,8 @@
     </div>
 </div>
 
-@include('student.modals.add-academic-year-modal')
-@include('student.modals.edit-academic-year-modal')
+@include('student.modals.add-academic-term-modal')
+@include('student.modals.edit-academic-term-modal')
 
 @endsection
 
@@ -99,11 +101,12 @@
         $('.overlay').removeClass('active');
     });
 
-    $('body').on('click', '.show-year-edit', function () {
+    $('body').on('click', '.show-term-edit', function () {
         $.get($(this).data('url'), function (data) {
-            $('#edit_year_id').val(data.id);
-            $('#edit_year_name').val(data.name);
-            $('#edit_year_status').val(data.status);
+            $('#edit_term_id').val(data.id);
+            $('#edit_term_name').val(data.name);
+            $('#edit_term_sort_order').val(data.sort_order);
+            $('#edit_term_status').val(data.status);
         });
     });
 </script>

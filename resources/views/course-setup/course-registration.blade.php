@@ -1229,8 +1229,8 @@
 
             if (!courses.length) {
                 showPlaceholder(
-                    'No courses found',
-                    'Add courses under Course Setup before registering them here.',
+                    'No eligible subjects',
+                    data.message || 'No subjects are linked to the selected class category.',
                     'ri-book-open-line'
                 );
                 return;

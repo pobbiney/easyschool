@@ -10,6 +10,7 @@ use App\Models\CourseRegistration;
 use App\Models\CourseTeachingAssignment;
 use App\Models\SchoolClass;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
 class CourseRegistrationController extends Controller
@@ -87,6 +88,16 @@ class CourseRegistrationController extends Controller
 
         if (! $this->isAssignableCourse($course)) {
             $message = 'This course cannot be registered.';
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message], 422);
+            }
+
+            return back()->with('message_error', $message);
+        }
+
+        if (! $this->courseIsEligibleForClass($course, (int) $validated['school_class_id'])) {
+            $message = 'This subject is not linked to the selected class category.';
 
             if ($request->expectsJson()) {
                 return response()->json(['message' => $message], 422);
@@ -178,13 +189,27 @@ class CourseRegistrationController extends Controller
 
     private function buildCoursesPayload(int $schoolClassId, int $academicTermId, int $academicYearId): array
     {
+        $schoolClass = SchoolClass::with('category')->findOrFail($schoolClassId);
+
+        if (! $schoolClass->class_category_id) {
+            return [
+                'courses' => [],
+                'stats' => ['total' => 0, 'registered' => 0, 'unregistered' => 0],
+                'has_registrations' => false,
+                'class_category' => null,
+                'message' => 'The selected class has no category assigned. Assign a class category before registering subjects.',
+            ];
+        }
+
+        $eligibleCourseIds = $this->eligibleCourseIdsForClass($schoolClassId);
+
         $assignableCourses = $this->assignableCourses(
             Course::topLevel()
                 ->with(['subCourses.parent', 'parent'])
                 ->where('status', 'Active')
                 ->orderBy('name')
                 ->get()
-        );
+        )->filter(fn (Course $course) => $eligibleCourseIds->contains($course->id));
 
         $registrations = CourseRegistration::query()
             ->where('school_class_id', $schoolClassId)
@@ -204,12 +229,13 @@ class CourseRegistrationController extends Controller
                 'is_sub_course' => $course->isSubCourse(),
                 'is_registered' => $registration !== null,
                 'registration_id' => $registration?->id,
+                'is_eligible' => true,
             ];
         })->values();
 
         $registeredCount = $courses->where('is_registered', true)->count();
 
-        return [
+        $payload = [
             'courses' => $courses,
             'stats' => [
                 'total' => $courses->count(),
@@ -217,7 +243,14 @@ class CourseRegistrationController extends Controller
                 'unregistered' => max($courses->count() - $registeredCount, 0),
             ],
             'has_registrations' => $registeredCount > 0,
+            'class_category' => $schoolClass->category?->name,
         ];
+
+        if ($courses->isEmpty()) {
+            $payload['message'] = 'No subjects are linked to the '.($schoolClass->category?->name ?? 'selected').' class category. Link subjects to this class category under Course Setup.';
+        }
+
+        return $payload;
     }
 
     private function buildRegisteredPayload(array $filters): array
@@ -295,5 +328,24 @@ class CourseRegistrationController extends Controller
         }
 
         return $course->subCourses()->where('status', 'Active')->doesntExist();
+    }
+
+    private function eligibleCourseIdsForClass(int $schoolClassId): Collection
+    {
+        $schoolClass = SchoolClass::query()->find($schoolClassId);
+
+        if (! $schoolClass?->class_category_id) {
+            return collect();
+        }
+
+        return Course::query()
+            ->where('status', 'Active')
+            ->whereHas('classCategories', fn ($query) => $query->where('class_categories.id', $schoolClass->class_category_id))
+            ->pluck('id');
+    }
+
+    private function courseIsEligibleForClass(Course $course, int $schoolClassId): bool
+    {
+        return $this->eligibleCourseIdsForClass($schoolClassId)->contains($course->id);
     }
 }
