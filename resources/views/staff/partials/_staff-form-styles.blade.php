@@ -125,4 +125,13 @@
         background: var(--white, #fff);
         padding: 16px 20px;
     }
+
+    .qualification-row {
+        background: var(--neutral-50, #f9fafb);
+        border-color: var(--neutral-200, #e5e7eb) !important;
+    }
+
+    .qualification-row-label {
+        color: var(--primary-600, #25A194);
+    }
 </style>

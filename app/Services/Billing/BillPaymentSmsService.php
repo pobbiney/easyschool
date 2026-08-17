@@ -6,6 +6,7 @@ use App\Models\BillPayment;
 use App\Models\SchoolSetting;
 use App\Models\Student;
 use App\Services\MNotifyService;
+use App\Support\GhanaPhone;
 use Illuminate\Support\Facades\Log;
 
 class BillPaymentSmsService
@@ -94,34 +95,11 @@ class BillPaymentSmsService
         }
 
         foreach ($phones as $phone) {
-            $normalized = $this->normalizeGhanaPhone($phone);
+            $normalized = GhanaPhone::normalize($phone);
 
             if ($normalized) {
                 return $normalized;
             }
-        }
-
-        return null;
-    }
-
-    private function normalizeGhanaPhone(?string $phone): ?string
-    {
-        $digits = preg_replace('/\D/', '', trim((string) $phone));
-
-        if ($digits === '') {
-            return null;
-        }
-
-        if (str_starts_with($digits, '233') && strlen($digits) === 12) {
-            return $digits;
-        }
-
-        if (str_starts_with($digits, '0') && strlen($digits) === 10) {
-            return $digits;
-        }
-
-        if (strlen($digits) === 9) {
-            return '0'.$digits;
         }
 
         return null;

@@ -1,4 +1,4 @@
-@php $pageName = "staff"; $subpageName = "add-staff"; @endphp
+@php $pageName = "hr"; $subpageName = "add-staff"; @endphp
 
 @extends('layouts.app')
 
@@ -12,7 +12,7 @@
 
     <div class="page-header breadcrumb d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
         <div>
-            <h1 class="fw-semibold mb-4 h6 text-primary-light">STAFF MANAGEMENT</h1>
+            <h1 class="fw-semibold mb-4 h6 text-primary-light">HR</h1>
             <div>
                 <a href="{{ route('dashboard') }}" class="text-secondary-light hover-text-primary hover-underline">Dashboard</a>
                 <a href="{{ route('list-staff') }}" class="text-secondary-light hover-text-primary hover-underline"> / Staff List</a>
@@ -54,6 +54,7 @@
                         <ul class="staff-tip-list">
                             <li><i class="ri-checkbox-circle-line"></i><span>Fill in all required fields marked with *.</span></li>
                             <li><i class="ri-checkbox-circle-line"></i><span>System login is optional — enable it only when needed.</span></li>
+                            <li><i class="ri-checkbox-circle-line"></i><span>Add all academic qualifications. Certificates are optional.</span></li>
                             <li><i class="ri-checkbox-circle-line"></i><span>User category controls which screens they can access.</span></li>
                         </ul>
                     </div>
@@ -159,11 +160,6 @@
                     <div class="card-body p-24">
                         <div class="row gy-3">
                             <div class="col-md-6">
-                                <label class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Position <span class="text-danger-600">*</span></label>
-                                <input type="text" name="position" class="form-control" value="{{ old('position') }}" placeholder="e.g. Mathematics Teacher">
-                                @error('position') <small class="text-danger-600">{{ $message }}</small> @enderror
-                            </div>
-                            <div class="col-md-6">
                                 <label class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Status <span class="text-danger-600">*</span></label>
                                 <select class="form-control form-select" name="status">
                                     <option value="" selected disabled>Select status</option>
@@ -175,6 +171,10 @@
                         </div>
                     </div>
                 </div>
+
+                @include('staff.partials._section-hr-employment')
+
+                @include('staff.partials._section-academic-qualifications')
 
                 @include('staff.partials._section-system-access')
             </div>
@@ -233,4 +233,5 @@
         });
     })();
 </script>
+@include('staff.partials._qualification-scripts')
 @endsection

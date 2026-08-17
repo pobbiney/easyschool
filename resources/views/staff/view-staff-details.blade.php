@@ -1,2528 +1,423 @@
-<!-- page title -->
-@php $pageName = "staff"; $subpageName = "add-staff"; @endphp
+@php
+    $pageName = "hr";
+    $subpageName = "list-staff";
+    $staff = $datas;
+    $activeTab = request('tab', 'overview');
+    $positionName = $staff->hrPosition?->name ?: ($staff->position ?: '—');
+    $initials = strtoupper(substr((string) ($staff->firstname ?? ''), 0, 1).substr((string) ($staff->surname ?? ''), 0, 1));
+    $pendingLeave = $leaveRequests->where('status', 'pending')->count();
+    $presentDays = $attendance->where('status', 'present')->count();
+    $latestSlip = $payslips->first();
+    $typeThemes = [
+        'Annual Leave' => 'amber',
+        'Sick Leave' => 'rose',
+        'Maternity Leave' => 'pink',
+        'Casual Leave' => 'sky',
+        'Study Leave' => 'violet',
+    ];
+    $typeTheme = function ($type) use ($typeThemes) {
+        $name = is_object($type) ? ($type->name ?? '') : (string) $type;
 
+        return $typeThemes[$name] ?? 'teal';
+    };
+    $leavePill = function ($status) {
+        return match ($status) {
+            'approved' => 'ac-pill-emerald',
+            'rejected' => 'ac-pill-rose',
+            default => 'ac-pill-draft',
+        };
+    };
+    $attPill = function ($status) {
+        return match ($status) {
+            'present' => 'ac-pill-present',
+            'absent' => 'ac-pill-absent',
+            'late' => 'ac-pill-late',
+            'on_leave' => 'ac-pill-excused',
+            default => 'ac-pill-slate',
+        };
+    };
+@endphp
 @extends('layouts.app')
- 
-@section('content')
 
-<div class="dashboard-main-body">
-
-        <div class="page-header breadcrumb d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-            <div class="">
-                <h1 class="fw-semibold mb-4 h6 text-primary-light">STAFF MANAGEMENT</h1>
-                <div class="">
-                <a href="#" class="text-secondary-light hover-text-primary hover-underline">Dashboard </a>
-                <a href="#" class="text-secondary-light hover-text-primary hover-underline d-none"> /
-                    Staff Management</a>
-                <span class="text-secondary-light">/ View Staff Details</span>
-                </div>
-            </div>
-            
-        </div>
-
-         <div class="mt-24">
-            <div class="card h-100">
-                <div class="card-body p-24">
-                    <div class="d-flex gap-32 flex-md-row flex-column">
-                        <div class="max-w-300-px w-100 text-center">
-                            <figure class="mb-24 w-120-px h-120-px mx-auto rounded-circle overflow-hidden">
-                                @if(!empty($datas->picture))
-                                 <img src="{{ $datas->picture }}" alt="Student Image" class="w-100 h-100 object-fit-cover">
-                                 @elseif(strtolower($datas->gender) == 'male')
-                                    <img src="{{ asset('assets/images/thumbs/edit-profile-img.png') }}"
-                                        alt="Male Staff"
-                                        class="flex-shrink-0 me-12 radius-8"  >
-                                @else
-                                    <img src="{{ asset('assets/images/thumbs/studnt-edit-profile-img.png') }}"
-                                        alt="Female Staff"
-                                        class="flex-shrink-0 me-12 radius-8"  >
-                                @endif
-                            </figure>
-                            <h2 class="h6 text-primary-light mb-16 fw-semibold">{{ $datas->surname. ' '.$datas->firstname }}</h2>
-                            <p class="mb-0">Staff No: <span class="text-primary-600 fw-semibold">{{ $datas->employee_id }}</span>
-                            </p>
-                             
-                            <div class="mt-32 d-flex gap-16 w-100">
-                                
-                                <a href="{{route('edit-staff',Crypt::encrypt($datas->id))}}"
-                                    class="btn btn-primary-600 border fw-medium border-primary-600 text-md d-flex justify-content-center align-items-center gap-8 flex-grow-1 px-12 py-8 radius-8">
-                                    <span class="d-flex text-lg">
-                                        <i class="ri-edit-line"></i>
-                                    </span>
-                                    Edit
-                                </a>
-                            </div>
-                        </div>
-                        <div class="">
-                            <span class="h-100 w-1-px bg-neutral-200"></span>
-                        </div>
-                        <div class="flex-grow-1">
-                            <div class="pb-16 border-bottom d-flex align-items-center justify-content-between gap-20">
-                                <h3 class="h6 text-primary-light text-lg mb-0 fw-semibold">Personal Info</h3>
-                               
-                                @if ($datas->status == "Active")
-                                    <span class="bg-success-100 text-success-600 px-16 py-4 radius-4 fw-medium text-sm">{{ $datas->status }}</span>
-                                    @elseif ($datas->status == "Inactive")
-                                    <span class="bg-success-100 text-danger-600 px-16 py-4 radius-4 fw-medium text-sm">{{ $datas->status }}</span>
-                                @endif
-                                    
-                            </div>
-                            <div class="mt-16 d-flex flex-column gap-8">
-                                 <div class="d-flex gap-4">
-                                    <span class="fw-semibold text-sm text-primary-light w-110-px">Gender</span>
-                                    <span class="fw-normal text-sm text-secondary-light">: {{ $datas->gender }}</span>
-                                </div>
-                                <div class="d-flex gap-4">
-                                    <span class="fw-semibold text-sm text-primary-light w-110-px">Email</span>
-                                    <span class="fw-normal text-sm text-secondary-light">: {{ $datas->email }}</span>
-                                </div>
-                                <div class="d-flex gap-4">
-                                    <span class="fw-semibold text-sm text-primary-light w-110-px">Mobile No</span>
-                                    <span class="fw-normal text-sm text-secondary-light">: {{ $datas->mobile }}</span>
-                                </div>
-                                <div class="d-flex gap-4">
-                                    <span class="fw-semibold text-sm text-primary-light w-110-px">Marital Status</span>
-                                    <span class="fw-normal text-sm text-secondary-light">: {{ $datas->marital_status }}</span>
-                                </div>
-                                <div class="d-flex gap-4">
-                                    <span class="fw-semibold text-sm text-primary-light w-110-px">Position</span>
-                                    <span class="fw-normal text-sm text-secondary-light">: {{ $datas->position }}</span>
-                                </div>
-                                <div class="d-flex gap-4">
-                                    <span class="fw-semibold text-sm text-primary-light w-110-px">Nationality</span>
-                                    <span class="fw-normal text-sm text-secondary-light">: {{ $datas->country->name }}</span>
-                                </div>
-                                <div class="d-flex gap-4">
-                                    <span class="fw-semibold text-sm text-primary-light w-110-px">Residential Address</span>
-                                    <span class="fw-normal text-sm text-secondary-light">: {{ $datas->residential_address }}</span>
-                                </div>
-                                
-                                
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="my-16">
-                <ul class="nav nav-pills bordered-tab mb-3" id="pills-tab" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button
-                            class="nav-link d-flex align-items-center gap-8 text-secondary-light fw-medium text-sm text-hover-primary-600 text-capitalize bg-transparent px-20 py-12  active"
-                            id="pills-studentDetails-tab" data-bs-toggle="pill" data-bs-target="#pills-studentDetails"
-                            type="button" role="tab" aria-controls="pills-studentDetails" aria-selected="true">
-                            <span class="d-flex tab-icon line-height-1 text-md">
-                                <i class="ri-group-line"></i>
-                            </span>
-                             Education Background
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button
-                            class="nav-link d-flex align-items-center gap-8 text-secondary-light fw-medium text-sm text-hover-primary-600 text-capitalize bg-transparent px-20 py-12 "
-                            id="pills-attendance-tab" data-bs-toggle="pill" data-bs-target="#pills-attendance"
-                            type="button" role="tab" aria-controls="pills-attendance" aria-selected="false">
-                            <span class="d-flex tab-icon line-height-1 text-md">
-                                   <i class="ri-home-line"></i>
-                            </span>
-                            Bank Details
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button
-                            class="nav-link d-flex align-items-center gap-8 text-secondary-light fw-medium text-sm text-hover-primary-600 text-capitalize bg-transparent px-20 py-12 "
-                            id="pills-leave-tab" data-bs-toggle="pill" data-bs-target="#pills-leave" type="button"
-                            role="tab" aria-controls="pills-leave" aria-selected="false">
-                            <span class="d-flex tab-icon line-height-1 text-md">
-                                    <i class="ri-login-box-line"></i>
-                            </span>
-                            My Payslips
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button
-                            class="nav-link d-flex align-items-center gap-8 text-secondary-light fw-medium text-sm text-hover-primary-600 text-capitalize bg-transparent px-20 py-12 "
-                            id="pills-fees-tab" data-bs-toggle="pill" data-bs-target="#pills-fees" type="button"
-                            role="tab" aria-controls="pills-fees" aria-selected="false">
-                            <span class="d-flex tab-icon line-height-1 text-md">
-                                 <i class="ri-money-dollar-box-line"></i>
-                            </span>
-                            Finance
-                        </button>
-                    </li>
-                     
-                    
-                </ul>
-
-
-                <div class="tab-content" id="pills-tabContent">
-
-                    <!-- Student Details tab start -->
-                    <div class="tab-pane fade show active" id="pills-studentDetails" role="tabpanel"
-                        aria-labelledby="pills-studentDetails-tab" tabindex="0">
-                        <div class="row gy-4">
-                            <div class="col-12">
-                                <div class="shadow-1 radius-12 bg-base h-100 overflow-hidden">
-                                    <div
-                                        class="card-header border-bottom bg-base py-16 px-24 d-flex align-items-center justify-content-between">
-                                        <h6 class="text-lg fw-semibold mb-0">Educational Background</h6>
-                                    </div>
-                                    <div class="card-body p-0">
-                                          <table class="table bordered-table mb-0 data-table" id="dataTable" data-page-length='10'>
-                                            <thead>
-                                                <tr>
-                                                    <th scope="col">
-                                                        #
-                                                    </th>
-                                                    <th scope="col">Level</th>
-                                                    <th scope="col">Year  </th>
-                                                    <th scope="col">Qualification</th>
-                                                    <th scope="col">Certificate</th>
-                                                    
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach($listdoc as $list)
-                                                <tr>
-                                                    <td>
-                                                        {{$loop->iteration}}
-                                                    </td>
-                                                     
-                                                     
-                                                    <td>{{$list->level}}</td>
-                                                    <td>{{$list->year}}</td>
-                                                    <td>{{$list->qualification}}</td>
-                                                    <td> <a href="{{ asset('uploads/staffdocs/' . $list->document_path) }}" class="btn btn-sm btn-primary"> <i class="ri-file-text-line"></i> View Certificate</td>
-                                                     
-                                                </tr>
-                                                @endforeach
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                           
-                        </div>
-                    </div>
-                    <!-- Student Details tab end -->
-
-                    <!-- Attendance tab start -->
-                    <div class="tab-pane fade" id="pills-attendance" role="tabpanel"
-                        aria-labelledby="pills-attendance-tab" tabindex="0">
-                        <div class="shadow-1 radius-12 bg-base h-100 overflow-hidden">
-                            <div
-                                class="card-header border-bottom bg-base py-16 px-24 d-flex align-items-center justify-content-between">
-                                <h6 class="text-lg fw-semibold mb-0">Attendance</h6>
-                            </div>
-                            <div class="card-body p-0">
-                                <div class="px-20 pt-20">
-                                    <div class="row row-cols-xxl-5 row-cols-lg-3 row-cols-sm-2 row-cols-1 g-3">
-                                        <div class="col">
-                                            <div
-                                                class="card px-20 py-28 shadow-2 radius-8 h-100 border border-neutral-200 shadow-none gradient-bg-end-7">
-                                                <div class="card-body p-0">
-                                                    <div
-                                                        class="d-flex flex-wrap align-items-center justify-content-between gap-1">
-                                                        <div>
-                                                            <h6 class="fw-semibold mb-2">227</h6>
-                                                            <span class="fw-medium text-secondary-light text-sm">Total
-                                                                Present</span>
-                                                        </div>
-                                                        <span
-                                                            class="mb-0 w-48-px h-48-px bg-success-600 text-white flex-shrink-0 text-white d-flex justify-content-center align-items-center rounded-circle h6 mb-0">
-                                                            <img src="assets/images/icons/attendence-icon1.png"
-                                                                alt="Present Icon">
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col">
-                                            <div
-                                                class="card px-20 py-28 shadow-2 radius-8 h-100 border border-neutral-200 shadow-none gradient-bg-end-8">
-                                                <div class="card-body p-0">
-                                                    <div
-                                                        class="d-flex flex-wrap align-items-center justify-content-between gap-1">
-                                                        <div>
-                                                            <h6 class="fw-semibold mb-2">70</h6>
-                                                            <span class="fw-medium text-secondary-light text-sm">Total
-                                                                Absent</span>
-                                                        </div>
-                                                        <span
-                                                            class="mb-0 w-48-px h-48-px bg-danger-600 text-white flex-shrink-0 text-white d-flex justify-content-center align-items-center rounded-circle h6 mb-0">
-                                                            <img src="assets/images/icons/attendence-icon2.png"
-                                                                alt="Absent Icon">
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col">
-                                            <div
-                                                class="card px-20 py-28 shadow-2 radius-8 h-100 border border-neutral-200 shadow-none gradient-bg-end-9">
-                                                <div class="card-body p-0">
-                                                    <div
-                                                        class="d-flex flex-wrap align-items-center justify-content-between gap-1">
-                                                        <div>
-                                                            <h6 class="fw-semibold mb-2">27</h6>
-                                                            <span class="fw-medium text-secondary-light text-sm">Half
-                                                                Day</span>
-                                                        </div>
-                                                        <span
-                                                            class="mb-0 w-48-px h-48-px bg-purple-600 text-white flex-shrink-0 text-white d-flex justify-content-center align-items-center rounded-circle h6 mb-0">
-                                                            <img src="assets/images/icons/attendence-icon3.png"
-                                                                alt="Calendar Icon">
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col">
-                                            <div
-                                                class="card px-20 py-28 shadow-2 radius-8 h-100 border border-neutral-200 shadow-none gradient-bg-end-10">
-                                                <div class="card-body p-0">
-                                                    <div
-                                                        class="d-flex flex-wrap align-items-center justify-content-between gap-1">
-                                                        <div>
-                                                            <h6 class="fw-semibold mb-2">28</h6>
-                                                            <span class="fw-medium text-secondary-light text-sm">Total
-                                                                Late</span>
-                                                        </div>
-                                                        <span
-                                                            class="mb-0 w-48-px h-48-px bg-info-600 text-white flex-shrink-0 text-white d-flex justify-content-center align-items-center rounded-circle h6 mb-0">
-                                                            <img src="assets/images/icons/attendence-icon4.png"
-                                                                alt="Clock Icon">
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col">
-                                            <div
-                                                class="card px-20 py-28 shadow-2 radius-8 h-100 border border-neutral-200 shadow-none gradient-bg-end-11">
-                                                <div class="card-body p-0">
-                                                    <div
-                                                        class="d-flex flex-wrap align-items-center justify-content-between gap-1">
-                                                        <div>
-                                                            <h6 class="fw-semibold mb-2">12</h6>
-                                                            <span class="fw-medium text-secondary-light text-sm">Total
-                                                                Holiday</span>
-                                                        </div>
-                                                        <span
-                                                            class="mb-0 w-48-px h-48-px bg-orange text-white flex-shrink-0 text-white d-flex justify-content-center align-items-center rounded-circle h6 mb-0">
-                                                            <img src="assets/images/icons/attendence-icon5.png"
-                                                                alt="Holiday Icon">
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="mt-24 mb-16 mx-20">
-                                    <div
-                                        class="d-flex flex-wrap align-items-center gap-24 justify-content-between flex-wrap">
-                                        <div class="d-flex flex-wrap align-items-center gap-16 ">
-                                            <div class="">
-                                                <select class="form-control form-select">
-                                                    <option value="Jun 2025/2026">Jun 2025/2026</option>
-                                                    <option value="Jun 2026/2027">Jun 2026/2027</option>
-                                                    <option value="Jun 2027/2028">Jun 2027/2028</option>
-                                                    <option value="Jun 2028/2029">Jun 2028/2029</option>
-                                                </select>
-                                            </div>
-                                            <div class="dropdown">
-                                                <button type="button"
-                                                    class="px-12 py-8 border border-neutral-300 radius-8 d-flex align-items-center gap-20"
-                                                    data-bs-toggle="dropdown" aria-expanded="false">
-                                                    <span
-                                                        class="d-flex align-items-center gap-1 text-secondary-light text-sm">
-                                                        <i class="ri-file-upload-line text-md line-height-1"></i>
-                                                        Export
-                                                    </span>
-                                                    <span class="">
-                                                        <i class="ri-arrow-down-s-line"></i>
-                                                    </span>
-                                                </button>
-                                                <ul class="dropdown-menu p-12 border bg-base shadow">
-                                                    <li>
-                                                        <button type="button"
-                                                            class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-10"
-                                                            data-bs-toggle="modal" data-bs-target="#exampleModalView">
-                                                            <i class="ri-file-3-line"></i>
-                                                            PDF
-                                                        </button>
-                                                    </li>
-                                                    <li>
-                                                        <button type="button"
-                                                            class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-10"
-                                                            data-bs-toggle="modal" data-bs-target="#exampleModalEdit">
-                                                            <i class="ri-file-excel-line"></i>
-                                                            Excel
-                                                        </button>
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                        </div>
-                                        <div class="d-flex align-items-center flex-wrap gap-8">
-                                            <p class="text-primary-light text-sm fw-medium mb-0">
-                                                Present:
-                                                <span class="fw-semibold text-success-600">P </span>
-                                            </p>
-                                            <p class="text-primary-light text-sm fw-medium mb-0">
-                                                Absent:
-                                                <span class="fw-semibold text-danger-600">A </span>
-                                            </p>
-                                            <p class="text-primary-light text-sm fw-medium mb-0">
-                                                Holiday:
-                                                <span class="fw-semibold text-warning-600">H </span>
-                                            </p>
-                                            <p class="text-primary-light text-sm fw-medium mb-0">
-                                                Late:
-                                                <span class="fw-semibold text-info-600">L </span>
-                                            </p>
-                                            <p class="text-primary-light text-sm fw-medium mb-0">
-                                                Half Day:
-                                                <span class="fw-semibold text-purple-600">F </span>
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="table-responsive overflow-x-auto">
-                                    <table class="table mb-0 table-heading-dark-mode">
-                                        <thead>
-                                            <tr>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">Month
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">1</th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">2</th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">3</th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">4</th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">5</th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">6</th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">7</th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">8</th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">9</th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">10
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">11
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">12
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">13
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">14
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">15
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">15
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">16
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">17
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">18
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">19
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">20
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">21
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">22
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">23
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">24
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">25
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">26
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">27
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">28
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">29
-                                                </th>
-                                                <th class="bg-neutral-100 text-sm text-primary-light px-10 py-16">30
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td class="px-10 py-16 text-sm">Jan</td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">H</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">A</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">F</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">L</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">H</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">A</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">L</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">h</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">F</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">H</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">P</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">A</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">H</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">p</span>
-                                                </td>
-                                                <td class="px-10 py-14 text-sm text-uppercase">
-                                                    <span class="attendance">p</span>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td class="px-10 py-16 text-sm">Feb</td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                            </tr>
-                                            <tr>
-                                                <td class="px-10 py-16 text-sm">Mar</td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                            </tr>
-                                            <tr>
-                                                <td class="px-10 py-16 text-sm">Apr</td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                            </tr>
-                                            <tr>
-                                                <td class="px-10 py-16 text-sm">May</td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                            </tr>
-                                            <tr>
-                                                <td class="px-10 py-16 text-sm">May</td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">F</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">L</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">H</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">P</span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance">A</span></td>
-                                            </tr>
-                                            <tr>
-                                                <td class="px-10 py-16 text-sm">Jun</td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                            </tr>
-                                            <tr>
-                                                <td class="px-10 py-16 text-sm">Ju</td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                            </tr>
-                                            <tr>
-                                                <td class="px-10 py-16 text-sm">Aug</td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                            </tr>
-                                            <tr>
-                                                <td class="px-10 py-16 text-sm">Sep</td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                            </tr>
-                                            <tr>
-                                                <td class="px-10 py-16 text-sm">Oct</td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                            </tr>
-                                            <tr>
-                                                <td class="px-10 py-16 text-sm">Nov</td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                            </tr>
-                                            <tr>
-                                                <td class="px-10 py-16 text-sm">Dec</td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                                <td class="px-10 py-16 text-sm"><span class="attendance"></span></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Attendance tab end -->
-
-                    <!-- leaves tab start -->
-                    <div class="tab-pane fade" id="pills-leave" role="tabpanel" aria-labelledby="pills-leave-tab"
-                        tabindex="0">
-                        <div class="shadow-1 radius-12 bg-base h-100 overflow-hidden">
-                            <div
-                                class="card-header border-bottom bg-base py-10 px-20 d-flex align-items-center justify-content-between">
-                                <h6 class="text-lg fw-semibold mb-0">Leave </h6>
-                                <button type="button"
-                                    class="apply-leave-btn btn btn-primary-600 d-flex align-items-center gap-6 py-8 text-sm">
-                                    <span class="d-flex text-sm">
-                                        <i class="ri-calendar-close-line"></i>
-                                    </span>
-                                    Apply Leave
-                                </button>
-                            </div>
-                            <div class="card-body p-0 dataTable-wrapper">
-                                <div
-                                    class="d-flex flex-wrap align-items-center gap-24 justify-content-between px-20 py-12">
-                                    <div class="d-flex flex-wrap align-items-center gap-16">
-                                        <form class="navbar-search dt-search m-0">
-                                            <input type="text" class="dt-input bg-transparent radius-4"
-                                                aria-controls="dataTable" name="search" placeholder="Search...">
-                                            <iconify-icon icon="ion:search-outline" class="icon"></iconify-icon>
-                                        </form>
-                                        <div class="">
-                                            <select class="form-control form-select">
-                                                <option value="Year 2025/2026">Year 2025/2026</option>
-                                                <option value="Year 2026/2027">Year 2026/2027</option>
-                                                <option value="Year 2027/2028">Year 2027/2028</option>
-                                                <option value="Year 2028/2029">Year 2028/2029</option>
-                                            </select>
-                                        </div>
-                                        <div class="dropdown">
-                                            <button type="button"
-                                                class="px-12 py-5-px border border-neutral-300 radius-8 d-flex align-items-center gap-20 "
-                                                data-bs-toggle="dropdown" aria-expanded="false">
-                                                <span
-                                                    class="d-flex align-items-center gap-1 text-secondary-light text-sm">
-                                                    <i class="ri-file-upload-line text-md line-height-1"></i>
-                                                    Export
-                                                </span>
-                                                <span class="">
-                                                    <i class="ri-arrow-down-s-line"></i>
-                                                </span>
-                                            </button>
-                                            <ul class="dropdown-menu p-12 border bg-base shadow">
-                                                <li>
-                                                    <button type="button"
-                                                        class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-10"
-                                                        data-bs-toggle="modal" data-bs-target="#exampleModalView">
-                                                        <i class="ri-file-3-line"></i>
-                                                        PDF
-                                                    </button>
-                                                </li>
-                                                <li>
-                                                    <button type="button"
-                                                        class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-10"
-                                                        data-bs-toggle="modal" data-bs-target="#exampleModalEdit">
-                                                        <i class="ri-file-excel-line"></i>
-                                                        Excel
-                                                    </button>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                    <div class="d-flex align-items-center gap-8 text-secondary-light">
-                                        <span class="">
-                                            Rows per page:
-                                        </span>
-                                        <div class="dt-length">
-                                            <select name="dataTable_length" aria-controls="dataTable"
-                                                class="dt-input form-control form-select">
-                                                <option value="5">5</option>
-                                                <option value="10" selected>10</option>
-                                                <option value="25">25</option>
-                                                <option value="50">50</option>
-                                                <option value="100">100</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                                <table class="table bordered-table mb-0 table-heading-dark-mode w-100 data-table"
-                                    id="dataTable" data-page-length='10'>
-                                    <thead>
-                                        <tr>
-                                            <th scope="col">
-                                                <div class="form-check style-check d-flex align-items-center">
-                                                    <input class="form-check-input" type="checkbox">
-                                                    <label class="form-check-label">
-                                                        S.L
-                                                    </label>
-                                                </div>
-                                            </th>
-                                            <th scope="col">Leave Type</th>
-                                            <th scope="col">Date</th>
-                                            <th scope="col">Duration</th>
-                                            <th scope="col">Apply Date</th>
-                                            <th scope="col">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>
-                                                <div class="form-check style-check d-flex align-items-center">
-                                                    <input class="form-check-input" type="checkbox">
-                                                    <label class="form-check-label">
-                                                        01
-                                                    </label>
-                                                </div>
-                                            </td>
-                                            <td>Medical Leave</td>
-                                            <td>07 May 2025 - 08 may 2025</td>
-                                            <td>1</td>
-                                            <td>07 May 2025 </td>
-                                            <td>
-                                                <span
-                                                    class="bg-success-100 text-success-600 px-20 py-4 radius-4 fw-medium text-sm">Approved</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="form-check style-check d-flex align-items-center">
-                                                    <input class="form-check-input" type="checkbox">
-                                                    <label class="form-check-label">
-                                                        02
-                                                    </label>
-                                                </div>
-                                            </td>
-                                            <td>Special Leave</td>
-                                            <td>07 May 2025 - 08 may 2025</td>
-                                            <td>3</td>
-                                            <td>07 May 2025 </td>
-                                            <td>
-                                                <span
-                                                    class="bg-warning-100 text-warning-600 px-20 py-4 radius-4 fw-medium text-sm">Pending</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="form-check style-check d-flex align-items-center">
-                                                    <input class="form-check-input" type="checkbox">
-                                                    <label class="form-check-label">
-                                                        03
-                                                    </label>
-                                                </div>
-                                            </td>
-                                            <td>Medical Leave</td>
-                                            <td>07 May 2025 - 08 may 2025</td>
-                                            <td>5</td>
-                                            <td>07 May 2025 </td>
-                                            <td>
-                                                <span
-                                                    class="bg-success-100 text-success-600 px-20 py-4 radius-4 fw-medium text-sm">Approved</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="form-check style-check d-flex align-items-center">
-                                                    <input class="form-check-input" type="checkbox">
-                                                    <label class="form-check-label">
-                                                        04
-                                                    </label>
-                                                </div>
-                                            </td>
-                                            <td>Casual Leave</td>
-                                            <td>07 May 2025 - 08 may 2025</td>
-                                            <td>6</td>
-                                            <td>07 May 2025 </td>
-                                            <td>
-                                                <span
-                                                    class="bg-warning-100 text-warning-600 px-20 py-4 radius-4 fw-medium text-sm">Pending</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="form-check style-check d-flex align-items-center">
-                                                    <input class="form-check-input" type="checkbox">
-                                                    <label class="form-check-label">
-                                                        05
-                                                    </label>
-                                                </div>
-                                            </td>
-                                            <td>Medical Leave</td>
-                                            <td>07 May 2025 - 08 may 2025</td>
-                                            <td>1</td>
-                                            <td>07 May 2025 </td>
-                                            <td>
-                                                <span
-                                                    class="bg-success-100 text-success-600 px-20 py-4 radius-4 fw-medium text-sm">Approved</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="form-check style-check d-flex align-items-center">
-                                                    <input class="form-check-input" type="checkbox">
-                                                    <label class="form-check-label">
-                                                        06
-                                                    </label>
-                                                </div>
-                                            </td>
-                                            <td>Special Leave</td>
-                                            <td>07 May 2025 - 08 may 2025</td>
-                                            <td>2</td>
-                                            <td>07 May 2025 </td>
-                                            <td>
-                                                <span
-                                                    class="bg-danger-100 text-danger-600 px-20 py-4 radius-4 fw-medium text-sm">Rejected</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="form-check style-check d-flex align-items-center">
-                                                    <input class="form-check-input" type="checkbox">
-                                                    <label class="form-check-label">
-                                                        07
-                                                    </label>
-                                                </div>
-                                            </td>
-                                            <td>Medical Leave</td>
-                                            <td>07 May 2025 - 08 may 2025</td>
-                                            <td>5</td>
-                                            <td>07 May 2025 </td>
-                                            <td>
-                                                <span
-                                                    class="bg-success-100 text-success-600 px-20 py-4 radius-4 fw-medium text-sm">Approved</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="form-check style-check d-flex align-items-center">
-                                                    <input class="form-check-input" type="checkbox">
-                                                    <label class="form-check-label">
-                                                        08
-                                                    </label>
-                                                </div>
-                                            </td>
-                                            <td>Casual Leave</td>
-                                            <td>07 May 2025 - 08 may 2025</td>
-                                            <td>6</td>
-                                            <td>07 May 2025 </td>
-                                            <td>
-                                                <span
-                                                    class="bg-danger-100 text-danger-600 px-20 py-4 radius-4 fw-medium text-sm">Rejected</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="form-check style-check d-flex align-items-center">
-                                                    <input class="form-check-input" type="checkbox">
-                                                    <label class="form-check-label">
-                                                        09
-                                                    </label>
-                                                </div>
-                                            </td>
-                                            <td>Medical Leave</td>
-                                            <td>07 May 2025 - 08 may 2025</td>
-                                            <td>1</td>
-                                            <td>07 May 2025 </td>
-                                            <td>
-                                                <span
-                                                    class="bg-success-100 text-success-600 px-20 py-4 radius-4 fw-medium text-sm">Approved</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="form-check style-check d-flex align-items-center">
-                                                    <input class="form-check-input" type="checkbox">
-                                                    <label class="form-check-label">
-                                                        10
-                                                    </label>
-                                                </div>
-                                            </td>
-                                            <td>Special Leave</td>
-                                            <td>07 May 2025 - 08 may 2025</td>
-                                            <td>2</td>
-                                            <td>07 May 2025 </td>
-                                            <td>
-                                                <span
-                                                    class="bg-danger-100 text-danger-600 px-20 py-4 radius-4 fw-medium text-sm">Rejected</span>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- leaves tab start -->
-
-                    <!-- Fees tab start -->
-                    <div class="tab-pane fade" id="pills-fees" role="tabpanel" aria-labelledby="pills-fees-tab"
-                        tabindex="0">
-                        <div class="shadow-1 radius-12 bg-base h-100 overflow-hidden">
-                            <div
-                                class="card-header border-bottom bg-base py-10 px-20 d-flex align-items-center justify-content-between">
-                                <h6 class="text-lg fw-semibold mb-0">Fees </h6>
-                                <button type="button"
-                                    class="collect-fees-btn btn btn-primary-600 d-flex align-items-center gap-6 py-8 text-sm">
-                                    <span class="d-flex text-sm">
-                                        <i class="ri-calendar-close-line"></i>
-                                    </span>
-                                    Collect Fees
-                                </button>
-                            </div>
-                            <div class="card-body p-0 dataTable-wrapper">
-                                <div class="p-20">
-                                    <div class="row g-3">
-                                        <div class="col-xl-3 col-sm-6">
-                                            <div
-                                                class="card px-20 py-28 shadow-2 radius-8 h-100 border border-neutral-200 shadow-none gradient-bg-end-10">
-                                                <div class="card-body p-0">
-                                                    <div
-                                                        class="d-flex flex-wrap align-items-center justify-content-between gap-1">
-                                                        <div>
-                                                            <h6 class="fw-semibold mb-2">$10,500</h6>
-                                                            <span class="fw-medium text-secondary-light text-sm">Total
-                                                                Amount</span>
-                                                        </div>
-                                                        <span
-                                                            class="mb-0 w-48-px h-48-px bg-info-600 text-white flex-shrink-0 text-white d-flex justify-content-center align-items-center rounded-circle h6 mb-0">
-                                                            <img src="assets/images/icons/fees-icon1.png"
-                                                                alt="Clock Icon">
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-xl-3 col-sm-6">
-                                            <div
-                                                class="card px-20 py-28 shadow-2 radius-8 h-100 border border-neutral-200 shadow-none gradient-bg-end-8">
-                                                <div class="card-body p-0">
-                                                    <div
-                                                        class="d-flex flex-wrap align-items-center justify-content-between gap-1">
-                                                        <div>
-                                                            <h6 class="fw-semibold mb-2">$200</h6>
-                                                            <span class="fw-medium text-secondary-light text-sm">Total
-                                                                Fine</span>
-                                                        </div>
-                                                        <span
-                                                            class="mb-0 w-48-px h-48-px bg-danger-600 text-white flex-shrink-0 text-white d-flex justify-content-center align-items-center rounded-circle h6 mb-0">
-                                                            <img src="assets/images/icons/fees-icon2.png"
-                                                                alt="Absent Icon">
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-xl-3 col-sm-6">
-                                            <div
-                                                class="card px-20 py-28 shadow-2 radius-8 h-100 border border-neutral-200 shadow-none gradient-bg-end-7">
-                                                <div class="card-body p-0">
-                                                    <div
-                                                        class="d-flex flex-wrap align-items-center justify-content-between gap-1">
-                                                        <div>
-                                                            <h6 class="fw-semibold mb-2">$7,500</h6>
-                                                            <span class="fw-medium text-secondary-light text-sm">Total
-                                                                Paid </span>
-                                                        </div>
-                                                        <span
-                                                            class="mb-0 w-48-px h-48-px bg-success-600 text-white flex-shrink-0 text-white d-flex justify-content-center align-items-center rounded-circle h6 mb-0">
-                                                            <img src="assets/images/icons/fees-icon3.png"
-                                                                alt="Present Icon">
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-xl-3 col-sm-6">
-                                            <div
-                                                class="card px-20 py-28 shadow-2 radius-8 h-100 border border-neutral-200 shadow-none gradient-bg-end-11">
-                                                <div class="card-body p-0">
-                                                    <div
-                                                        class="d-flex flex-wrap align-items-center justify-content-between gap-1">
-                                                        <div>
-                                                            <h6 class="fw-semibold mb-2">$3,000</h6>
-                                                            <span class="fw-medium text-secondary-light text-sm">Total
-                                                                Due</span>
-                                                        </div>
-                                                        <span
-                                                            class="mb-0 w-48-px h-48-px bg-orange text-white flex-shrink-0 text-white d-flex justify-content-center align-items-center rounded-circle h6 mb-0">
-                                                            <img src="assets/images/icons/fees-icon4.png"
-                                                                alt="Holiday Icon">
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div
-                                    class="d-flex flex-wrap align-items-center gap-24 justify-content-between px-20 pb-16">
-                                    <div class="d-flex flex-wrap align-items-center gap-16">
-                                        <form class="navbar-search dt-search m-0">
-                                            <input type="text" class="dt-input bg-transparent radius-4"
-                                                aria-controls="dataTable" name="search" placeholder="Search...">
-                                            <iconify-icon icon="ion:search-outline" class="icon"></iconify-icon>
-                                        </form>
-                                        <div class="">
-                                            <select class="form-control form-select">
-                                                <option value="Year 2025/2026">Year 2025/2026</option>
-                                                <option value="Year 2026/2027">Year 2026/2027</option>
-                                                <option value="Year 2027/2028">Year 2027/2028</option>
-                                                <option value="Year 2028/2029">Year 2028/2029</option>
-                                            </select>
-                                        </div>
-                                        <div class="dropdown">
-                                            <button type="button"
-                                                class="px-12 py-5-px border border-neutral-300 radius-8 d-flex align-items-center gap-20 "
-                                                data-bs-toggle="dropdown" aria-expanded="false">
-                                                <span
-                                                    class="d-flex align-items-center gap-1 text-secondary-light text-sm">
-                                                    <i class="ri-file-upload-line text-md line-height-1"></i>
-                                                    Export
-                                                </span>
-                                                <span class="">
-                                                    <i class="ri-arrow-down-s-line"></i>
-                                                </span>
-                                            </button>
-                                            <ul class="dropdown-menu p-12 border bg-base shadow">
-                                                <li>
-                                                    <button type="button"
-                                                        class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-10"
-                                                        data-bs-toggle="modal" data-bs-target="#exampleModalView">
-                                                        <i class="ri-file-3-line"></i>
-                                                        PDF
-                                                    </button>
-                                                </li>
-                                                <li>
-                                                    <button type="button"
-                                                        class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-10"
-                                                        data-bs-toggle="modal" data-bs-target="#exampleModalEdit">
-                                                        <i class="ri-file-excel-line"></i>
-                                                        Excel
-                                                    </button>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                    <div class="d-flex align-items-center gap-8 text-secondary-light">
-                                        <span class="">
-                                            Rows per page:
-                                        </span>
-                                        <div class="dt-length">
-                                            <select name="dataTable_length" aria-controls="dataTable"
-                                                class="dt-input form-control form-select">
-                                                <option value="5">5</option>
-                                                <option value="10" selected>10</option>
-                                                <option value="25">25</option>
-                                                <option value="50">50</option>
-                                                <option value="100">100</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                                <table class="table bordered-table mb-0 table-heading-dark-mode w-100 data-table"
-                                    id="dataTableTwo" data-page-length='10'>
-                                    <thead>
-                                        <tr>
-                                            <th scope="col">
-                                                <div class="form-check style-check d-flex align-items-center">
-                                                    <input class="form-check-input" type="checkbox">
-                                                    <label class="form-check-label">
-                                                        S.L
-                                                    </label>
-                                                </div>
-                                            </th>
-                                            <th scope="col">Fees Type</th>
-                                            <th scope="col">Due Date</th>
-                                            <th scope="col">Payment Type</th>
-                                            <th scope="col">Amount</th>
-                                            <th scope="col">Discount</th>
-                                            <th scope="col">Fine</th>
-                                            <th scope="col">Paid</th>
-                                            <th scope="col">Due</th>
-                                            <th scope="col">Paid Date</th>
-                                            <th scope="col">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>
-                                                <div class="form-check style-check d-flex align-items-center">
-                                                    <input class="form-check-input" type="checkbox">
-                                                    <label class="form-check-label">01</label>
-                                                </div>
-                                            </td>
-                                            <td>May Month Fees</td>
-                                            <td>05 May 2025</td>
-                                            <td>Bank</td>
-                                            <td>$700.50</td>
-                                            <td>10%</td>
-                                            <td>$50</td>
-                                            <td>$700.50</td>
-                                            <td>$0</td>
-                                            <td>12 May 2025</td>
-                                            <td>
-                                                <span
-                                                    class="bg-success-100 text-success-600 px-20 py-4 radius-4 fw-medium text-sm">
-                                                    Paid
-                                                </span>
-                                            </td>
-                                        </tr>
-
-                                        <tr>
-                                            <td>
-                                                <div class="form-check style-check d-flex align-items-center">
-                                                    <input class="form-check-input" type="checkbox">
-                                                    <label class="form-check-label">02</label>
-                                                </div>
-                                            </td>
-                                            <td>June Month Fees</td>
-                                            <td>05 Jun 2025</td>
-                                            <td>Cash</td>
-                                            <td>$680.00</td>
-                                            <td>5%</td>
-                                            <td>$30</td>
-                                            <td>$350.00</td>
-                                            <td>$330.00</td>
-                                            <td>09 Jun 2025</td>
-                                            <td>
-                                                <span
-                                                    class="bg-warning-100 text-warning-600 px-20 py-4 radius-4 fw-medium text-sm">
-                                                    Partial
-                                                </span>
-                                            </td>
-                                        </tr>
-
-                                        <tr>
-                                            <td>
-                                                <div class="form-check style-check d-flex align-items-center">
-                                                    <input class="form-check-input" type="checkbox">
-                                                    <label class="form-check-label">03</label>
-                                                </div>
-                                            </td>
-                                            <td>July Month Fees</td>
-                                            <td>05 Jul 2025</td>
-                                            <td>Bank</td>
-                                            <td>$700.00</td>
-                                            <td>10%</td>
-                                            <td>$0</td>
-                                            <td>$0.00</td>
-                                            <td>$700.00</td>
-                                            <td>-</td>
-                                            <td>
-                                                <span
-                                                    class="bg-danger-100 text-danger-600 px-20 py-4 radius-4 fw-medium text-sm">
-                                                    Unpaid
-                                                </span>
-                                            </td>
-                                        </tr>
-
-                                        <tr>
-                                            <td>
-                                                <div class="form-check style-check d-flex align-items-center">
-                                                    <input class="form-check-input" type="checkbox">
-                                                    <label class="form-check-label">04</label>
-                                                </div>
-                                            </td>
-                                            <td>August Month Fees</td>
-                                            <td>05 Aug 2025</td>
-                                            <td>Online</td>
-                                            <td>$750.00</td>
-                                            <td>15%</td>
-                                            <td>$40</td>
-                                            <td>$750.00</td>
-                                            <td>$0</td>
-                                            <td>07 Aug 2025</td>
-                                            <td>
-                                                <span
-                                                    class="bg-success-100 text-success-600 px-20 py-4 radius-4 fw-medium text-sm">
-                                                    Paid
-                                                </span>
-                                            </td>
-                                        </tr>
-
-                                        <tr>
-                                            <td>
-                                                <div class="form-check style-check d-flex align-items-center">
-                                                    <input class="form-check-input" type="checkbox">
-                                                    <label class="form-check-label">05</label>
-                                                </div>
-                                            </td>
-                                            <td>September Month Fees</td>
-                                            <td>05 Sep 2025</td>
-                                            <td>Bank</td>
-                                            <td>$720.00</td>
-                                            <td>10%</td>
-                                            <td>$25</td>
-                                            <td>$360.00</td>
-                                            <td>$360.00</td>
-                                            <td>10 Sep 2025</td>
-                                            <td>
-                                                <span
-                                                    class="bg-warning-100 text-warning-600 px-20 py-4 radius-4 fw-medium text-sm">
-                                                    Partial
-                                                </span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="form-check style-check d-flex align-items-center">
-                                                    <input class="form-check-input" type="checkbox">
-                                                    <label class="form-check-label">06</label>
-                                                </div>
-                                            </td>
-                                            <td>June month fees</td>
-                                            <td>05 Jun 2025</td>
-                                            <td>Cash</td>
-                                            <td>$700.50</td>
-                                            <td>5%</td>
-                                            <td>$0</td>
-                                            <td>$665.00</td>
-                                            <td>$35.50</td>
-                                            <td>07 Jun 2025</td>
-                                            <td><span
-                                                    class="bg-warning-100 text-warning-600 px-20 py-4 radius-4 fw-medium text-sm">Partial</span>
-                                            </td>
-                                        </tr>
-
-                                        <tr>
-                                            <td>
-                                                <div class="form-check style-check d-flex align-items-center">
-                                                    <input class="form-check-input" type="checkbox">
-                                                    <label class="form-check-label">07</label>
-                                                </div>
-                                            </td>
-                                            <td>July month fees</td>
-                                            <td>05 Jul 2025</td>
-                                            <td>Bank</td>
-                                            <td>$700.50</td>
-                                            <td>10%</td>
-                                            <td>$25</td>
-                                            <td>$700.50</td>
-                                            <td>$0</td>
-                                            <td>06 Jul 2025</td>
-                                            <td><span
-                                                    class="bg-success-100 text-success-600 px-20 py-4 radius-4 fw-medium text-sm">Paid</span>
-                                            </td>
-                                        </tr>
-
-                                        <tr>
-                                            <td>
-                                                <div class="form-check style-check d-flex align-items-center">
-                                                    <input class="form-check-input" type="checkbox">
-                                                    <label class="form-check-label">08</label>
-                                                </div>
-                                            </td>
-                                            <td>August month fees</td>
-                                            <td>05 Aug 2025</td>
-                                            <td>Card</td>
-                                            <td>$700.50</td>
-                                            <td>0%</td>
-                                            <td>$0</td>
-                                            <td>$0</td>
-                                            <td>$700.50</td>
-                                            <td>-</td>
-                                            <td><span
-                                                    class="bg-danger-100 text-danger-600 px-20 py-4 radius-4 fw-medium text-sm">Unpaid</span>
-                                            </td>
-                                        </tr>
-
-                                        <tr>
-                                            <td>
-                                                <div class="form-check style-check d-flex align-items-center">
-                                                    <input class="form-check-input" type="checkbox">
-                                                    <label class="form-check-label">09</label>
-                                                </div>
-                                            </td>
-                                            <td>September month fees</td>
-                                            <td>05 Sep 2025</td>
-                                            <td>Online</td>
-                                            <td>$700.50</td>
-                                            <td>5%</td>
-                                            <td>$15</td>
-                                            <td>$350.00</td>
-                                            <td>$350.50</td>
-                                            <td>08 Sep 2025</td>
-                                            <td><span
-                                                    class="bg-warning-100 text-warning-600 px-20 py-4 radius-4 fw-medium text-sm">Partial</span>
-                                            </td>
-                                        </tr>
-
-                                        <tr>
-                                            <td>
-                                                <div class="form-check style-check d-flex align-items-center">
-                                                    <input class="form-check-input" type="checkbox">
-                                                    <label class="form-check-label">10</label>
-                                                </div>
-                                            </td>
-                                            <td>October month fees</td>
-                                            <td>05 Oct 2025</td>
-                                            <td>Bank</td>
-                                            <td>$700.50</td>
-                                            <td>10%</td>
-                                            <td>$20</td>
-                                            <td>$700.50</td>
-                                            <td>$0</td>
-                                            <td>06 Oct 2025</td>
-                                            <td><span
-                                                    class="bg-success-100 text-success-600 px-20 py-4 radius-4 fw-medium text-sm">Paid</span>
-                                            </td>
-                                        </tr>
-
-                                        <tr>
-                                            <td>
-                                                <div class="form-check style-check d-flex align-items-center">
-                                                    <input class="form-check-input" type="checkbox">
-                                                    <label class="form-check-label">11</label>
-                                                </div>
-                                            </td>
-                                            <td>November month fees</td>
-                                            <td>05 Nov 2025</td>
-                                            <td>Cash</td>
-                                            <td>$700.50</td>
-                                            <td>0%</td>
-                                            <td>$0</td>
-                                            <td>$0</td>
-                                            <td>$700.50</td>
-                                            <td>-</td>
-                                            <td><span
-                                                    class="bg-danger-100 text-danger-600 px-20 py-4 radius-4 fw-medium text-sm">Unpaid</span>
-                                            </td>
-                                        </tr>
-
-                                        <tr>
-                                            <td>
-                                                <div class="form-check style-check d-flex align-items-center">
-                                                    <input class="form-check-input" type="checkbox">
-                                                    <label class="form-check-label">12</label>
-                                                </div>
-                                            </td>
-                                            <td>December month fees</td>
-                                            <td>05 Dec 2025</td>
-                                            <td>Online</td>
-                                            <td>$700.50</td>
-                                            <td>15%</td>
-                                            <td>$0</td>
-                                            <td>$595.00</td>
-                                            <td>$105.50</td>
-                                            <td>10 Dec 2025</td>
-                                            <td><span
-                                                    class="bg-warning-100 text-warning-600 px-20 py-4 radius-4 fw-medium text-sm">Partial</span>
-                                            </td>
-                                        </tr>
-
-                                        <tr>
-                                            <td>
-                                                <div class="form-check style-check d-flex align-items-center">
-                                                    <input class="form-check-input" type="checkbox">
-                                                    <label class="form-check-label">13</label>
-                                                </div>
-                                            </td>
-                                            <td>January month fees</td>
-                                            <td>05 Jan 2026</td>
-                                            <td>Bank</td>
-                                            <td>$700.50</td>
-                                            <td>10%</td>
-                                            <td>$0</td>
-                                            <td>$700.50</td>
-                                            <td>$0</td>
-                                            <td>06 Jan 2026</td>
-                                            <td><span
-                                                    class="bg-success-100 text-success-600 px-20 py-4 radius-4 fw-medium text-sm">Paid</span>
-                                            </td>
-                                        </tr>
-
-                                    </tbody>
-
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Fees tab end -->
-
-                    <!-- Exam tab start -->
-                    <div class="tab-pane fade" id="pills-exam" role="tabpanel" aria-labelledby="pills-exam-tab"
-                        tabindex="0">
-                        <div class="shadow-1 radius-12 bg-base h-100 overflow-hidden">
-                            <div
-                                class="card-header border-bottom bg-base py-16 px-24 d-flex align-items-center justify-content-between">
-                                <h6 class="text-lg fw-semibold mb-0">Exam </h6>
-                            </div>
-                            <div class="card-body p-20 d-flex flex-column gap-20">
-
-                                <div class="border radius-8 overflow-hidden">
-                                    <button type="button"
-                                        class="custom-accordion-btn text-md fw-semibold text-secondary-light w-100 py-10 px-20 d-flex align-items-center gap-12 justify-content-between">
-                                        First Semester
-                                        <span class="arrow-icon text-lg d-flex line-height-1">
-                                            <i class="ri-arrow-down-s-line"></i>
-                                        </span>
-                                    </button>
-                                    <div class="custom-accordion-content table-bottom-info-none">
-                                        <table
-                                            class="table bordered-table mb-0 table-heading-dark-mode w-100 data-table"
-                                            id="firstSemesterTable" data-page-length='10'>
-                                            <thead>
-                                                <tr>
-                                                    <th scope="col" class="text-start">Subject</th>
-                                                    <th scope="col" class="text-start">Max Marks</th>
-                                                    <th scope="col" class="text-start">Min Marks</th>
-                                                    <th scope="col" class="text-start">Marks Obtained</th>
-                                                    <th scope="col" class="text-start">Grade</th>
-                                                    <th scope="col" class="text-start">Result</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <td class="text-start">Bangla</td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">80</td>
-                                                    <td class="text-start">A+</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="text-start">English</td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">60</td>
-                                                    <td class="text-start">B+</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="text-start">ICT</td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">70</td>
-                                                    <td class="text-start">A+</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="text-start">Physics </td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">60 </td>
-                                                    <td class="text-start">B</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="text-start">Chemistry </td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">48 </td>
-                                                    <td class="text-start">B</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="text-start">Mathematics</td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">80</td>
-                                                    <td class="text-start">A+</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                            <tfoot>
-                                                <tr>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                        Rank: 30
-                                                    </td>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                        Total: 600
-                                                    </td>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                    </td>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                        Total Obtain Marks: 398
-                                                    </td>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                        Grande: A
-                                                    </td>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                        Results: Pass
-                                                    </td>
-                                                </tr>
-                                            </tfoot>
-                                        </table>
-                                    </div>
-                                </div>
-
-                                <div class="border radius-8 overflow-hidden">
-                                    <button type="button"
-                                        class="custom-accordion-btn text-md fw-semibold text-secondary-light w-100 py-10 px-20 d-flex align-items-center gap-12 justify-content-between">
-                                        Monthly Test (Jun-2025)
-                                        <span class="arrow-icon text-lg d-flex line-height-1">
-                                            <i class="ri-arrow-down-s-line"></i>
-                                        </span>
-                                    </button>
-                                    <div class="custom-accordion-content table-bottom-info-none">
-                                        <table
-                                            class="table bordered-table mb-0 table-heading-dark-mode w-100 data-table"
-                                            id="monthlyTestJun" data-page-length='10'>
-                                            <thead>
-                                                <tr>
-                                                    <th scope="col" class="text-start">Subject</th>
-                                                    <th scope="col" class="text-start">Max Marks</th>
-                                                    <th scope="col" class="text-start">Min Marks</th>
-                                                    <th scope="col" class="text-start">Marks Obtained</th>
-                                                    <th scope="col" class="text-start">Grade</th>
-                                                    <th scope="col" class="text-start">Result</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <td class="text-start">Bangla</td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">80</td>
-                                                    <td class="text-start">A+</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="text-start">English</td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">60</td>
-                                                    <td class="text-start">B+</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="text-start">ICT</td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">70</td>
-                                                    <td class="text-start">A+</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="text-start">Physics </td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">60 </td>
-                                                    <td class="text-start">B</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="text-start">Chemistry </td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">48 </td>
-                                                    <td class="text-start">B</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="text-start">Mathematics</td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">80</td>
-                                                    <td class="text-start">A+</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                            <tfoot>
-                                                <tr>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                        Rank: 30
-                                                    </td>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                        Total: 600
-                                                    </td>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                    </td>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                        Total Obtain Marks: 398
-                                                    </td>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                        Grande: A
-                                                    </td>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                        Results: Pass
-                                                    </td>
-                                                </tr>
-                                            </tfoot>
-                                        </table>
-                                    </div>
-                                </div>
-
-                                <div class="border radius-8 overflow-hidden">
-                                    <button type="button"
-                                        class="custom-accordion-btn text-md fw-semibold text-secondary-light w-100 py-10 px-20 d-flex align-items-center gap-12 justify-content-between">
-                                        Weekly Test(Jun-2025)
-                                        <span class="arrow-icon text-lg d-flex line-height-1">
-                                            <i class="ri-arrow-down-s-line"></i>
-                                        </span>
-                                    </button>
-                                    <div class="custom-accordion-content table-bottom-info-none">
-                                        <table
-                                            class="table bordered-table mb-0 table-heading-dark-mode w-100 data-table"
-                                            id="weeklyTestJun" data-page-length='10'>
-                                            <thead>
-                                                <tr>
-                                                    <th scope="col" class="text-start">Subject</th>
-                                                    <th scope="col" class="text-start">Max Marks</th>
-                                                    <th scope="col" class="text-start">Min Marks</th>
-                                                    <th scope="col" class="text-start">Marks Obtained</th>
-                                                    <th scope="col" class="text-start">Grade</th>
-                                                    <th scope="col" class="text-start">Result</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <td class="text-start">Bangla</td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">80</td>
-                                                    <td class="text-start">A+</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="text-start">English</td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">60</td>
-                                                    <td class="text-start">B+</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="text-start">ICT</td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">70</td>
-                                                    <td class="text-start">A+</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="text-start">Physics </td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">60 </td>
-                                                    <td class="text-start">B</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="text-start">Chemistry </td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">48 </td>
-                                                    <td class="text-start">B</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="text-start">Mathematics</td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">80</td>
-                                                    <td class="text-start">A+</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                            <tfoot>
-                                                <tr>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                        Rank: 30
-                                                    </td>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                        Total: 600
-                                                    </td>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                    </td>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                        Total Obtain Marks: 398
-                                                    </td>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                        Grande: A
-                                                    </td>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                        Results: Pass
-                                                    </td>
-                                                </tr>
-                                            </tfoot>
-                                        </table>
-                                    </div>
-                                </div>
-
-                                <div class="border radius-8 overflow-hidden">
-                                    <button type="button"
-                                        class="custom-accordion-btn text-md fw-semibold text-secondary-light w-100 py-10 px-20 d-flex align-items-center gap-12 justify-content-between">
-                                        Weekly Test(May-2025)
-                                        <span class="arrow-icon text-lg d-flex line-height-1">
-                                            <i class="ri-arrow-down-s-line"></i>
-                                        </span>
-                                    </button>
-                                    <div class="custom-accordion-content table-bottom-info-none">
-                                        <table
-                                            class="table bordered-table mb-0 table-heading-dark-mode w-100 data-table"
-                                            id="weeklyTestMay" data-page-length='10'>
-                                            <thead>
-                                                <tr>
-                                                    <th scope="col" class="text-start">Subject</th>
-                                                    <th scope="col" class="text-start">Max Marks</th>
-                                                    <th scope="col" class="text-start">Min Marks</th>
-                                                    <th scope="col" class="text-start">Marks Obtained</th>
-                                                    <th scope="col" class="text-start">Grade</th>
-                                                    <th scope="col" class="text-start">Result</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <td class="text-start">Bangla</td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">80</td>
-                                                    <td class="text-start">A+</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="text-start">English</td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">60</td>
-                                                    <td class="text-start">B+</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="text-start">ICT</td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">70</td>
-                                                    <td class="text-start">A+</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="text-start">Physics </td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">60 </td>
-                                                    <td class="text-start">B</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="text-start">Chemistry </td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">48 </td>
-                                                    <td class="text-start">B</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="text-start">Mathematics</td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">80</td>
-                                                    <td class="text-start">A+</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                            <tfoot>
-                                                <tr>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                        Rank: 30
-                                                    </td>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                        Total: 600
-                                                    </td>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                    </td>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                        Total Obtain Marks: 398
-                                                    </td>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                        Grande: A
-                                                    </td>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                        Results: Pass
-                                                    </td>
-                                                </tr>
-                                            </tfoot>
-                                        </table>
-                                    </div>
-                                </div>
-
-                                <div class="border radius-8 overflow-hidden">
-                                    <button type="button"
-                                        class="custom-accordion-btn text-md fw-semibold text-secondary-light w-100 py-10 px-20 d-flex align-items-center gap-12 justify-content-between">
-                                        weeklyTestMay
-                                        <span class="arrow-icon text-lg d-flex line-height-1">
-                                            <i class="ri-arrow-down-s-line"></i>
-                                        </span>
-                                    </button>
-                                    <div class="custom-accordion-content table-bottom-info-none">
-                                        <table
-                                            class="table bordered-table mb-0 table-heading-dark-mode w-100 data-table"
-                                            id="monthlyTestMay" data-page-length='10'>
-                                            <thead>
-                                                <tr>
-                                                    <th scope="col" class="text-start">Subject</th>
-                                                    <th scope="col" class="text-start">Max Marks</th>
-                                                    <th scope="col" class="text-start">Min Marks</th>
-                                                    <th scope="col" class="text-start">Marks Obtained</th>
-                                                    <th scope="col" class="text-start">Grade</th>
-                                                    <th scope="col" class="text-start">Result</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <td class="text-start">Bangla</td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">80</td>
-                                                    <td class="text-start">A+</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="text-start">English</td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">60</td>
-                                                    <td class="text-start">B+</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="text-start">ICT</td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">70</td>
-                                                    <td class="text-start">A+</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="text-start">Physics </td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">60 </td>
-                                                    <td class="text-start">B</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="text-start">Chemistry </td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">48 </td>
-                                                    <td class="text-start">B</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="text-start">Mathematics</td>
-                                                    <td class="text-start">100.00</td>
-                                                    <td class="text-start">35.00</td>
-                                                    <td class="text-start">80</td>
-                                                    <td class="text-start">A+</td>
-                                                    <td class="text-start">
-                                                        <span
-                                                            class="bg-success-100 text-success-600 px-16 py-2 radius-4 fw-medium text-sm">Pass</span>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                            <tfoot>
-                                                <tr>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                        Rank: 30
-                                                    </td>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                        Total: 600
-                                                    </td>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                    </td>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                        Total Obtain Marks: 398
-                                                    </td>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                        Grande: A
-                                                    </td>
-                                                    <td
-                                                        class="text-primary-light fw-semibold text-md border-top border-bottom border-neutral-200 text-start bg-neutral-50">
-                                                        Results: Pass
-                                                    </td>
-                                                </tr>
-                                            </tfoot>
-                                        </table>
-                                    </div>
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Exam tab start -->
-
-                    <!-- Library tab start -->
-                    <div class="tab-pane fade" id="pills-library" role="tabpanel" aria-labelledby="pills-library-tab"
-                        tabindex="0">
-                        <div class="shadow-1 radius-12 bg-base h-100 overflow-hidden">
-                            <div
-                                class="card-header border-bottom bg-base py-10 px-20 d-flex align-items-center justify-content-between">
-                                <h6 class="text-lg fw-semibold mb-0">Library </h6>
-                            </div>
-                            <div class="card-body p-0 dataTable-wrapper">
-                                <div
-                                    class="d-flex flex-wrap align-items-center gap-24 justify-content-between px-20 py-16">
-                                    <div class="d-flex flex-wrap align-items-center gap-16">
-                                        <form class="navbar-search dt-search m-0">
-                                            <input type="text" class="dt-input bg-transparent radius-4"
-                                                aria-controls="dataTable" name="search" placeholder="Search...">
-                                            <iconify-icon icon="ion:search-outline" class="icon"></iconify-icon>
-                                        </form>
-                                        <div class="">
-                                            <select class="form-control form-select">
-                                                <option value="Year 2025/2026">Year 2025/2026</option>
-                                                <option value="Year 2026/2027">Year 2026/2027</option>
-                                                <option value="Year 2027/2028">Year 2027/2028</option>
-                                                <option value="Year 2028/2029">Year 2028/2029</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="d-flex align-items-center gap-8 text-secondary-light">
-                                        <span class="">
-                                            Rows per page:
-                                        </span>
-                                        <div class="dt-length">
-                                            <select name="dataTable_length" aria-controls="dataTable"
-                                                class="dt-input form-control form-select">
-                                                <option value="5">5</option>
-                                                <option value="10" selected>10</option>
-                                                <option value="25">25</option>
-                                                <option value="50">50</option>
-                                                <option value="100">100</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                                <table class="table bordered-table mb-0 table-heading-dark-mode w-100 data-table"
-                                    id="dataTableLibrary" data-page-length='10'>
-                                    <thead>
-                                        <tr>
-                                            <th scope="col" class="text-start">S.L</th>
-                                            <th scope="col" class="text-start">Book Name</th>
-                                            <th scope="col" class="text-start">Book Category</th>
-                                            <th scope="col" class="text-start">Book Number</th>
-                                            <th scope="col" class="text-start">Taken ON</th>
-                                            <th scope="col" class="text-start">Last Date</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td class="text-start">01</td>
-                                            <td class="text-start">
-                                                <div class="d-flex align-items-center">
-                                                    <img src="assets/images/thumbs/library-img1.png" alt="Library Image"
-                                                        class="flex-shrink-0 me-12 radius-4 w-36-px h-36-px">
-                                                    <div class="">
-                                                        <h6
-                                                            class="text-md mb-0 fw-medium flex-grow-1 text-secondary-light">
-                                                            Marigold (NCERT)
-                                                        </h6>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td class="text-start">English</td>
-                                            <td class="text-start">8512</td>
-                                            <td class="text-start"> 05 May 2025</td>
-                                            <td class="text-start">05 Jun 2025</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-start">02</td>
-                                            <td class="text-start">
-                                                <div class="d-flex align-items-center">
-                                                    <img src="assets/images/thumbs/library-img2.png" alt="Library Image"
-                                                        class="flex-shrink-0 me-12 radius-4 w-36-px h-36-px">
-                                                    <div class="">
-                                                        <h6
-                                                            class="text-md mb-0 fw-medium flex-grow-1 text-secondary-light">
-                                                            Number Magic
-                                                        </h6>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td class="text-start">Mathematics</td>
-                                            <td class="text-start">85620</td>
-                                            <td class="text-start"> 05 May 2025</td>
-                                            <td class="text-start">05 Jun 2025</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-start">03</td>
-                                            <td class="text-start">
-                                                <div class="d-flex align-items-center">
-                                                    <img src="assets/images/thumbs/library-img3.png" alt="Library Image"
-                                                        class="flex-shrink-0 me-12 radius-4 w-36-px h-36-px">
-                                                    <div class="">
-                                                        <h6
-                                                            class="text-md mb-0 fw-medium flex-grow-1 text-secondary-light">
-                                                            Mental Math
-                                                        </h6>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td class="text-start">Mathematics</td>
-                                            <td class="text-start">8512</td>
-                                            <td class="text-start"> 05 May 2025</td>
-                                            <td class="text-start">05 Jun 2025</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-start">04</td>
-                                            <td class="text-start">
-                                                <div class="d-flex align-items-center">
-                                                    <img src="assets/images/thumbs/library-img4.png" alt="Library Image"
-                                                        class="flex-shrink-0 me-12 radius-4 w-36-px h-36-px">
-                                                    <div class="">
-                                                        <h6
-                                                            class="text-md mb-0 fw-medium flex-grow-1 text-secondary-light">
-                                                            Our Environment
-                                                        </h6>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td class="text-start">Environmental Studies</td>
-                                            <td class="text-start">85620</td>
-                                            <td class="text-start"> 05 May 2025</td>
-                                            <td class="text-start">05 Jun 2025</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-start">05</td>
-                                            <td class="text-start">
-                                                <div class="d-flex align-items-center">
-                                                    <img src="assets/images/thumbs/library-img5.png" alt="Library Image"
-                                                        class="flex-shrink-0 me-12 radius-4 w-36-px h-36-px">
-                                                    <div class="">
-                                                        <h6
-                                                            class="text-md mb-0 fw-medium flex-grow-1 text-secondary-light">
-                                                            Brainvita
-                                                        </h6>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td class="text-start">General Knowledge</td>
-                                            <td class="text-start">8512</td>
-                                            <td class="text-start"> 05 May 2025</td>
-                                            <td class="text-start">05 Jun 2025</td>
-                                        </tr>
-
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Library tab start -->
-
-                </div>
-            </div>
-        </div>
-            
-          
-</div>
+@section('css')
+@include('partials._academic-ui-styles')
+@include('hr.partials._styles')
+<style>
+    .sp-hero {
+        border: 1px solid var(--neutral-200, #e5e7eb);
+        border-radius: 16px;
+        padding: 24px 28px;
+        background: linear-gradient(135deg, rgba(37, 161, 148, 0.12), rgba(99, 102, 241, 0.08));
+        margin-bottom: 24px;
+    }
+    .sp-photo {
+        width: 96px;
+        height: 96px;
+        border-radius: 18px;
+        overflow: hidden;
+        border: 3px solid #25A194;
+        background: #fff;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 28px;
+        color: #0f766e;
+    }
+    .sp-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .sp-name { margin: 0 0 6px; font-size: 24px; font-weight: 800; letter-spacing: -0.03em; }
+    .sp-meta { display: flex; flex-wrap: wrap; gap: 8px 16px; color: #64748b; font-size: 13px; }
+    .sp-meta i { color: #25A194; }
+    .sp-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 6px;
+        background: #f8fafc;
+        border: 1px solid var(--neutral-200, #e5e7eb);
+        border-radius: 14px;
+        margin-bottom: 24px;
+    }
+    .sp-tabs .nav-link {
+        border: 0;
+        background: transparent;
+        color: #64748b;
+        font-weight: 600;
+        font-size: 13px;
+        padding: 10px 16px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .sp-tabs .nav-link.active {
+        background: #fff;
+        color: #25A194;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+    }
+    .sp-fact {
+        border: 1px solid var(--neutral-200, #e5e7eb);
+        border-radius: 12px;
+        padding: 14px 16px;
+        background: #fafbfc;
+        height: 100%;
+    }
+    .sp-fact span {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        color: #64748b;
+        margin-bottom: 4px;
+    }
+    .sp-fact strong { font-size: 14px; word-break: break-word; }
+    .sp-empty { text-align: center; padding: 48px 20px; color: #64748b; }
+    .sp-empty i { font-size: 36px; color: #25A194; display: block; margin-bottom: 10px; }
+    .leave-type-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 12px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .leave-pill-amber { background: #fef3c7; color: #b45309; }
+    .leave-pill-rose { background: #ffe4e6; color: #be123c; }
+    .leave-pill-pink { background: #fce7f3; color: #be185d; }
+    .leave-pill-sky { background: #e0f2fe; color: #0369a1; }
+    .leave-pill-violet { background: #ede9fe; color: #6d28d9; }
+    .leave-pill-teal { background: #ccfbf1; color: #0f766e; }
+    .sp-section-title {
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        color: #25A194;
+        margin: 0 0 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .sp-section-title::before {
+        content: "";
+        width: 4px;
+        height: 14px;
+        background: #25A194;
+        border-radius: 2px;
+    }
+</style>
 @endsection
 
-@section('scripts')
- 
+@section('content')
+<div class="dashboard-main-body">
+    @include('partials._page-header', [
+        'section' => 'HR',
+        'crumbs' => [
+            ['label' => 'Dashboard', 'url' => route('dashboard')],
+            ['label' => 'Employees', 'url' => route('list-staff')],
+            ['label' => $staff->full_name, 'url' => null, 'active' => true],
+        ],
+        'title' => $staff->full_name,
+        'subtitle' => $staff->employee_id,
+        'actions' => '<a href="'.route('list-staff').'" class="btn btn-outline-primary-600"><i class="ri-arrow-left-line"></i> Employees</a>
+            <a href="'.route('edit-staff', $id).'" class="btn btn-primary-600"><i class="ri-edit-line"></i> Edit</a>',
+    ])
+
+    <div class="sp-hero">
+        <div class="d-flex flex-wrap align-items-start gap-20">
+            <div class="sp-photo">
+                @if(!empty($staff->picture))
+                    <img src="{{ asset($staff->picture) }}" alt="{{ $staff->full_name }}">
+                @else
+                    {{ $initials ?: 'ST' }}
+                @endif
+            </div>
+            <div class="flex-grow-1">
+                <div class="d-flex flex-wrap align-items-center gap-8 mb-8">
+                    <h2 class="sp-name">{{ $staff->full_name }}</h2>
+                    <span class="ac-pill {{ $staff->status === 'Active' ? 'ac-pill-emerald' : 'ac-pill-inactive' }}">{{ $staff->status }}</span>
+                </div>
+                <div class="d-flex flex-wrap gap-8 mb-12">
+                    <span class="ac-pill ac-pill-teal">{{ $positionName }}</span>
+                    @if($staff->department)
+                        <span class="ac-pill ac-pill-indigo">{{ $staff->department->name }}</span>
+                    @endif
+                    @if($staff->employment_type)
+                        <span class="ac-pill ac-pill-slate">{{ $staff->employment_type }}</span>
+                    @endif
+                </div>
+                <div class="sp-meta">
+                    @if($staff->email)<span><i class="ri-mail-line"></i> {{ $staff->email }}</span>@endif
+                    @if($staff->mobile)<span><i class="ri-phone-line"></i> {{ $staff->mobile }}</span>@endif
+                    @if($staff->employee_id)<span><i class="ri-id-card-line"></i> {{ $staff->employee_id }}</span>@endif
+                    @if($staff->user)
+                        <span><i class="ri-shield-user-line"></i> Login enabled</span>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row gy-4 mb-24">
+        <div class="col-sm-6 col-xl-3">
+            <div class="ac-stat-card">
+                <div class="d-flex align-items-center justify-content-between gap-3">
+                    <div>
+                        <p class="text-secondary-light text-sm mb-4">Qualifications</p>
+                        <h4 class="fw-semibold mb-0">{{ $listdoc->count() }}</h4>
+                    </div>
+                    <span class="stat-icon bg-primary-50 text-primary-600"><i class="ri-graduation-cap-line"></i></span>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="ac-stat-card">
+                <div class="d-flex align-items-center justify-content-between gap-3">
+                    <div>
+                        <p class="text-secondary-light text-sm mb-4">Pending leave</p>
+                        <h4 class="fw-semibold mb-0 text-warning-600">{{ $pendingLeave }}</h4>
+                    </div>
+                    <span class="stat-icon bg-warning-100 text-warning-600"><i class="ri-calendar-event-line"></i></span>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="ac-stat-card">
+                <div class="d-flex align-items-center justify-content-between gap-3">
+                    <div>
+                        <p class="text-secondary-light text-sm mb-4">Present (last 30)</p>
+                        <h4 class="fw-semibold mb-0 text-success-600">{{ $presentDays }}</h4>
+                    </div>
+                    <span class="stat-icon bg-success-100 text-success-600"><i class="ri-calendar-check-line"></i></span>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="ac-stat-card">
+                <div class="d-flex align-items-center justify-content-between gap-3">
+                    <div>
+                        <p class="text-secondary-light text-sm mb-4">Latest net pay</p>
+                        <h5 class="fw-semibold mb-0">{{ $latestSlip ? \App\Support\Money::ghs($latestSlip->net) : '—' }}</h5>
+                    </div>
+                    <span class="stat-icon bg-info-100 text-info-600"><i class="ri-wallet-3-line"></i></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <ul class="nav sp-tabs" role="tablist">
+        <li><button class="nav-link {{ $activeTab === 'overview' ? 'active' : '' }}" data-bs-toggle="pill" data-bs-target="#tab-overview" type="button"><i class="ri-user-line"></i> Overview</button></li>
+        <li><button class="nav-link {{ $activeTab === 'edu' ? 'active' : '' }}" data-bs-toggle="pill" data-bs-target="#tab-edu" type="button"><i class="ri-graduation-cap-line"></i> Qualifications</button></li>
+        <li><button class="nav-link {{ $activeTab === 'bank' ? 'active' : '' }}" data-bs-toggle="pill" data-bs-target="#tab-bank" type="button"><i class="ri-bank-line"></i> Bank &amp; next of kin</button></li>
+        <li><button class="nav-link {{ $activeTab === 'leave' ? 'active' : '' }}" data-bs-toggle="pill" data-bs-target="#tab-leave" type="button"><i class="ri-calendar-event-line"></i> Leave</button></li>
+        <li><button class="nav-link {{ $activeTab === 'att' ? 'active' : '' }}" data-bs-toggle="pill" data-bs-target="#tab-att" type="button"><i class="ri-calendar-check-line"></i> Attendance</button></li>
+        <li><button class="nav-link {{ $activeTab === 'pay' ? 'active' : '' }}" data-bs-toggle="pill" data-bs-target="#tab-pay" type="button"><i class="ri-file-paper-2-line"></i> Payslips</button></li>
+    </ul>
+
+    <div class="tab-content">
+        <div class="tab-pane fade {{ $activeTab === 'overview' ? 'show active' : '' }}" id="tab-overview">
+            <div class="card ac-list-wrapper mb-24">
+                <div class="card-body p-24">
+                    <h6 class="sp-section-title">Personal</h6>
+                    <div class="row g-3 mb-24">
+                        <div class="col-sm-6 col-xl-3"><div class="sp-fact"><span>Gender</span><strong>{{ $staff->gender ?: '—' }}</strong></div></div>
+                        <div class="col-sm-6 col-xl-3"><div class="sp-fact"><span>Date of birth</span><strong>{{ $staff->dob ? \Carbon\Carbon::parse($staff->dob)->format('d M Y') : '—' }}</strong></div></div>
+                        <div class="col-sm-6 col-xl-3"><div class="sp-fact"><span>Marital status</span><strong>{{ $staff->marital_status ?: '—' }}</strong></div></div>
+                        <div class="col-sm-6 col-xl-3"><div class="sp-fact"><span>Nationality</span><strong>{{ $staff->country?->name ?: '—' }}</strong></div></div>
+                        <div class="col-12"><div class="sp-fact"><span>Residential address</span><strong>{{ $staff->residential_address ?: '—' }}</strong></div></div>
+                    </div>
+
+                    <h6 class="sp-section-title">Employment</h6>
+                    <div class="row g-3 mb-24">
+                        <div class="col-sm-6 col-xl-3"><div class="sp-fact"><span>Position</span><strong>{{ $positionName }}</strong></div></div>
+                        <div class="col-sm-6 col-xl-3"><div class="sp-fact"><span>Department</span><strong>{{ $staff->department?->name ?: '—' }}</strong></div></div>
+                        <div class="col-sm-6 col-xl-3"><div class="sp-fact"><span>Employment type</span><strong>{{ $staff->employment_type ?: '—' }}</strong></div></div>
+                        <div class="col-sm-6 col-xl-3"><div class="sp-fact"><span>Pay grade</span><strong>{{ $staff->payGrade?->name ?: '—' }}</strong></div></div>
+                        <div class="col-sm-6 col-xl-3"><div class="sp-fact"><span>Appointment</span><strong>{{ $staff->appointment_date?->format('d M Y') ?: '—' }}</strong></div></div>
+                        <div class="col-sm-6 col-xl-3"><div class="sp-fact"><span>Confirmation</span><strong>{{ $staff->confirmation_date?->format('d M Y') ?: '—' }}</strong></div></div>
+                        <div class="col-sm-6 col-xl-3"><div class="sp-fact"><span>Contract end</span><strong>{{ $staff->contract_end_date?->format('d M Y') ?: '—' }}</strong></div></div>
+                        <div class="col-sm-6 col-xl-3"><div class="sp-fact"><span>Basic salary</span><strong>{{ $staff->resolvedBasicSalary() > 0 ? \App\Support\Money::ghs($staff->resolvedBasicSalary()) : '—' }}</strong></div></div>
+                    </div>
+
+                    <h6 class="sp-section-title">Statutory</h6>
+                    <div class="row g-3">
+                        <div class="col-sm-6"><div class="sp-fact"><span>SSNIT number</span><strong>{{ $staff->ssnit_number ?: '—' }}</strong></div></div>
+                        <div class="col-sm-6"><div class="sp-fact"><span>TIN</span><strong>{{ $staff->tin ?: '—' }}</strong></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade {{ $activeTab === 'edu' ? 'show active' : '' }}" id="tab-edu">
+            <div class="card ac-list-wrapper">
+                <div class="table-responsive">
+                    <table class="table bordered-table mb-0">
+                        <thead><tr><th>Level</th><th>Year</th><th>Qualification</th><th>Institution</th><th></th></tr></thead>
+                        <tbody>
+                            @forelse($listdoc as $list)
+                                <tr>
+                                    <td><span class="ac-pill ac-pill-indigo">{{ $list->level }}</span></td>
+                                    <td>{{ $list->year }}</td>
+                                    <td class="fw-semibold">{{ $list->qualification }}</td>
+                                    <td>{{ $list->institution ?: '—' }}</td>
+                                    <td class="text-end">
+                                        @if($list->document_path)
+                                            <a href="{{ asset('uploads/staffdocs/'.$list->document_path) }}" target="_blank" class="btn btn-sm btn-outline-primary-600">
+                                                <i class="ri-file-text-line"></i> View
+                                            </a>
+                                        @else
+                                            <span class="text-secondary-light">No file</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="5"><div class="sp-empty"><i class="ri-graduation-cap-line"></i>No qualifications recorded.</div></td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade {{ $activeTab === 'bank' ? 'show active' : '' }}" id="tab-bank">
+            <div class="card ac-list-wrapper">
+                <div class="card-body p-24">
+                    <h6 class="sp-section-title">Bank account</h6>
+                    <div class="row g-3 mb-24">
+                        <div class="col-sm-6 col-xl-3"><div class="sp-fact"><span>Bank</span><strong>{{ $staff->bank_name ?: '—' }}</strong></div></div>
+                        <div class="col-sm-6 col-xl-3"><div class="sp-fact"><span>Branch</span><strong>{{ $staff->bank_branch ?: '—' }}</strong></div></div>
+                        <div class="col-sm-6 col-xl-3"><div class="sp-fact"><span>Account name</span><strong>{{ $staff->account_name ?: '—' }}</strong></div></div>
+                        <div class="col-sm-6 col-xl-3"><div class="sp-fact"><span>Account number</span><strong>{{ $staff->account_number ?: '—' }}</strong></div></div>
+                    </div>
+                    <h6 class="sp-section-title">Next of kin</h6>
+                    <div class="row g-3">
+                        <div class="col-sm-6 col-xl-4"><div class="sp-fact"><span>Name</span><strong>{{ $staff->next_of_kin_name ?: '—' }}</strong></div></div>
+                        <div class="col-sm-6 col-xl-4"><div class="sp-fact"><span>Phone</span><strong>{{ $staff->next_of_kin_phone ?: '—' }}</strong></div></div>
+                        <div class="col-sm-6 col-xl-4"><div class="sp-fact"><span>Relationship</span><strong>{{ $staff->next_of_kin_relationship ?: '—' }}</strong></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade {{ $activeTab === 'leave' ? 'show active' : '' }}" id="tab-leave">
+            <div class="card ac-list-wrapper">
+                <div class="table-responsive">
+                    <table class="table bordered-table mb-0">
+                        <thead><tr><th>Type</th><th>Dates</th><th>Days</th><th>Status</th></tr></thead>
+                        <tbody>
+                            @forelse($leaveRequests as $leave)
+                                <tr>
+                                    <td><span class="leave-type-pill leave-pill-{{ $typeTheme($leave->leaveType) }}">{{ $leave->leaveType?->name ?: '—' }}</span></td>
+                                    <td>{{ $leave->start_date->format('d M Y') }} – {{ $leave->end_date->format('d M Y') }}</td>
+                                    <td>{{ $leave->days }}</td>
+                                    <td><span class="ac-pill {{ $leavePill($leave->status) }}">{{ ucfirst($leave->status) }}</span></td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="4"><div class="sp-empty"><i class="ri-calendar-event-line"></i>No leave records.</div></td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade {{ $activeTab === 'att' ? 'show active' : '' }}" id="tab-att">
+            <div class="card ac-list-wrapper">
+                <div class="table-responsive">
+                    <table class="table bordered-table mb-0">
+                        <thead><tr><th>Date</th><th>Status</th><th>In</th><th>Out</th><th>Remarks</th></tr></thead>
+                        <tbody>
+                            @forelse($attendance as $row)
+                                <tr>
+                                    <td>{{ $row->date->format('d M Y') }}</td>
+                                    <td><span class="ac-pill {{ $attPill($row->status) }}">{{ ucfirst(str_replace('_', ' ', $row->status)) }}</span></td>
+                                    <td>{{ $row->check_in ?: '—' }}</td>
+                                    <td>{{ $row->check_out ?: '—' }}</td>
+                                    <td>{{ $row->remarks ?: '—' }}</td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="5"><div class="sp-empty"><i class="ri-calendar-check-line"></i>No attendance records in the last 30 days.</div></td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade {{ $activeTab === 'pay' ? 'show active' : '' }}" id="tab-pay">
+            <div class="card ac-list-wrapper">
+                <div class="table-responsive">
+                    <table class="table bordered-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Period</th>
+                                <th class="text-end">Gross</th>
+                                <th class="text-end">Net</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($payslips as $slip)
+                                <tr>
+                                    <td class="fw-semibold">{{ $slip->payrollRun?->periodLabel() }}</td>
+                                    <td class="text-end">{{ \App\Support\Money::ghs($slip->gross) }}</td>
+                                    <td class="text-end fw-semibold" style="color:#0f766e;">{{ \App\Support\Money::ghs($slip->net) }}</td>
+                                    <td class="text-end">
+                                        <a href="{{ route('hr-payslip-print', $slip->id) }}" target="_blank" class="btn btn-sm btn-outline-primary-600">
+                                            <i class="ri-printer-line"></i> Print
+                                        </a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="4"><div class="sp-empty"><i class="ri-file-paper-2-line"></i>No payslips yet.</div></td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection

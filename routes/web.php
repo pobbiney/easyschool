@@ -8,6 +8,15 @@ use App\Http\Controllers\Course\CourseRegistrationController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\UserManagement\UserManagementController;
 use App\Http\Controllers\Staff\StaffController;
+use App\Http\Controllers\Hr\DashboardController as HrDashboardController;
+use App\Http\Controllers\Hr\DepartmentController;
+use App\Http\Controllers\Hr\PositionController;
+use App\Http\Controllers\Hr\LeaveController;
+use App\Http\Controllers\Hr\AttendanceController as HrAttendanceController;
+use App\Http\Controllers\Hr\SalaryStructureController;
+use App\Http\Controllers\Hr\PayrollController;
+use App\Http\Controllers\Hr\SettingController as HrSettingController;
+use App\Http\Controllers\Hr\AppraisalController;
 use App\Http\Controllers\Student\StudentController;
 use App\Http\Controllers\Student\AcademicYearController;
 use App\Http\Controllers\Student\AcademicTermController;
@@ -32,6 +41,8 @@ use App\Http\Controllers\Teacher\CourseWorkspaceController;
 use App\Http\Controllers\Teacher\AssessmentController;
 use App\Http\Controllers\Teacher\AttendanceController;
 use App\Http\Controllers\Teacher\GradebookController;
+use App\Http\Controllers\Sms\SmsController;
+use App\Http\Controllers\Timetable\TimetableController;
 
 Route::get('forgot-password',[AuthenticationController::class,'getForgetPassword'])->name('forgot-password');
 Route::post('forgot-password-process',[AuthenticationController::class,'forgotPass'])->name('forgot-password-process');
@@ -69,6 +80,71 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         
     });
 /* End StaffController*/
+
+/* HR Module */
+   Route::controller(HrDashboardController::class)->group(function () {
+        Route::get('hr-dashboard', 'index')->name('hr-dashboard');
+    });
+
+   Route::controller(DepartmentController::class)->group(function () {
+        Route::get('hr-departments', 'index')->name('hr-departments');
+        Route::post('hr-departments-process', 'store')->name('hr-departments-process');
+        Route::get('hr-departments/{id}', 'show')->name('hr-departments-show');
+        Route::post('hr-departments-update', 'update')->name('hr-departments-update');
+    });
+
+   Route::controller(PositionController::class)->group(function () {
+        Route::get('hr-positions', 'index')->name('hr-positions');
+        Route::post('hr-positions-process', 'store')->name('hr-positions-process');
+        Route::get('hr-positions/{id}', 'show')->name('hr-positions-show');
+        Route::post('hr-positions-update', 'update')->name('hr-positions-update');
+        Route::post('hr-positions-delete', 'destroy')->name('hr-positions-delete');
+    });
+
+   Route::controller(LeaveController::class)->group(function () {
+        Route::get('hr-leave', 'index')->name('hr-leave');
+        Route::post('hr-leave-types-process', 'storeType')->name('hr-leave-types-process');
+        Route::post('hr-leave-types-update', 'updateType')->name('hr-leave-types-update');
+        Route::post('hr-leave-requests-process', 'storeRequest')->name('hr-leave-requests-process');
+        Route::post('hr-leave-review-process', 'review')->name('hr-leave-review-process');
+    });
+
+   Route::controller(HrAttendanceController::class)->group(function () {
+        Route::get('hr-attendance', 'index')->name('hr-attendance');
+        Route::post('hr-attendance-process', 'store')->name('hr-attendance-process');
+    });
+
+   Route::controller(SalaryStructureController::class)->group(function () {
+        Route::get('hr-salary-structures', 'index')->name('hr-salary-structures');
+        Route::post('hr-pay-grades-process', 'storeGrade')->name('hr-pay-grades-process');
+        Route::post('hr-pay-grades-update', 'updateGrade')->name('hr-pay-grades-update');
+        Route::post('hr-earning-types-process', 'storeEarning')->name('hr-earning-types-process');
+        Route::post('hr-earning-types-update', 'updateEarning')->name('hr-earning-types-update');
+        Route::post('hr-deduction-types-process', 'storeDeduction')->name('hr-deduction-types-process');
+        Route::post('hr-deduction-types-update', 'updateDeduction')->name('hr-deduction-types-update');
+    });
+
+   Route::controller(PayrollController::class)->group(function () {
+        Route::get('hr-payroll', 'index')->name('hr-payroll');
+        Route::post('hr-payroll-generate', 'generate')->name('hr-payroll-generate');
+        Route::get('hr-payroll/{id}', 'show')->name('hr-payroll-show');
+        Route::post('hr-payroll/{id}/approve', 'approve')->name('hr-payroll-approve');
+        Route::post('hr-payroll/{id}/paid', 'markPaid')->name('hr-payroll-paid');
+        Route::get('hr-payslips', 'payslips')->name('hr-payslips');
+        Route::get('hr-payslips/{id}/print', 'printPayslip')->name('hr-payslip-print');
+    });
+
+   Route::controller(HrSettingController::class)->group(function () {
+        Route::get('hr-settings', 'index')->name('hr-settings');
+        Route::post('hr-settings-process', 'update')->name('hr-settings-process');
+    });
+
+   Route::controller(AppraisalController::class)->group(function () {
+        Route::get('hr-appraisals', 'index')->name('hr-appraisals');
+        Route::post('hr-appraisals-process', 'store')->name('hr-appraisals-process');
+        Route::get('hr-appraisals/{id}', 'show')->name('hr-appraisals-show');
+    });
+/* End HR Module */
 
 /* UserManagementController*/
    Route::controller(UserManagementController::class)->group(function () {
@@ -297,3 +373,22 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         Route::get('teacher/classes/{class}/report-cards/print', 'printClassReportCards')->name('teacher-class-report-cards-print');
     });
 /* End Teacher Portal */
+
+/* Send SMS */
+   Route::controller(SmsController::class)->group(function () {
+        Route::get('send-sms', 'index')->name('send-sms');
+        Route::get('send-sms-recipients', 'recipients')->name('send-sms-recipients');
+        Route::post('send-sms-process', 'send')->name('send-sms-process');
+    });
+/* End Send SMS */
+
+/* Timetable */
+   Route::controller(TimetableController::class)->group(function () {
+        Route::get('timetable', 'index')->name('timetable');
+        Route::get('timetable-periods', 'periods')->name('timetable-periods');
+        Route::post('timetable-periods-process', 'updatePeriods')->name('timetable-periods-process');
+        Route::post('timetable-generate', 'generate')->name('timetable-generate');
+        Route::get('timetable/{class}/print', 'print')->name('timetable-print');
+        Route::get('timetable/{class}', 'show')->name('timetable-show');
+    });
+/* End Timetable */

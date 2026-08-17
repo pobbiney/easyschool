@@ -17,10 +17,9 @@
                     </label>
                    <select class="form-control" name="level" id="level">
                         <option value="" selected disabled>Choose Level</option>
-                        <option value="Junior High">Junior High</option>
-                        <option value="Senior High">Senior High</option>
-                        <option value="Tertiary">Tertiary</option>
-                        <option value="Vocational">Vocational</option>
+                        @foreach(\App\Models\StaffDoc::educationLevels() as $level)
+                            <option value="{{ $level }}">{{ $level }}</option>
+                        @endforeach
                    </select>
                 </div>
             </div>
@@ -41,14 +40,21 @@
                         <input type="text" class="form-control" name="qualification" id="qualification" placeholder="Enter Qualification">
                     </div>
                 </div>
-                <div class="col-sm-4">
+               <div class="col-sm-6">
+                    <div class="">
+                        <label class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Institution
+                        </label>
+                        <input type="text" class="form-control" name="institution" id="institution" placeholder="Enter Institution">
+                    </div>
+                </div>
+                <div class="col-sm-8">
                     <div class="">
                         <label for="numberEdit" class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Upload Certificate
                         </label>
                         <input type="file" class="form-control" name="document" id="document" placeholder="Upload Certificate">
                     </div>
                 </div>
-                <div class="col-sm-2">
+                <div class="col-sm-4">
                     <div class="">
                          <br/>
                         <button type="button" class="btn btn-success" id="addDocument">Add</button>
@@ -64,6 +70,7 @@
                         <th scope="col">Level</th>
                         <th scope="col">Year</th>
                         <th scope="col">Qualification</th>
+                        <th scope="col">Institution</th>
                         <th scope="col">Certificate</th>
                         
                         <th scope="col">Action</th>

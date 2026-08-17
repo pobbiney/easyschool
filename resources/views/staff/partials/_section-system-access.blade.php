@@ -1,6 +1,7 @@
 @php
     $moduleIcons = [
         'Staff Management' => 'ri-team-line',
+        'HR' => 'ri-id-card-line',
         'Student Management' => 'ri-graduation-cap-line',
         'Course Setup' => 'ri-book-open-line',
         'User Management' => 'ri-shield-user-line',
@@ -11,6 +12,12 @@
 
     $screenIcons = [
         'Staff' => 'ri-user-add-line',
+        'Employee' => 'ri-user-add-line',
+        'HR' => 'ri-id-card-line',
+        'Leave' => 'ri-calendar-event-line',
+        'Payroll' => 'ri-money-cny-box-line',
+        'Payslip' => 'ri-file-text-line',
+        'Attendance' => 'ri-calendar-check-line',
         'Student' => 'ri-user-follow-line',
         'Course' => 'ri-book-2-line',
         'Category' => 'ri-shield-user-line',

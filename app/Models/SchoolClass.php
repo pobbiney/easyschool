@@ -67,4 +67,9 @@ class SchoolClass extends Model
     {
         return $this->hasMany(CourseRegistration::class, 'school_class_id');
     }
+
+    public function timetables()
+    {
+        return $this->hasMany(ClassTimetable::class, 'school_class_id');
+    }
 }

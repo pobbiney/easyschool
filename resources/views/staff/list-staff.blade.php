@@ -1,5 +1,5 @@
 <!-- page title -->
-@php $pageName = "staff"; $subpageName = "list-staff"; @endphp
+@php $pageName = "hr"; $subpageName = "list-staff"; @endphp
 
 @extends('layouts.app')
 
@@ -47,7 +47,7 @@
 
     <div class="page-header breadcrumb d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
         <div class="">
-            <h1 class="fw-semibold mb-4 h6 text-primary-light">STAFF MANAGEMENT</h1>
+            <h1 class="fw-semibold mb-4 h6 text-primary-light">HR</h1>
             <div class="">
                 <a href="{{ route('dashboard') }}" class="text-secondary-light hover-text-primary hover-underline">Dashboard</a>
                 <span class="text-secondary-light"> / Staff List</span>
@@ -57,7 +57,7 @@
             <span class="d-flex text-md">
                 <i class="ri-add-large-line"></i>
             </span>
-            Add New Staff
+            Add Employee
         </a>
     </div>
               
@@ -231,8 +231,9 @@
 
     $('#addDocument').click(function () {
         let year = $('#year').val();
-        let level = $('#level option:selected').text();
+        let level = $('#level').val();
         let qualification = $('#qualification').val();
+        let institution = $('#institution').val();
         let fileInput = $('#document')[0];
         let file = fileInput.files[0];
 
@@ -263,6 +264,7 @@
                 <td>${level}</td>
                 <td>${year}</td>
                 <td>${qualification}</td>
+                <td>${institution || '—'}</td>
                 <td>${fileName}</td>
                 <td>
                     <button type="button" class="btn btn-danger btn-sm removeDoc" data-id="${counter}">
@@ -279,6 +281,7 @@
                 <input type="hidden" name="documents[${counter}][level]" value="${level}">
                 <input type="hidden" name="documents[${counter}][year]" value="${year}">
                 <input type="hidden" name="documents[${counter}][qualification]" value="${qualification}">
+                <input type="hidden" name="documents[${counter}][institution]" value="${institution}">
                 <input type="file" name="documents[${counter}][document]" class="realFileInput">
             </div>
         `);
@@ -293,6 +296,7 @@
         $('#level').val('');
         $('#year').val('');
         $('#qualification').val('');
+        $('#institution').val('');
         $('#document').val('');
 
         counter++;

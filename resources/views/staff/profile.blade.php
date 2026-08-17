@@ -1,5 +1,5 @@
 <!-- page title -->
-@php $pageName = "staff"; $subpageName = "profile"; @endphp
+@php $pageName = "hr"; $subpageName = "profile"; @endphp
 @php $activeTab = session('active_tab', '#pills-studentDetails'); @endphp
 @php session()->forget('active_tab'); @endphp
 @extends('layouts.app')
@@ -10,12 +10,10 @@
 
         <div class="page-header breadcrumb d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
             <div class="">
-                <h1 class="fw-semibold mb-4 h6 text-primary-light">STAFF MANAGEMENT</h1>
+                <h1 class="fw-semibold mb-4 h6 text-primary-light">HR</h1>
                 <div class="">
-                <a href="#" class="text-secondary-light hover-text-primary hover-underline">Dashboard </a>
-                <a href="#" class="text-secondary-light hover-text-primary hover-underline d-none"> /
-                    Staff Management</a>
-                <span class="text-secondary-light">/ View Staff Details</span>
+                <a href="{{ route('dashboard') }}" class="text-secondary-light hover-text-primary hover-underline">Dashboard </a>
+                <span class="text-secondary-light"> / Profile</span>
                 </div>
             </div>
             
