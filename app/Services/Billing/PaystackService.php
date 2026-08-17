@@ -66,7 +66,7 @@ class PaystackService
 
     public function publicKey(): string
     {
-        return (string) config('paystack.public_key');
+        return $this->resolveCredential('paystack.public_key', 'PAYSTACK_PUBLIC_KEY');
     }
 
     public function isConfigured(): bool
@@ -76,7 +76,26 @@ class PaystackService
 
     private function secretKey(): string
     {
-        return (string) config('paystack.secret_key');
+        return $this->resolveCredential('paystack.secret_key', 'PAYSTACK_SECRET_KEY');
+    }
+
+    private function resolveCredential(string $configKey, string $envKey): string
+    {
+        $value = config($configKey);
+
+        if ($value !== null && trim((string) $value) !== '') {
+            return trim((string) $value);
+        }
+
+        $envValue = env($envKey);
+
+        if ($envValue !== null && trim((string) $envValue) !== '') {
+            return trim((string) $envValue);
+        }
+
+        $systemValue = getenv($envKey);
+
+        return is_string($systemValue) ? trim($systemValue) : '';
     }
 
     private function baseUrl(): string

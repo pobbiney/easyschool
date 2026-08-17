@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Billing;
 use App\Http\Controllers\Controller;
 use App\Models\BillPayment;
 use App\Models\BillPaymentAllocation;
+use App\Http\Controllers\Pos\PosSaleController;
 use App\Models\BillPaymentTransaction;
 use App\Models\SchoolSetting;
 use App\Models\Student;
@@ -269,6 +270,12 @@ class BillPaymentController extends Controller
 
         try {
             $this->completePaystackTransaction($reference);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+            try {
+                app(PosSaleController::class)->completePaystackFromWebhook($reference);
+            } catch (InvalidArgumentException|RuntimeException) {
+                return response()->json(['message' => 'Unable to process webhook.'], 422);
+            }
         } catch (InvalidArgumentException|RuntimeException) {
             return response()->json(['message' => 'Unable to process webhook.'], 422);
         }

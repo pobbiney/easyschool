@@ -43,6 +43,10 @@ use App\Http\Controllers\Teacher\AttendanceController;
 use App\Http\Controllers\Teacher\GradebookController;
 use App\Http\Controllers\Sms\SmsController;
 use App\Http\Controllers\Timetable\TimetableController;
+use App\Http\Controllers\Pos\PosCategoryController;
+use App\Http\Controllers\Pos\PosProductController;
+use App\Http\Controllers\Pos\PosStockController;
+use App\Http\Controllers\Pos\PosSaleController;
 
 Route::get('forgot-password',[AuthenticationController::class,'getForgetPassword'])->name('forgot-password');
 Route::post('forgot-password-process',[AuthenticationController::class,'forgotPass'])->name('forgot-password-process');
@@ -392,3 +396,34 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         Route::get('timetable/{class}', 'show')->name('timetable-show');
     });
 /* End Timetable */
+
+/* POS */
+   Route::controller(PosSaleController::class)->group(function () {
+        Route::get('pos-sale', 'index')->name('pos-sale');
+        Route::post('pos-sale-process', 'store')->name('pos-sale-process');
+        Route::post('paystack/pos-sale/initialize', 'initializePaystack')->name('paystack-pos-sale-initialize');
+        Route::post('paystack/pos-sale/verify', 'verifyPaystack')->name('paystack-pos-sale-verify');
+        Route::get('pos-sales', 'history')->name('pos-sales');
+        Route::get('pos-receipt/{id}', 'receipt')->name('pos-receipt');
+        Route::get('pos-student-search', 'searchStudents')->name('pos-student-search');
+    });
+
+   Route::controller(PosProductController::class)->group(function () {
+        Route::get('pos-products', 'index')->name('pos-products');
+        Route::post('add-pos-product-process', 'store')->name('add-pos-product-process');
+        Route::get('get-pos-product-id/{id}', 'show')->name('get-pos-product-id');
+        Route::post('update-pos-product-process', 'update')->name('update-pos-product-process');
+    });
+
+   Route::controller(PosCategoryController::class)->group(function () {
+        Route::get('pos-categories', 'index')->name('pos-categories');
+        Route::post('add-pos-category-process', 'store')->name('add-pos-category-process');
+        Route::get('get-pos-category-id/{id}', 'show')->name('get-pos-category-id');
+        Route::post('update-pos-category-process', 'update')->name('update-pos-category-process');
+    });
+
+   Route::controller(PosStockController::class)->group(function () {
+        Route::get('pos-stock', 'index')->name('pos-stock');
+        Route::post('pos-stock-process', 'store')->name('pos-stock-process');
+    });
+/* End POS */

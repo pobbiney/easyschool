@@ -879,13 +879,9 @@
                     return;
                 }
 
-                const handler = PaystackPop.setup({
+                const paystackOptions = {
                     key: res.public_key || paystackPublicKey,
                     email: res.email,
-                    label: res.label || undefined,
-                    amount: res.amount,
-                    currency: res.currency || 'GHS',
-                    ref: res.reference,
                     callback: function(response) {
                         verifyPaystackPayment(response.reference);
                     },
@@ -893,7 +889,18 @@
                         showAppToast('error', 'Paystack payment was cancelled.');
                         resetSubmitButton();
                     }
-                });
+                };
+
+                if (res.access_code) {
+                    paystackOptions.access_code = res.access_code;
+                } else {
+                    paystackOptions.label = res.label || undefined;
+                    paystackOptions.amount = res.amount;
+                    paystackOptions.currency = res.currency || 'GHS';
+                    paystackOptions.ref = res.reference;
+                }
+
+                const handler = PaystackPop.setup(paystackOptions);
 
                 $btn.html('<i class="ri-secure-payment-line"></i> Opening Paystack...');
                 handler.openIframe();
