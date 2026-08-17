@@ -7,12 +7,13 @@ use App\Models\Course;
 use App\Models\CourseTeachingAssignment;
 use App\Models\SchoolClass;
 use App\Models\Staff;
+use App\Support\AcademicPeriodDefaults;
+use App\Support\TeacherCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class CourseTeacherController extends Controller
 {
-    private const TEACHER_CATEGORY_ID = 2;
 
     public function index()
     {
@@ -99,6 +100,8 @@ class CourseTeacherController extends Controller
         }
 
         $assignment->staff_id = $teacher->id;
+        $assignment->academic_year_id = AcademicPeriodDefaults::yearId($request);
+        $assignment->academic_term_id = AcademicPeriodDefaults::termId($request);
         $assignment->updated_by = Auth::id();
         $assignment->save();
 
@@ -141,7 +144,7 @@ class CourseTeacherController extends Controller
         return Staff::query()
             ->where('staff.status', 'Active')
             ->whereHas('user', function ($query) {
-                $query->where('user_cat', self::TEACHER_CATEGORY_ID)
+                $query->where('user_cat', TeacherCategory::id())
                     ->where('status', 'Active');
             })
             ->orderBy('staff.surname')

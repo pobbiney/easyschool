@@ -359,6 +359,45 @@
         animation: scaSpin .7s linear infinite;
     }
     @keyframes scaSpin { to { transform: rotate(360deg); } }
+
+    .sca-mode-tabs {
+        display: inline-flex; gap: 8px; padding: 6px;
+        border: 1px solid var(--neutral-200, #e5e7eb); border-radius: 999px;
+        background: #fff; margin-bottom: 16px;
+    }
+    .sca-mode-tab {
+        border: none; background: transparent; color: #6b7280;
+        padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 600;
+        display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+        transition: all .15s ease;
+    }
+    .sca-mode-tab.is-active {
+        background: #25A194; color: #fff;
+        box-shadow: 0 2px 8px rgba(37,161,148,.25);
+    }
+    .sca-bulk-shell {
+        border: 1px solid var(--neutral-200, #e5e7eb); border-radius: 16px;
+        background: #fff; overflow: hidden;
+        box-shadow: 0 1px 3px rgba(15,23,42,.04);
+    }
+    .sca-bulk-toolbar {
+        padding: 20px 22px; border-bottom: 1px solid var(--neutral-200, #e5e7eb);
+        background: linear-gradient(180deg, #fff 0%, #f9fafb 100%);
+    }
+    .sca-bulk-table-wrap { max-height: 420px; overflow: auto; }
+    .sca-bulk-table thead th {
+        position: sticky; top: 0; z-index: 2;
+        background: #25A194; color: #fff; border: none; font-size: 12px;
+    }
+    .sca-bulk-table tbody tr.is-selected { background: rgba(37,161,148,.04); }
+    .sca-bulk-footer {
+        padding: 18px 22px; border-top: 1px solid var(--neutral-200, #e5e7eb);
+        background: #fafafa;
+    }
+    .sca-bulk-count {
+        padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;
+        background: rgba(37,161,148,.1); color: #25A194;
+    }
 </style>
 @endsection
 
@@ -366,7 +405,7 @@
 <div class="sca-progress" id="scaProgress"></div>
 
 <div class="dashboard-main-body">
-    <div class="breadcrumb d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
+    <div class="page-header breadcrumb d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
         <div>
             <h1 class="fw-semibold mb-4 h6 text-primary-light">CLASS SETUP</h1>
             <div>
@@ -384,7 +423,7 @@
         <span class="sca-hero-icon"><i class="ri-user-shared-line"></i></span>
         <div>
             <h5 class="fw-semibold mb-6">Student Class Assignment</h5>
-            <p class="text-sm text-secondary-light mb-0">Search students, review their profile, assign enrollment, and inherit bills for the selected term and year.</p>
+            <p class="text-sm text-secondary-light mb-0">Search students for single assignment, or use bulk mode to assign many students to one class at once.</p>
         </div>
     </div>
 
@@ -418,6 +457,12 @@
         </div>
     </div>
 
+    <div class="sca-mode-tabs">
+        <button type="button" class="sca-mode-tab is-active" data-mode="single"><i class="ri-user-line"></i> Single Student</button>
+        <button type="button" class="sca-mode-tab" data-mode="bulk"><i class="ri-group-2-line"></i> Bulk Assignment</button>
+    </div>
+
+    <div id="singleAssignmentPanel">
     <div class="sca-shell">
         <div class="sca-search-section">
             <div class="sca-search-row">
@@ -555,6 +600,108 @@
                 </div>
         </div>
     </div>
+    </div>
+
+    <div id="bulkAssignmentPanel" class="d-none">
+        <div class="sca-bulk-shell">
+            <div class="sca-bulk-toolbar">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-16">
+                    <div>
+                        <h6 class="fw-semibold mb-4"><i class="ri-group-2-line text-primary-600"></i> Bulk Assign to Class</h6>
+                        <p class="text-sm text-secondary-light mb-0">Select students, choose target class/year/term, then assign all at once.</p>
+                    </div>
+                    <span id="bulkSelectedCount" class="sca-bulk-count">0 selected</span>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="sca-field">
+                            <label><i class="ri-calendar-2-line"></i> Academic Year</label>
+                            <select id="bulkAssignYear" class="form-select">
+                                <option value="">Select year</option>
+                                @foreach($academicYears as $year)
+                                    <option value="{{ $year->id }}">{{ $year->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="sca-field">
+                            <label><i class="ri-calendar-event-line"></i> Academic Term</label>
+                            <select id="bulkAssignTerm" class="form-select">
+                                <option value="">Select term</option>
+                                @foreach($academicTerms as $term)
+                                    <option value="{{ $term->id }}">{{ $term->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="sca-field">
+                            <label><i class="ri-book-open-line"></i> Target Class</label>
+                            <select id="bulkAssignClass" class="form-select">
+                                <option value="">Select class</option>
+                                @foreach($schoolClasses as $class)
+                                    <option value="{{ $class->id }}">{{ $class->name }}@if($class->category) · {{ $class->category->name }}@endif</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div id="bulkBillPreview" class="sca-preview d-none mt-16"></div>
+            </div>
+
+            <div class="sca-bulk-toolbar border-top-0 pt-0">
+                <div class="sca-search-row">
+                    <div class="sca-search-wrap">
+                        <i class="ri-search-line"></i>
+                        <input type="text" id="bulkSearchInput" class="form-control" placeholder="Search students by name or ID..." autocomplete="off">
+                    </div>
+                    <div class="sca-filter-field">
+                        <select id="bulkFilterClass" class="form-select">
+                            <option value="">All current classes</option>
+                            @foreach($schoolClasses as $class)
+                                <option value="{{ $class->id }}">{{ $class->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="sca-filter-field d-flex align-items-end">
+                        <div class="form-check mb-10">
+                            <input class="form-check-input" type="checkbox" id="bulkUnassignedOnly" checked>
+                            <label class="form-check-label text-sm" for="bulkUnassignedOnly">Unassigned only</label>
+                        </div>
+                    </div>
+                    <button type="button" id="bulkLoadBtn" class="btn btn-outline-primary-600"><i class="ri-refresh-line"></i> Load Students</button>
+                </div>
+            </div>
+
+            <div class="sca-bulk-table-wrap">
+                <table class="table bordered-table mb-0 sca-bulk-table">
+                    <thead>
+                        <tr>
+                            <th style="width:44px;"><input type="checkbox" id="bulkSelectAll" class="form-check-input m-0"></th>
+                            <th>Student</th>
+                            <th>ID</th>
+                            <th>Current Class</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bulkStudentsBody">
+                        <tr><td colspan="5" class="text-center py-40 text-secondary-light text-sm">Click “Load Students” to show candidates for bulk assignment.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="sca-bulk-footer d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div class="text-sm text-secondary-light" id="bulkLoadedSummary">No students loaded.</div>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" id="bulkClearSelectionBtn" class="btn btn-outline-secondary-600">Clear Selection</button>
+                    <button type="button" id="bulkAssignBtn" class="btn btn-primary-600 d-inline-flex align-items-center gap-6">
+                        <i class="ri-check-double-line"></i> Assign Selected Students
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
 
@@ -564,11 +711,14 @@
     const showUrlTemplate = @json(route('get-student-class-assignment', ['id' => '__ID__']));
     const previewUrl = @json(route('student-class-assignment-preview'));
     const assignUrl = @json(route('assign-student-class-process'));
+    const bulkCandidatesUrl = @json(route('student-class-assignment-bulk-candidates'));
+    const bulkAssignUrl = @json(route('assign-student-class-bulk-process'));
     const csrfToken = @json(csrf_token());
     const defaultAcademicYearId = @json($defaultAcademicYearId);
     const defaultAcademicTermId = @json($defaultAcademicTermId);
 
     let selectedStudentId = null, currentStudent = null, searchTimer = null, activeTab = 'tabOverview';
+    let bulkStudents = [], bulkSelectedIds = new Set();
 
     function setLoading(on) { $('#scaProgress').toggleClass('is-active', on); $('#profileLoading').toggleClass('is-visible', on); }
     function escapeHtml(v) { return $('<div>').text(v ?? '').html(); }
@@ -788,6 +938,181 @@
             .done(function (res) { showAppToast('success', res.message || 'Student assigned.'); loadStudent(selectedStudentId); })
             .fail(function (xhr) { showAppToast('error', (xhr.responseJSON || {}).message || 'Unable to assign student.'); })
             .always(function () { $btn.prop('disabled', false).html('<i class="ri-check-double-line"></i> Assign & Sync Bills'); });
+    });
+
+    function switchAssignmentMode(mode) {
+        $('.sca-mode-tab').removeClass('is-active');
+        $('.sca-mode-tab[data-mode="' + mode + '"]').addClass('is-active');
+        if (mode === 'bulk') {
+            $('#singleAssignmentPanel').addClass('d-none');
+            $('#bulkAssignmentPanel').removeClass('d-none');
+            if (!bulkStudents.length) {
+                loadBulkCandidates();
+            }
+        } else {
+            $('#bulkAssignmentPanel').addClass('d-none');
+            $('#singleAssignmentPanel').removeClass('d-none');
+        }
+    }
+
+    function updateBulkSelectedCount() {
+        $('#bulkSelectedCount').text(bulkSelectedIds.size + ' selected');
+        $('#bulkSelectAll').prop('checked', bulkStudents.length > 0 && bulkSelectedIds.size === bulkStudents.length);
+    }
+
+    function renderBulkStudents(students) {
+        bulkStudents = students || [];
+        bulkSelectedIds = new Set(bulkStudents.map(function (s) { return s.id; }));
+        updateBulkSelectedCount();
+        $('#bulkLoadedSummary').text(bulkStudents.length + ' student(s) loaded.');
+
+        if (!bulkStudents.length) {
+            $('#bulkStudentsBody').html('<tr><td colspan="5" class="text-center py-40 text-secondary-light text-sm">No students match your filters.</td></tr>');
+            return;
+        }
+
+        let html = '';
+        bulkStudents.forEach(function (s) {
+            const checked = bulkSelectedIds.has(s.id) ? ' checked' : '';
+            html += '<tr class="bulk-student-row' + (checked ? ' is-selected' : '') + '" data-id="' + s.id + '">'
+                + '<td><input type="checkbox" class="form-check-input bulk-student-check m-0" value="' + s.id + '"' + checked + '></td>'
+                + '<td class="fw-semibold text-sm">' + escapeHtml(s.full_name) + '</td>'
+                + '<td class="text-sm text-secondary-light">' + escapeHtml(s.student_id) + '</td>'
+                + '<td class="text-sm">' + escapeHtml(s.class_name || 'Unassigned') + '</td>'
+                + '<td>' + statusBadge(s.status) + '</td>'
+                + '</tr>';
+        });
+        $('#bulkStudentsBody').html(html);
+    }
+
+    function loadBulkBillPreview() {
+        const classId = $('#bulkAssignClass').val();
+        const yearId = $('#bulkAssignYear').val();
+        const termId = $('#bulkAssignTerm').val();
+        const preview = $('#bulkBillPreview');
+
+        if (!classId || !yearId || !termId) {
+            preview.addClass('d-none').removeClass('is-found is-missing').empty();
+            return;
+        }
+
+        preview.removeClass('d-none is-found is-missing').html('<div class="text-sm text-secondary-light"><span class="sca-spinner d-inline-block" style="width:16px;height:16px;border-width:2px;vertical-align:middle;margin-right:6px;"></span> Checking bill setup...</div>');
+
+        $.get(previewUrl, { school_class_id: classId, academic_year_id: yearId, academic_term_id: termId }).done(function (data) {
+            preview.removeClass('is-found is-missing');
+            if (data.setup_found) {
+                preview.addClass('is-found');
+                let html = '<div class="fw-semibold text-success-600 mb-10"><i class="ri-checkbox-circle-line"></i> Bills to inherit · ' + escapeHtml(data.category_name) + '</div>';
+                data.items.forEach(function (item) {
+                    html += '<div class="sca-preview-row"><span>' + escapeHtml(item.name) + '</span><span class="fw-semibold">₵' + formatMoney(item.amount) + '</span></div>';
+                });
+                html += '<div class="sca-preview-row mt-4 pt-8" style="border-top:1px solid rgba(34,197,94,.2);"><span class="fw-bold">Total per student</span><span class="fw-bold text-success-600">₵' + formatMoney(data.total) + '</span></div>';
+                preview.html(html);
+            } else {
+                preview.addClass('is-missing');
+                preview.html('<div class="fw-semibold text-warning-600 mb-4"><i class="ri-error-warning-line"></i> No bill setup</div><p class="text-sm mb-0">' + escapeHtml(data.message || 'No bills will be created.') + '</p>');
+            }
+        });
+    }
+
+    function loadBulkCandidates() {
+        setLoading(true);
+        $.get(bulkCandidatesUrl, {
+            q: $('#bulkSearchInput').val().trim(),
+            school_class_id: $('#bulkFilterClass').val(),
+            unassigned_only: $('#bulkUnassignedOnly').is(':checked') ? 1 : 0,
+        }).done(function (data) {
+            renderBulkStudents(data.students || []);
+        }).fail(function () {
+            showAppToast('error', 'Unable to load students for bulk assignment.');
+        }).always(function () {
+            setLoading(false);
+        });
+    }
+
+    $('.sca-mode-tab').on('click', function () {
+        switchAssignmentMode($(this).data('mode'));
+    });
+
+    if (defaultAcademicYearId) {
+        $('#bulkAssignYear').val(String(defaultAcademicYearId));
+    }
+    if (defaultAcademicTermId) {
+        $('#bulkAssignTerm').val(String(defaultAcademicTermId));
+    }
+
+    $('#bulkAssignYear, #bulkAssignTerm, #bulkAssignClass').on('change', loadBulkBillPreview);
+    $('#bulkLoadBtn').on('click', loadBulkCandidates);
+    $('#bulkSearchInput, #bulkFilterClass, #bulkUnassignedOnly').on('change input', function () {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(loadBulkCandidates, 350);
+    });
+
+    $('#bulkSelectAll').on('change', function () {
+        const checked = $(this).is(':checked');
+        bulkSelectedIds = checked ? new Set(bulkStudents.map(function (s) { return s.id; })) : new Set();
+        $('.bulk-student-check').prop('checked', checked);
+        $('.bulk-student-row').toggleClass('is-selected', checked);
+        updateBulkSelectedCount();
+    });
+
+    $('body').on('change', '.bulk-student-check', function () {
+        const id = parseInt($(this).val(), 10);
+        if ($(this).is(':checked')) {
+            bulkSelectedIds.add(id);
+            $(this).closest('tr').addClass('is-selected');
+        } else {
+            bulkSelectedIds.delete(id);
+            $(this).closest('tr').removeClass('is-selected');
+        }
+        updateBulkSelectedCount();
+    });
+
+    $('#bulkClearSelectionBtn').on('click', function () {
+        bulkSelectedIds.clear();
+        $('.bulk-student-check').prop('checked', false);
+        $('.bulk-student-row').removeClass('is-selected');
+        updateBulkSelectedCount();
+    });
+
+    $('#bulkAssignBtn').on('click', function () {
+        const studentIds = Array.from(bulkSelectedIds);
+        const payload = {
+            _token: csrfToken,
+            student_ids: studentIds,
+            school_class_id: $('#bulkAssignClass').val(),
+            academic_year_id: $('#bulkAssignYear').val(),
+            academic_term_id: $('#bulkAssignTerm').val(),
+        };
+
+        if (!studentIds.length) {
+            showAppToast('error', 'Select at least one student.');
+            return;
+        }
+        if (!payload.school_class_id || !payload.academic_year_id || !payload.academic_term_id) {
+            showAppToast('error', 'Select academic year, term, and target class.');
+            return;
+        }
+
+        const className = $('#bulkAssignClass option:selected').text().trim();
+        if (!confirm('Assign ' + studentIds.length + ' student(s) to ' + className + '?')) {
+            return;
+        }
+
+        const $btn = $(this).prop('disabled', true).html('<span class="sca-spinner d-inline-block" style="width:14px;height:14px;border-width:2px;"></span> Assigning...');
+        $.ajax({
+            url: bulkAssignUrl,
+            method: 'POST',
+            data: payload,
+            headers: { Accept: 'application/json' },
+        }).done(function (res) {
+            showAppToast('success', res.message || 'Students assigned.');
+            loadBulkCandidates();
+        }).fail(function (xhr) {
+            showAppToast('error', (xhr.responseJSON || {}).message || 'Unable to bulk assign students.');
+        }).always(function () {
+            $btn.prop('disabled', false).html('<i class="ri-check-double-line"></i> Assign Selected Students');
+        });
     });
 </script>
 @endsection

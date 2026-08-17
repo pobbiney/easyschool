@@ -616,7 +616,7 @@
 
 <div class="dashboard-main-body">
 
-    <div class="breadcrumb d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
+    <div class="page-header breadcrumb d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
         <div>
             <h1 class="fw-semibold mb-4 h6 text-primary-light">COURSE SETUP</h1>
             <div>
@@ -1229,8 +1229,8 @@
 
             if (!courses.length) {
                 showPlaceholder(
-                    'No courses found',
-                    'Add courses under Course Setup before registering them here.',
+                    'No eligible subjects',
+                    data.message || 'No subjects are linked to the selected class category.',
                     'ri-book-open-line'
                 );
                 return;

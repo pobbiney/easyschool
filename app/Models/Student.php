@@ -13,6 +13,9 @@ class Student extends Model
         'academic_term_id',
         'class_name',
         'school_class_id',
+        'last_promotion_from_class_id',
+        'last_promotion_type',
+        'last_promoted_at',
         'section',
         'roll_number',
         'firstname',
@@ -52,8 +55,14 @@ class Student extends Model
         'dormitory_id',
         'bed_id',
         'status',
+        'credit_balance',
         'created_by',
         'updated_by',
+    ];
+
+    protected $casts = [
+        'credit_balance' => 'decimal:2',
+        'last_promoted_at' => 'datetime',
     ];
 
     public function docs()
@@ -64,6 +73,11 @@ class Student extends Model
     public function schoolClass()
     {
         return $this->belongsTo(SchoolClass::class, 'school_class_id');
+    }
+
+    public function lastPromotionFromClass()
+    {
+        return $this->belongsTo(SchoolClass::class, 'last_promotion_from_class_id');
     }
 
     public function academicYear()
@@ -84,6 +98,11 @@ class Student extends Model
     public function billPayments()
     {
         return $this->hasMany(BillPayment::class);
+    }
+
+    public function creditTransactions()
+    {
+        return $this->hasMany(StudentBillCreditTransaction::class);
     }
 
     public function house()

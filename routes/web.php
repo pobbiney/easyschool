@@ -10,16 +10,28 @@ use App\Http\Controllers\UserManagement\UserManagementController;
 use App\Http\Controllers\Staff\StaffController;
 use App\Http\Controllers\Student\StudentController;
 use App\Http\Controllers\Student\AcademicYearController;
+use App\Http\Controllers\Student\AcademicTermController;
 use App\Http\Controllers\Student\SchoolClassController;
 use App\Http\Controllers\Student\ClassCategoryController;
 use App\Http\Controllers\Student\ClassTeacherController;
 use App\Http\Controllers\Student\StudentClassAssignmentController;
+use App\Http\Controllers\Student\StudentPromotionController;
 use App\Http\Controllers\Settings\SchoolSettingController;
+use App\Http\Controllers\Settings\AssessmentTypeController;
+use App\Http\Controllers\Settings\PromotionSettingController;
 use App\Http\Controllers\Dormitory\DormitoryController;
 use App\Http\Controllers\Billing\BillingItemController;
 use App\Http\Controllers\Billing\CategoryBillSetupController;
 use App\Http\Controllers\Billing\StudentBillController;
 use App\Http\Controllers\Billing\BillPaymentController;
+use App\Http\Controllers\TeacherManagement\TeacherDirectoryController;
+use App\Http\Controllers\TeacherManagement\GradingSchemeController;
+use App\Http\Controllers\Teacher\DashboardController as TeacherDashboardController;
+use App\Http\Controllers\Teacher\ClassWorkspaceController;
+use App\Http\Controllers\Teacher\CourseWorkspaceController;
+use App\Http\Controllers\Teacher\AssessmentController;
+use App\Http\Controllers\Teacher\AttendanceController;
+use App\Http\Controllers\Teacher\GradebookController;
 
 Route::get('forgot-password',[AuthenticationController::class,'getForgetPassword'])->name('forgot-password');
 Route::post('forgot-password-process',[AuthenticationController::class,'forgotPass'])->name('forgot-password-process');
@@ -31,7 +43,8 @@ Route::post('reset-otp-process/{id}',[AuthenticationController::class,'resetOtp'
 /** End of Frontend */
 
 /* Backend*/
-Route::get('/',[AuthenticationController::class,'getAdminLoginPage'])->name('admin-login');
+Route::get('/', [AuthenticationController::class, 'getAdminLoginPage'])->name('admin-login');
+Route::get('login', fn () => redirect('/'))->name('login');
 Route::get('dashboard',[DashboardController::class,'index'])->name('dashboard');
  
 Route::get('user-profile',[AuthenticationController::class,'getUserProfile'])->name('user-profile');
@@ -87,6 +100,26 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         Route::post('update-academic-year-process', 'update')->name('update-academic-year-process');
     });
 
+   Route::controller(AcademicTermController::class)->group(function () {
+        Route::get('academic-terms', 'index')->name('academic-terms');
+        Route::post('add-academic-term-process', 'store')->name('add-academic-term-process');
+        Route::get('get-academic-term-id/{id}', 'show')->name('get-academic-term-id');
+        Route::post('update-academic-term-process', 'update')->name('update-academic-term-process');
+    });
+
+   Route::controller(AssessmentTypeController::class)->group(function () {
+        Route::get('assessment-types', 'index')->name('assessment-types');
+        Route::post('add-assessment-type-process', 'store')->name('add-assessment-type-process');
+        Route::get('get-assessment-type-id/{id}', 'show')->name('get-assessment-type-id');
+        Route::post('update-assessment-type-process', 'update')->name('update-assessment-type-process');
+        Route::post('delete-assessment-type-process', 'destroy')->name('delete-assessment-type-process');
+    });
+
+   Route::controller(PromotionSettingController::class)->group(function () {
+        Route::get('promotion-settings', 'index')->name('promotion-settings');
+        Route::post('update-promotion-settings-process', 'update')->name('update-promotion-settings-process');
+    });
+
    Route::controller(SchoolClassController::class)->group(function () {
         Route::get('school-classes', 'index')->name('school-classes');
         Route::post('add-school-class-process', 'store')->name('add-school-class-process');
@@ -113,7 +146,15 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         Route::get('student-class-assignment-search', 'search')->name('student-class-assignment-search');
         Route::get('get-student-class-assignment/{id}', 'show')->name('get-student-class-assignment');
         Route::get('student-class-assignment-preview', 'preview')->name('student-class-assignment-preview');
+        Route::get('student-class-assignment-bulk-candidates', 'bulkCandidates')->name('student-class-assignment-bulk-candidates');
         Route::post('assign-student-class-process', 'assign')->name('assign-student-class-process');
+        Route::post('assign-student-class-bulk-process', 'bulkAssign')->name('assign-student-class-bulk-process');
+    });
+
+   Route::controller(StudentPromotionController::class)->group(function () {
+        Route::get('student-promotion', 'index')->name('student-promotion');
+        Route::get('student-promotion/classes/{class}', 'show')->name('student-promotion-class');
+        Route::post('student-promotion/classes/{class}/promote', 'promote')->name('student-promotion-process');
     });
 /* End StudentController*/
 
@@ -183,6 +224,10 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
 
    Route::controller(StudentBillController::class)->group(function () {
         Route::get('student-bills', 'index')->name('student-bills');
+        Route::get('student-bills/print', 'printLedger')->name('student-bills-print');
+        Route::get('student-bills/print/{id}', 'printStatement')->name('student-bill-print');
+        Route::get('print-bills', 'printBillsIndex')->name('print-bills');
+        Route::get('print-class-bills/output', 'printClassStatements')->name('print-class-bills-output');
         Route::get('edit-student-bills', 'editIndex')->name('edit-student-bills');
         Route::get('edit-student-bills-search', 'search')->name('edit-student-bills-search');
         Route::get('get-student-bills/{id}', 'show')->name('get-student-bills');
@@ -193,6 +238,62 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
    Route::controller(BillPaymentController::class)->group(function () {
         Route::get('record-bill-payment/{id}', 'cashier')->name('record-bill-payment');
         Route::post('record-bill-payment-process', 'store')->name('record-bill-payment-process');
+        Route::post('paystack/bill-payment/initialize', 'initializePaystack')->name('paystack-bill-payment-initialize');
+        Route::post('paystack/bill-payment/verify', 'verifyPaystack')->name('paystack-bill-payment-verify');
+        Route::post('paystack/webhook', 'webhook')->name('paystack-webhook')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
         Route::get('bill-payment-receipt/{id}', 'receipt')->name('bill-payment-receipt');
     });
 /* End Billing */
+
+/* Teacher Management */
+   Route::controller(TeacherDirectoryController::class)->group(function () {
+        Route::get('teacher-directory', 'index')->name('teacher-directory');
+    });
+
+   Route::controller(GradingSchemeController::class)->group(function () {
+        Route::get('grading-scheme', 'index')->name('grading-scheme');
+        Route::post('add-grading-scheme-process', 'store')->name('add-grading-scheme-process');
+        Route::post('update-grading-scheme-process', 'update')->name('update-grading-scheme-process');
+        Route::post('delete-grading-scheme-process', 'destroy')->name('delete-grading-scheme-process');
+    });
+/* End Teacher Management */
+
+/* Teacher Portal */
+   Route::controller(TeacherDashboardController::class)->group(function () {
+        Route::get('teacher-dashboard', 'index')->name('teacher-dashboard');
+    });
+
+   Route::controller(ClassWorkspaceController::class)->group(function () {
+        Route::get('teacher/classes/{class}', 'show')->name('teacher-class-workspace');
+    });
+
+   Route::controller(CourseWorkspaceController::class)->group(function () {
+        Route::get('teacher/courses/{course}/classes/{class}', 'show')->name('teacher-course-workspace');
+    });
+
+   Route::controller(AssessmentController::class)->group(function () {
+        Route::get('teacher-assessments', 'hub')->name('teacher-assessments');
+        Route::get('teacher-assessment-records', 'records')->name('teacher-assessment-records');
+        Route::get('teacher/classes/{class}/assessments', 'classIndex')->name('teacher-class-assessments');
+        Route::get('teacher/classes/{class}/assessment-records', 'classRecords')->name('teacher-class-assessment-records');
+        Route::get('teacher/courses/{course}/classes/{class}/assessments', 'courseIndex')->name('teacher-course-assessments');
+        Route::get('teacher/courses/{course}/classes/{class}/assessment-records', 'courseRecords')->name('teacher-course-assessment-records');
+        Route::post('teacher-assessments-process', 'store')->name('teacher-assessments-process');
+        Route::get('teacher/assessments/{assessment}/scores', 'scores')->name('teacher-assessment-scores');
+        Route::post('teacher/assessments/{assessment}/scores', 'saveScores')->name('teacher-assessment-scores-process');
+        Route::delete('teacher/assessments/{assessment}', 'destroy')->name('teacher-assessments-delete');
+    });
+
+   Route::controller(AttendanceController::class)->group(function () {
+        Route::get('teacher-attendance', 'hub')->name('teacher-attendance');
+        Route::get('teacher/classes/{class}/attendance', 'index')->name('teacher-class-attendance');
+        Route::post('teacher/classes/{class}/attendance', 'store')->name('teacher-class-attendance-process');
+    });
+
+   Route::controller(GradebookController::class)->group(function () {
+        Route::get('teacher-gradebook', 'hub')->name('teacher-gradebook');
+        Route::get('teacher/classes/{class}/gradebook', 'index')->name('teacher-class-gradebook');
+        Route::get('teacher/students/{student}/report-card/print', 'printReportCard')->name('teacher-report-card-print');
+        Route::get('teacher/classes/{class}/report-cards/print', 'printClassReportCards')->name('teacher-class-report-cards-print');
+    });
+/* End Teacher Portal */

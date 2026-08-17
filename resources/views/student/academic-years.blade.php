@@ -6,7 +6,7 @@
 
 <div class="dashboard-main-body">
 
-    <div class="breadcrumb d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
+    <div class="page-header breadcrumb d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
         <div>
             <h1 class="fw-semibold mb-4 h6 text-primary-light">SETTINGS</h1>
             <div>
@@ -15,6 +15,12 @@
             </div>
         </div>
         <div class="d-flex flex-wrap gap-2">
+            <a href="{{ route('academic-terms') }}" class="btn btn-outline-primary-600 d-flex align-items-center gap-6">
+                <i class="ri-calendar-event-line"></i> Academic Terms
+            </a>
+            <a href="{{ route('assessment-types') }}" class="btn btn-outline-primary-600 d-flex align-items-center gap-6">
+                <i class="ri-file-list-3-line"></i> Assessment Types
+            </a>
             <a href="{{ route('academic-session') }}" class="btn btn-outline-primary-600 d-flex align-items-center gap-6">
                 <i class="ri-calendar-2-line"></i> Set Current Session
             </a>
