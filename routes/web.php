@@ -4,15 +4,22 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Authentication\AuthenticationController;
 use App\Http\Controllers\Course\CourseController;
 use App\Http\Controllers\Course\CourseTeacherController;
+use App\Http\Controllers\Course\CourseRegistrationController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\UserManagement\UserManagementController;
 use App\Http\Controllers\Staff\StaffController;
 use App\Http\Controllers\Student\StudentController;
 use App\Http\Controllers\Student\AcademicYearController;
 use App\Http\Controllers\Student\SchoolClassController;
+use App\Http\Controllers\Student\ClassCategoryController;
 use App\Http\Controllers\Student\ClassTeacherController;
+use App\Http\Controllers\Student\StudentClassAssignmentController;
 use App\Http\Controllers\Settings\SchoolSettingController;
 use App\Http\Controllers\Dormitory\DormitoryController;
+use App\Http\Controllers\Billing\BillingItemController;
+use App\Http\Controllers\Billing\CategoryBillSetupController;
+use App\Http\Controllers\Billing\StudentBillController;
+use App\Http\Controllers\Billing\BillPaymentController;
 
 Route::get('forgot-password',[AuthenticationController::class,'getForgetPassword'])->name('forgot-password');
 Route::post('forgot-password-process',[AuthenticationController::class,'forgotPass'])->name('forgot-password-process');
@@ -87,17 +94,33 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         Route::post('update-school-class-process', 'update')->name('update-school-class-process');
     });
 
+   Route::controller(ClassCategoryController::class)->group(function () {
+        Route::get('class-categories', 'index')->name('class-categories');
+        Route::post('add-class-category-process', 'store')->name('add-class-category-process');
+        Route::get('get-class-category-id/{id}', 'show')->name('get-class-category-id');
+        Route::post('update-class-category-process', 'update')->name('update-class-category-process');
+    });
+
    Route::controller(ClassTeacherController::class)->group(function () {
         Route::get('class-teacher-assignment', 'index')->name('class-teacher-assignment');
         Route::get('get-class-teacher-assignment/{id}', 'show')->name('get-class-teacher-assignment');
         Route::post('assign-class-teacher-process', 'assign')->name('assign-class-teacher-process');
         Route::post('unassign-class-teacher-process', 'unassign')->name('unassign-class-teacher-process');
     });
+
+   Route::controller(StudentClassAssignmentController::class)->group(function () {
+        Route::get('student-class-assignment', 'index')->name('student-class-assignment');
+        Route::get('student-class-assignment-search', 'search')->name('student-class-assignment-search');
+        Route::get('get-student-class-assignment/{id}', 'show')->name('get-student-class-assignment');
+        Route::get('student-class-assignment-preview', 'preview')->name('student-class-assignment-preview');
+        Route::post('assign-student-class-process', 'assign')->name('assign-student-class-process');
+    });
 /* End StudentController*/
 
 /* SchoolSettingController*/
    Route::controller(SchoolSettingController::class)->group(function () {
         Route::get('school-settings', 'index')->name('school-settings');
+        Route::get('academic-session', 'index')->name('academic-session');
         Route::post('update-school-settings-process', 'update')->name('update-school-settings-process');
     });
 /* End SchoolSettingController*/
@@ -134,4 +157,42 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         Route::post('assign-course-teacher-process', 'assign')->name('assign-course-teacher-process');
         Route::post('unassign-course-teacher-process', 'unassign')->name('unassign-course-teacher-process');
     });
+
+   Route::controller(CourseRegistrationController::class)->group(function () {
+        Route::get('course-registration', 'index')->name('course-registration');
+        Route::get('course-registration-courses', 'courses')->name('course-registration-courses');
+        Route::get('course-registration-registered', 'registered')->name('course-registration-registered');
+        Route::post('course-registration-register', 'register')->name('course-registration-register');
+        Route::post('course-registration-unregister', 'unregister')->name('course-registration-unregister');
+    });
 /* End CourseController*/
+
+/* Billing */
+   Route::controller(BillingItemController::class)->group(function () {
+        Route::get('billing-items', 'index')->name('billing-items');
+        Route::post('add-billing-item-process', 'store')->name('add-billing-item-process');
+        Route::get('get-billing-item-id/{id}', 'show')->name('get-billing-item-id');
+        Route::post('update-billing-item-process', 'update')->name('update-billing-item-process');
+    });
+
+   Route::controller(CategoryBillSetupController::class)->group(function () {
+        Route::get('category-bill-setup', 'index')->name('category-bill-setup');
+        Route::get('category-bill-setup-load', 'load')->name('category-bill-setup-load');
+        Route::post('category-bill-setup-save', 'store')->name('category-bill-setup-save');
+    });
+
+   Route::controller(StudentBillController::class)->group(function () {
+        Route::get('student-bills', 'index')->name('student-bills');
+        Route::get('edit-student-bills', 'editIndex')->name('edit-student-bills');
+        Route::get('edit-student-bills-search', 'search')->name('edit-student-bills-search');
+        Route::get('get-student-bills/{id}', 'show')->name('get-student-bills');
+        Route::get('get-student-outstanding-bills/{id}', 'outstanding')->name('get-student-outstanding-bills');
+        Route::post('update-student-bill-process', 'updateBill')->name('update-student-bill-process');
+    });
+
+   Route::controller(BillPaymentController::class)->group(function () {
+        Route::get('record-bill-payment/{id}', 'cashier')->name('record-bill-payment');
+        Route::post('record-bill-payment-process', 'store')->name('record-bill-payment-process');
+        Route::get('bill-payment-receipt/{id}', 'receipt')->name('bill-payment-receipt');
+    });
+/* End Billing */

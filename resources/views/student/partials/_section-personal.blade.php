@@ -1,4 +1,14 @@
-@php $student = $student ?? null; @endphp
+@php
+    $student = $student ?? null;
+    $selectedYearId = old('academic_year_id');
+    if ($selectedYearId === null) {
+        $selectedYearId = $student?->academic_year_id ?? ($defaultAcademicYearId ?? '');
+    }
+    $selectedTermId = old('academic_term_id');
+    if ($selectedTermId === null) {
+        $selectedTermId = $student?->academic_term_id ?? ($defaultAcademicTermId ?? '');
+    }
+@endphp
 <div class="row gy-3">
     <div class="col-xxl-3 col-xl-4 col-sm-6">
         <label class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Student ID <span class="text-danger-600">*</span></label>
@@ -7,27 +17,39 @@
     </div>
     <div class="col-xxl-3 col-xl-4 col-sm-6">
         <label class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Academic Year <span class="text-danger-600">*</span></label>
-        <select name="academic_year" class="form-control form-select wizard-required">
-            <option value="" disabled {{ old('academic_year', $student?->academic_year ?? '') ? '' : 'selected' }}>Select Academic Year</option>
+        <select name="academic_year_id" class="form-control form-select wizard-required">
+            <option value="" disabled {{ $selectedYearId ? '' : 'selected' }}>Select Academic Year</option>
             @forelse($academicYears ?? [] as $year)
-                <option value="{{ $year->name }}" {{ old('academic_year', $student?->academic_year ?? '') == $year->name ? 'selected' : '' }}>{{ $year->name }}</option>
+                <option value="{{ $year->id }}" {{ (string) $selectedYearId === (string) $year->id ? 'selected' : '' }}>{{ $year->name }}</option>
             @empty
                 <option value="" disabled>No academic years found — add them first</option>
             @endforelse
         </select>
-        @error('academic_year') <small class="text-danger">{{ $message }}</small> @enderror
+        @error('academic_year_id') <small class="text-danger">{{ $message }}</small> @enderror
+    </div>
+    <div class="col-xxl-3 col-xl-4 col-sm-6">
+        <label class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Academic Term <span class="text-danger-600">*</span></label>
+        <select name="academic_term_id" class="form-control form-select wizard-required">
+            <option value="" disabled {{ $selectedTermId ? '' : 'selected' }}>Select Academic Term</option>
+            @forelse($academicTerms ?? [] as $term)
+                <option value="{{ $term->id }}" {{ (string) $selectedTermId === (string) $term->id ? 'selected' : '' }}>{{ $term->name }}</option>
+            @empty
+                <option value="" disabled>No academic terms found</option>
+            @endforelse
+        </select>
+        @error('academic_term_id') <small class="text-danger">{{ $message }}</small> @enderror
     </div>
     <div class="col-xxl-3 col-xl-4 col-sm-6">
         <label class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Class <span class="text-danger-600">*</span></label>
-        <select name="class_name" class="form-control form-select wizard-required">
-            <option value="" disabled {{ old('class_name', $student?->class_name ?? '') ? '' : 'selected' }}>Select Class</option>
+        <select name="school_class_id" class="form-control form-select wizard-required">
+            <option value="" disabled {{ old('school_class_id', $student?->school_class_id ?? '') ? '' : 'selected' }}>Select Class</option>
             @forelse($schoolClasses ?? [] as $class)
-                <option value="{{ $class->name }}" {{ old('class_name', $student?->class_name ?? '') == $class->name ? 'selected' : '' }}>{{ $class->name }}</option>
+                <option value="{{ $class->id }}" {{ old('school_class_id', $student?->school_class_id ?? '') == $class->id ? 'selected' : '' }}>{{ $class->name }}</option>
             @empty
                 <option value="" disabled>No classes found — add them first</option>
             @endforelse
         </select>
-        @error('class_name') <small class="text-danger">{{ $message }}</small> @enderror
+        @error('school_class_id') <small class="text-danger">{{ $message }}</small> @enderror
     </div>
     <div class="col-xxl-3 col-xl-4 col-sm-6">
         <label class="text-sm fw-semibold text-primary-light d-inline-block mb-8">First Name <span class="text-danger-600">*</span></label>

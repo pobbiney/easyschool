@@ -12,4 +12,9 @@ class AcademicYear extends Model
         'created_by',
         'updated_by',
     ];
+
+    public function courseRegistrations()
+    {
+        return $this->hasMany(CourseRegistration::class, 'academic_year_id');
+    }
 }

@@ -10,11 +10,17 @@ class SchoolClass extends Model
 
     protected $fillable = [
         'name',
+        'class_category_id',
         'status',
         'class_teacher_id',
         'created_by',
         'updated_by',
     ];
+
+    public function category()
+    {
+        return $this->belongsTo(ClassCategory::class, 'class_category_id');
+    }
 
     public function classTeacher()
     {
@@ -24,5 +30,10 @@ class SchoolClass extends Model
     public function courseTeachingAssignments()
     {
         return $this->hasMany(CourseTeachingAssignment::class, 'school_class_id');
+    }
+
+    public function courseRegistrations()
+    {
+        return $this->hasMany(CourseRegistration::class, 'school_class_id');
     }
 }

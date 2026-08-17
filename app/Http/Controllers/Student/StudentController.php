@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Student;
 use App\Models\StudentDoc;
 use App\Models\AcademicYear;
+use App\Models\AcademicTerm;
 use App\Models\SchoolClass;
 use App\Models\SchoolSetting;
 use App\Models\House;
+use App\Services\Billing\StudentBillSyncService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
@@ -23,6 +25,7 @@ class StudentController extends Controller
         return view('student.add-student', [
             'studentCode' => $studentCode,
             'academicYears' => AcademicYear::where('status', 'Active')->orderBy('name', 'desc')->get(),
+            'academicTerms' => AcademicTerm::where('status', 'Active')->orderBy('sort_order')->get(),
             'schoolClasses' => SchoolClass::where('status', 'Active')->orderBy('name')->get(),
         ]);
     }
@@ -46,6 +49,10 @@ class StudentController extends Controller
         $student->status = $this->resolveFinalStudentStatus($request);
         $student->updated_by = Auth::id();
         $student->save();
+
+        if ($student->status === 'Active') {
+            app(StudentBillSyncService::class)->syncForStudent($student->fresh(['schoolClass.category']));
+        }
 
         $this->saveStudentDocuments($request, $student->id);
 
@@ -133,6 +140,7 @@ class StudentController extends Controller
             'id' => $id,
             'docs' => $docs,
             'academicYears' => AcademicYear::where('status', 'Active')->orderBy('name', 'desc')->get(),
+            'academicTerms' => AcademicTerm::where('status', 'Active')->orderBy('sort_order')->get(),
             'schoolClasses' => SchoolClass::where('status', 'Active')->orderBy('name')->get(),
         ]);
     }
@@ -157,6 +165,10 @@ class StudentController extends Controller
         $student->status = $this->resolveFinalStudentStatus($request);
         $student->updated_by = Auth::id();
         $student->save();
+
+        if ($student->status === 'Active') {
+            app(StudentBillSyncService::class)->syncForStudent($student->fresh(['schoolClass.category']));
+        }
 
         $this->saveStudentDocuments($request, $student->id);
 
@@ -232,8 +244,9 @@ class StudentController extends Controller
     {
         return [
             'student_id' => 'required',
-            'academic_year' => 'required',
-            'class_name' => 'required',
+            'academic_year_id' => 'required|exists:academic_years,id',
+            'academic_term_id' => 'required|exists:academic_terms,id',
+            'school_class_id' => 'required|exists:school_classes,id',
             'firstname' => 'required',
             'surname' => 'required',
             'gender' => 'required',
@@ -257,9 +270,15 @@ class StudentController extends Controller
 
     private function fillStudentFromRequest(Student $student, Request $request)
     {
+        $schoolClass = SchoolClass::findOrFail($request->school_class_id);
+        $academicYear = AcademicYear::findOrFail($request->academic_year_id);
+
         $student->student_id = trim($request->student_id);
-        $student->academic_year = trim($request->academic_year);
-        $student->class_name = trim($request->class_name);
+        $student->school_class_id = $schoolClass->id;
+        $student->class_name = $schoolClass->name;
+        $student->academic_year_id = $academicYear->id;
+        $student->academic_year = $academicYear->name;
+        $student->academic_term_id = $request->academic_term_id;
         $student->section = $this->cleanInput($request->section) ?? '';
         $student->roll_number = $this->cleanInput($request->roll_number) ?? '';
         $student->firstname = trim($request->firstname);

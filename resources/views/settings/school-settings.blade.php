@@ -1,6 +1,6 @@
 @php
     $pageName = "settings";
-    $subpageName = "school-settings";
+    $subpageName = !empty($focusAcademicSession) ? 'academic-session' : 'school-settings';
     $hasLogo = !empty($school->logo_path);
     $hasName = !empty($school->name);
     $hasAddress = !empty($school->address);
@@ -519,6 +519,114 @@
             flex-wrap: nowrap;
         }
     }
+
+    .firm-session-card {
+        background: #fff;
+        border-radius: 20px;
+        border: 1px solid var(--firm-border);
+        box-shadow: 0 8px 40px rgba(15, 23, 42, 0.06);
+        padding: 24px 28px;
+        margin-bottom: 28px;
+    }
+
+    .firm-session-card.is-highlighted {
+        border-color: rgba(37, 161, 148, 0.45);
+        box-shadow: 0 0 0 4px rgba(37, 161, 148, 0.12), 0 8px 40px rgba(15, 23, 42, 0.06);
+    }
+
+    .firm-session-card h3 {
+        font-size: 18px;
+        font-weight: 800;
+        color: var(--firm-ink);
+        margin: 0 0 6px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .firm-session-card h3 i {
+        color: var(--firm-teal);
+        font-size: 22px;
+    }
+
+    .firm-session-card .session-hint {
+        font-size: 14px;
+        color: var(--firm-muted);
+        margin: 0 0 20px;
+    }
+
+    .firm-session-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .session-field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .session-field label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--firm-ink);
+        margin: 0;
+    }
+
+    .session-field label i {
+        color: var(--firm-teal);
+        font-size: 17px;
+        flex-shrink: 0;
+    }
+
+    .session-field label .req {
+        color: #ef4444;
+    }
+
+    .session-select {
+        display: block;
+        width: 100%;
+        min-height: 48px;
+        padding: 12px 2.5rem 12px 16px;
+        border-radius: 12px;
+        border: 1.5px solid #e2e8f0;
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 1.4;
+        color: var(--firm-ink);
+        background-color: #fff;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 14px center;
+        background-size: 14px 10px;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        cursor: pointer;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .session-select:focus {
+        border-color: var(--firm-teal);
+        box-shadow: 0 0 0 4px rgba(37, 161, 148, 0.12);
+        outline: none;
+    }
+
+    .session-select:invalid,
+    .session-select option[value=""]:checked {
+        color: #94a3b8;
+    }
+
+    @media (max-width: 767px) {
+        .firm-session-grid {
+            grid-template-columns: 1fr;
+        }
+    }
 </style>
 @endsection
 
@@ -531,12 +639,52 @@
             <h1 class="fw-semibold mb-4 h6 text-primary-light">SETTINGS</h1>
             <div>
                 <a href="{{ route('dashboard') }}" class="text-secondary-light hover-text-primary hover-underline">Dashboard</a>
-                <span class="text-secondary-light"> / School Firm Setup</span>
+                <span class="text-secondary-light"> / {{ !empty($focusAcademicSession) ? 'Academic Session' : 'School Firm Setup' }}</span>
             </div>
         </div>
         <button type="submit" form="schoolSettingsForm" class="btn btn-primary-600 border border-primary-600 text-md px-28 py-12 radius-8">
             <i class="ri-save-line"></i> Save Changes
         </button>
+    </div>
+
+    <form action="{{ route('update-school-settings-process') }}" method="POST" enctype="multipart/form-data" id="schoolSettingsForm">
+        @csrf
+
+    <div class="firm-session-card{{ !empty($focusAcademicSession) ? ' is-highlighted' : '' }}" id="academicSessionSection">
+        <h3><i class="ri-calendar-2-line"></i> Current Academic Session</h3>
+        <p class="session-hint">Choose the active year and term used as the default across billing, registration, and student forms. Click <strong>Save Changes</strong> when done.</p>
+        <div class="firm-session-grid">
+            <div class="session-field">
+                <label for="default_academic_year_id">
+                    <i class="ri-calendar-2-line"></i>
+                    Academic Year <span class="req">*</span>
+                </label>
+                <select id="default_academic_year_id" name="default_academic_year_id" class="session-select" required>
+                    <option value="" disabled {{ old('default_academic_year_id', $school->default_academic_year_id ?? '') ? '' : 'selected' }}>Select academic year</option>
+                    @forelse($academicYears ?? [] as $year)
+                        <option value="{{ $year->id }}" @selected(old('default_academic_year_id', $school->default_academic_year_id ?? '') == $year->id)>{{ $year->name }}</option>
+                    @empty
+                        <option value="" disabled>No active academic years — add them under Settings first</option>
+                    @endforelse
+                </select>
+                @error('default_academic_year_id') <small class="text-danger">{{ $message }}</small> @enderror
+            </div>
+            <div class="session-field">
+                <label for="default_academic_term_id">
+                    <i class="ri-calendar-event-line"></i>
+                    Academic Term <span class="req">*</span>
+                </label>
+                <select id="default_academic_term_id" name="default_academic_term_id" class="session-select" required>
+                    <option value="" disabled {{ old('default_academic_term_id', $school->default_academic_term_id ?? '') ? '' : 'selected' }}>Select academic term</option>
+                    @forelse($academicTerms ?? [] as $term)
+                        <option value="{{ $term->id }}" @selected(old('default_academic_term_id', $school->default_academic_term_id ?? '') == $term->id)>{{ $term->name }}</option>
+                    @empty
+                        <option value="" disabled>No active academic terms — add them under Settings first</option>
+                    @endforelse
+                </select>
+                @error('default_academic_term_id') <small class="text-danger">{{ $message }}</small> @enderror
+            </div>
+        </div>
     </div>
 
     <div class="firm-stats">
@@ -562,9 +710,6 @@
             </div>
         </div>
     </div>
-
-    <form action="{{ route('update-school-settings-process') }}" method="POST" enctype="multipart/form-data" id="schoolSettingsForm">
-        @csrf
 
         <div class="firm-workspace">
             <div class="firm-preview-stack">
@@ -734,12 +879,18 @@
             $('.firm-tab[data-tab="contact"]').addClass('active');
             $('.firm-tab-pane').removeClass('active');
             $('#tab-contact').addClass('active');
+        @elseif($errors->has('default_academic_year_id') || $errors->has('default_academic_term_id'))
+            document.getElementById('academicSessionSection')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         @else
             $('.firm-tab').removeClass('active');
             $('.firm-tab[data-tab="identity"]').addClass('active');
             $('.firm-tab-pane').removeClass('active');
             $('#tab-identity').addClass('active');
         @endif
+    @endif
+
+    @if(!empty($focusAcademicSession))
+        document.getElementById('academicSessionSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     @endif
 
     $('.firm-tab').on('click', function () {

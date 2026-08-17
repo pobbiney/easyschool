@@ -95,28 +95,74 @@
 }
 
 
-.app-toast {
+.app-toast.swal2-popup.swal2-toast {
+    width: auto !important;
+    min-width: 320px !important;
+    max-width: min(560px, calc(100vw - 24px)) !important;
     border-radius: 14px !important;
     padding: 0 !important;
-    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14) !important;
-    border: 1px solid rgba(15, 23, 42, 0.06) !important;
+    margin: 0 !important;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.16) !important;
+    border: 1px solid rgba(15, 23, 42, 0.08) !important;
+    background: #fff !important;
     overflow: hidden !important;
-    width: 380px !important;
-    max-width: calc(100vw - 32px) !important;
+    display: block !important;
+    position: relative !important;
+    grid-template-columns: none !important;
+    grid-template-rows: none !important;
+}
+
+body.swal2-toast-shown .swal2-container {
+    width: auto !important;
+    max-width: none !important;
+    pointer-events: none !important;
+}
+
+body.swal2-toast-shown .swal2-container .swal2-popup {
+    pointer-events: auto !important;
+}
+
+.app-toast .swal2-header,
+.app-toast .swal2-icon,
+.app-toast .swal2-title,
+.app-toast .swal2-actions,
+.app-toast .swal2-footer,
+.app-toast .swal2-close {
+    display: none !important;
 }
 
 .app-toast .swal2-html-container {
     margin: 0 !important;
     padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-align: left !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+    display: block !important;
+}
+
+.app-toast .swal2-timer-progress-bar-container {
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 3px !important;
+    border-radius: 0 !important;
+    overflow: hidden !important;
 }
 
 .app-toast-wrap {
     display: flex;
     align-items: flex-start;
     gap: 14px;
-    padding: 16px 18px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 16px 18px 20px;
     border-left: 4px solid #25A194;
-    background: #fff;
+    background: transparent;
     text-align: left;
 }
 
@@ -125,14 +171,15 @@
 }
 
 .app-toast-icon {
-    width: 42px;
-    height: 42px;
+    width: 40px;
+    height: 40px;
     border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 22px;
     flex-shrink: 0;
+    margin-top: 1px;
 }
 
 .app-toast-icon.is-success {
@@ -145,18 +192,26 @@
     color: #E5484D;
 }
 
+.app-toast-body {
+    flex: 1;
+    min-width: 0;
+}
+
 .app-toast-heading {
     font-size: 15px;
     font-weight: 700;
     color: #111827;
     margin-bottom: 4px;
-    line-height: 1.3;
+    line-height: 1.35;
 }
 
 .app-toast-message {
     font-size: 13px;
-    color: #6B7280;
-    line-height: 1.5;
+    color: #4B5563;
+    line-height: 1.55;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    white-space: normal;
 }
 
 .swal-timer-success {
@@ -920,33 +975,45 @@
 </script>
 
  <script>
+    const AppToast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 4500,
+        timerProgressBar: true,
+        width: 'auto',
+        customClass: {
+            popup: 'app-toast',
+        },
+        didOpen: function (toast) {
+            toast.addEventListener('mouseenter', Swal.stopTimer);
+            toast.addEventListener('mouseleave', Swal.resumeTimer);
+        }
+    });
+
     window.showAppToast = function (type, message) {
+        if (!message) {
+            return;
+        }
+
+        Swal.close();
+
         let isSuccess = type === 'success';
-        let heading = isSuccess ? 'Success!' : 'Something went wrong';
+        let heading = isSuccess ? 'Success' : 'Error';
         let iconClass = isSuccess ? 'ri-checkbox-circle-fill' : 'ri-error-warning-fill';
         let safeMessage = $('<div>').text(message).html();
 
-        Swal.mixin({
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 4000,
-            timerProgressBar: true,
+        AppToast.fire({
             customClass: {
                 popup: 'app-toast',
-                timerProgressBar: isSuccess ? 'swal-timer-success' : 'swal-timer-error'
+                timerProgressBar: isSuccess ? 'swal-timer-success' : 'swal-timer-error',
             },
-            didOpen: function (toast) {
-                toast.addEventListener('mouseenter', Swal.stopTimer);
-                toast.addEventListener('mouseleave', Swal.resumeTimer);
-            }
-        }).fire({
             html: `
                 <div class="app-toast-wrap ${isSuccess ? '' : 'is-error'}">
                     <div class="app-toast-icon ${isSuccess ? 'is-success' : 'is-error'}">
                         <i class="${iconClass}"></i>
                     </div>
-                    <div>
+                    <div class="app-toast-body">
                         <div class="app-toast-heading">${heading}</div>
                         <div class="app-toast-message">${safeMessage}</div>
                     </div>

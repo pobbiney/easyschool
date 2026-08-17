@@ -31,6 +31,11 @@ class Course extends Model
         return $this->hasMany(CourseTeachingAssignment::class, 'course_id');
     }
 
+    public function registrations()
+    {
+        return $this->hasMany(CourseRegistration::class, 'course_id');
+    }
+
     public function scopeTopLevel($query)
     {
         return $query->whereNull('parent_id');

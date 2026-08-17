@@ -14,10 +14,15 @@
                 <span class="text-secondary-light"> / Settings / Academic Years</span>
             </div>
         </div>
-        <button type="button" class="my-sidebar-btn btn btn-primary-600 d-flex align-items-center gap-6">
-            <span class="d-flex text-md"><i class="ri-add-large-line"></i></span>
-            Add Academic Year
-        </button>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ route('academic-session') }}" class="btn btn-outline-primary-600 d-flex align-items-center gap-6">
+                <i class="ri-calendar-2-line"></i> Set Current Session
+            </a>
+            <button type="button" class="my-sidebar-btn btn btn-primary-600 d-flex align-items-center gap-6">
+                <span class="d-flex text-md"><i class="ri-add-large-line"></i></span>
+                Add Academic Year
+            </button>
+        </div>
     </div>
 
     <div class="mt-24">

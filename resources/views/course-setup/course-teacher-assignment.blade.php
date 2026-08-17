@@ -178,6 +178,167 @@
         color: var(--primary-600, #25A194);
         font-size: 20px;
     }
+
+    .btn-pill {
+        border-radius: 999px;
+        padding: 8px 18px;
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.2;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn-pill-neutral {
+        background: var(--neutral-100, #f3f4f6);
+        border: 1px solid var(--neutral-200, #e5e7eb);
+        color: var(--neutral-600, #4b5563);
+    }
+
+    .btn-pill-neutral:hover {
+        background: var(--neutral-200, #e5e7eb);
+        color: var(--neutral-700, #374151);
+    }
+
+    .btn-pill-danger {
+        background: rgba(239, 68, 68, 0.08);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        color: #dc2626;
+    }
+
+    .btn-pill-danger:hover {
+        background: rgba(239, 68, 68, 0.14);
+        color: #b91c1c;
+    }
+
+    .view-teachers-modal {
+        overflow: hidden;
+    }
+
+    .view-teachers-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 20px 24px;
+        background: linear-gradient(135deg, rgba(37, 161, 148, 0.1) 0%, rgba(37, 161, 148, 0.03) 100%);
+        border-bottom: 1px solid rgba(37, 161, 148, 0.12);
+        position: relative;
+    }
+
+    .view-teachers-header .btn-close {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+    }
+
+    .view-teachers-header-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--primary-600, #25A194);
+        color: #fff;
+        font-size: 22px;
+        flex-shrink: 0;
+    }
+
+    .view-teachers-header-content {
+        flex: 1;
+        min-width: 0;
+        padding-right: 28px;
+    }
+
+    .view-teachers-header-content .modal-title {
+        margin-bottom: 4px;
+    }
+
+    .view-teachers-count-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 8px;
+        padding: 4px 12px;
+        border-radius: 999px;
+        background: rgba(37, 161, 148, 0.14);
+        color: var(--primary-600, #25A194);
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .view-teachers-body {
+        padding: 20px 24px;
+        max-height: 420px;
+        overflow-y: auto;
+    }
+
+    .view-teachers-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .view-teacher-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 14px 16px;
+        border-radius: 14px;
+        background: var(--white, #fff);
+        border: 1px solid var(--neutral-200, #e5e7eb);
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .view-teacher-card:hover {
+        border-color: rgba(37, 161, 148, 0.25);
+        box-shadow: 0 4px 14px rgba(37, 161, 148, 0.08);
+    }
+
+    .view-teacher-card-main {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+    }
+
+    .view-class-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 4px;
+        padding: 3px 10px;
+        border-radius: 999px;
+        background: rgba(99, 102, 241, 0.1);
+        color: #4338ca;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .view-teachers-empty {
+        text-align: center;
+        padding: 32px 16px;
+        border-radius: 14px;
+        background: var(--neutral-50, #f9fafb);
+        border: 1px dashed var(--neutral-200, #e5e7eb);
+    }
+
+    .view-teachers-empty i {
+        display: block;
+        font-size: 32px;
+        color: var(--neutral-400, #9ca3af);
+        margin-bottom: 10px;
+    }
+
+    .view-teachers-footer {
+        padding: 16px 24px;
+        border-top: 1px solid var(--neutral-200, #e5e7eb);
+        display: flex;
+        justify-content: center;
+    }
 </style>
 @endsection
 
@@ -361,6 +522,42 @@
             $container.html(html);
         }
 
+        function renderViewTeachersList(assignments, emptyMessage) {
+            const $container = $('#viewTeachersList');
+            $('#viewTeachersCount').text(assignments.length);
+
+            if (!assignments.length) {
+                $container.html(
+                    '<div class="view-teachers-empty">' +
+                        '<i class="ri-user-unfollow-line"></i>' +
+                        '<p class="text-sm text-secondary-light mb-0">' + emptyMessage + '</p>' +
+                    '</div>'
+                );
+                return;
+            }
+
+            const html = assignments.map(function (assignment) {
+                const avatar = teacherAvatarHtml(assignment.teacher_name, assignment.teacher_picture);
+
+                return (
+                    '<div class="view-teacher-card">' +
+                        '<div class="view-teacher-card-main">' +
+                            '<span class="teacher-avatar">' + avatar + '</span>' +
+                            '<div class="teacher-meta">' +
+                                '<span class="fw-semibold d-block">' + (assignment.teacher_name || 'Unknown teacher') + '</span>' +
+                                '<span class="view-class-pill"><i class="ri-group-line"></i> ' + (assignment.class_name || '—') + '</span>' +
+                            '</div>' +
+                        '</div>' +
+                        '<button type="button" class="btn btn-pill btn-pill-danger remove-assigned-teacher-btn" data-assignment-id="' + assignment.id + '">' +
+                            '<i class="ri-user-unfollow-line"></i> Remove' +
+                        '</button>' +
+                    '</div>'
+                );
+            }).join('');
+
+            $container.html(html);
+        }
+
         function assignedClassIds() {
             return currentAssignments.map(function (assignment) {
                 return String(assignment.school_class_id);
@@ -453,11 +650,9 @@
                 return;
             }
 
-            renderAssignedTeachersList(
-                '#viewTeachersList',
+            renderViewTeachersList(
                 currentAssignments,
-                'No teachers assigned to this course yet.',
-                true
+                'No teachers assigned to this course yet.'
             );
         }
 
@@ -547,11 +742,9 @@
                 activeCourseUrl = button.data('url');
 
                 $('#view_teachers_course_name').text(data.parent_name ? data.parent_name + ' / ' + data.name : data.name);
-                renderAssignedTeachersList(
-                    '#viewTeachersList',
+                renderViewTeachersList(
                     currentAssignments,
-                    'No teachers assigned to this course yet.',
-                    true
+                    'No teachers assigned to this course yet.'
                 );
 
                 if (viewModal) {
