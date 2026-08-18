@@ -207,7 +207,7 @@
     $attendancePresent = $report['attendance']['present'] ?? 0;
     $attendanceTotal = $report['attendance']['total_days'] ?? 0;
     $studentPhotoUrl = MediaUrl::resolve($report['student']->picture ?? null);
-    $schoolLogoUrl = MediaUrl::resolve($school->logo_path ?? null);
+    $schoolLogoUrl = $school?->logoUrl() ?: asset(\App\Models\SchoolSetting::dummyLogoPath());
 @endphp
 
 <div class="terminal-report report-card-page" @if(!empty($withPageBreak)) style="page-break-after: always;" @endif>
@@ -232,9 +232,7 @@
         </div>
 
         <div class="terminal-report__logo">
-            @if($schoolLogoUrl)
-                <img src="{{ $schoolLogoUrl }}" alt="{{ $school->name ?? 'School logo' }}">
-            @endif
+            <img src="{{ $schoolLogoUrl }}" alt="{{ $school->name ?? 'School logo' }}">
         </div>
     </div>
 

@@ -47,6 +47,10 @@ use App\Http\Controllers\Pos\PosCategoryController;
 use App\Http\Controllers\Pos\PosProductController;
 use App\Http\Controllers\Pos\PosStockController;
 use App\Http\Controllers\Pos\PosSaleController;
+use App\Http\Controllers\Expense\ExpenseController;
+use App\Http\Controllers\Expense\ExpenseCategoryController;
+use App\Http\Controllers\Reports\ReportController;
+use App\Services\Reports\ReportCatalog;
 
 Route::get('forgot-password',[AuthenticationController::class,'getForgetPassword'])->name('forgot-password');
 Route::post('forgot-password-process',[AuthenticationController::class,'forgotPass'])->name('forgot-password-process');
@@ -427,3 +431,30 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         Route::post('pos-stock-process', 'store')->name('pos-stock-process');
     });
 /* End POS */
+
+/* Expenses */
+   Route::controller(ExpenseController::class)->group(function () {
+        Route::get('expenses', 'index')->name('expenses');
+        Route::post('add-expense-process', 'store')->name('add-expense-process');
+        Route::get('get-expense-id/{id}', 'show')->name('get-expense-id');
+        Route::post('update-expense-process', 'update')->name('update-expense-process');
+        Route::post('delete-expense-process', 'destroy')->name('delete-expense-process');
+    });
+
+   Route::controller(ExpenseCategoryController::class)->group(function () {
+        Route::get('expense-categories', 'index')->name('expense-categories');
+        Route::post('add-expense-category-process', 'store')->name('add-expense-category-process');
+        Route::get('get-expense-category-id/{id}', 'show')->name('get-expense-category-id');
+        Route::post('update-expense-category-process', 'update')->name('update-expense-category-process');
+    });
+/* End Expenses */
+
+/* Reports */
+    foreach (ReportCatalog::KEYS as $reportKey => $reportTitle) {
+        $reportUrl = ReportCatalog::url($reportKey);
+        Route::get($reportUrl, [ReportController::class, 'show'])->defaults('key', $reportKey)->name($reportUrl);
+        Route::get($reportUrl.'-print', [ReportController::class, 'print'])->defaults('key', $reportKey)->name($reportUrl.'-print');
+        Route::get($reportUrl.'-pdf', [ReportController::class, 'pdf'])->defaults('key', $reportKey)->name($reportUrl.'-pdf');
+        Route::get($reportUrl.'-excel', [ReportController::class, 'excel'])->defaults('key', $reportKey)->name($reportUrl.'-excel');
+    }
+/* End Reports */

@@ -75,12 +75,12 @@
     }
 
     .pos-category-card {
-        min-width: 136px;
-        max-width: 136px;
+        min-width: 188px;
+        max-width: 188px;
         border: 1px solid #e2e8f0;
-        border-radius: 18px;
+        border-radius: 20px;
         background: #fff;
-        padding: 16px 12px;
+        padding: 20px 14px;
         text-align: center;
         cursor: pointer;
         transition: all .18s ease;
@@ -107,10 +107,10 @@
     }
 
     .pos-category-thumb {
-        width: 58px;
-        height: 58px;
-        margin: 0 auto 10px;
-        border-radius: 16px;
+        width: 78px;
+        height: 78px;
+        margin: 0 auto 12px;
+        border-radius: 18px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -135,12 +135,12 @@
     }
 
     .pos-category-thumb i {
-        font-size: 24px;
+        font-size: 30px;
         color: #fff;
     }
 
     .pos-category-name {
-        font-size: 13px;
+        font-size: 15px;
         font-weight: 800;
         color: #1e3a8a;
         margin-bottom: 4px;
@@ -148,7 +148,7 @@
     }
 
     .pos-category-count {
-        font-size: 12px;
+        font-size: 13px;
         color: var(--pos-muted);
         font-weight: 600;
     }

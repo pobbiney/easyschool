@@ -416,7 +416,7 @@
         
       <div class="card-border-glow"></div>
       <div class="card">
-        <div class="logo"><img src="assets/images/logo-icon.png" alt="Logo"></div>
+        <div class="logo"><img src="{{ $school?->logoUrl() ?: asset('assets/images/logo-icon.png') }}" alt="{{ $school?->name ?: 'EasySchool' }}"></div>
         <h2>Welcome back!</h2>
         <p class="sub">Sign in to continue to your dashboard</p>
          @if (session('login_error_message'))

@@ -38,7 +38,7 @@
     };
 @endphp
 @extends('layouts.app')
-
+ 
 @section('css')
 @include('partials._academic-ui-styles')
 @include('hr.partials._styles')
@@ -170,15 +170,15 @@
             <div class="sp-photo">
                 @if(!empty($staff->picture))
                     <img src="{{ asset($staff->picture) }}" alt="{{ $staff->full_name }}">
-                @else
+                                @else
                     {{ $initials ?: 'ST' }}
-                @endif
-            </div>
+                                @endif
+                            </div>
             <div class="flex-grow-1">
                 <div class="d-flex flex-wrap align-items-center gap-8 mb-8">
                     <h2 class="sp-name">{{ $staff->full_name }}</h2>
                     <span class="ac-pill {{ $staff->status === 'Active' ? 'ac-pill-emerald' : 'ac-pill-inactive' }}">{{ $staff->status }}</span>
-                </div>
+                        </div>
                 <div class="d-flex flex-wrap gap-8 mb-12">
                     <span class="ac-pill ac-pill-teal">{{ $positionName }}</span>
                     @if($staff->department)
@@ -187,65 +187,65 @@
                     @if($staff->employment_type)
                         <span class="ac-pill ac-pill-slate">{{ $staff->employment_type }}</span>
                     @endif
-                </div>
+                        </div>
                 <div class="sp-meta">
                     @if($staff->email)<span><i class="ri-mail-line"></i> {{ $staff->email }}</span>@endif
                     @if($staff->mobile)<span><i class="ri-phone-line"></i> {{ $staff->mobile }}</span>@endif
                     @if($staff->employee_id)<span><i class="ri-id-card-line"></i> {{ $staff->employee_id }}</span>@endif
                     @if($staff->user)
                         <span><i class="ri-shield-user-line"></i> Login enabled</span>
-                    @endif
-                </div>
-            </div>
-        </div>
-    </div>
-
+                                @endif
+                            </div>
+                                </div>
+                                </div>
+                                </div>
+                                
     <div class="row gy-4 mb-24">
         <div class="col-sm-6 col-xl-3">
             <div class="ac-stat-card">
                 <div class="d-flex align-items-center justify-content-between gap-3">
-                    <div>
+                                                        <div>
                         <p class="text-secondary-light text-sm mb-4">Qualifications</p>
                         <h4 class="fw-semibold mb-0">{{ $listdoc->count() }}</h4>
-                    </div>
+                                                        </div>
                     <span class="stat-icon bg-primary-50 text-primary-600"><i class="ri-graduation-cap-line"></i></span>
-                </div>
-            </div>
-        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
         <div class="col-sm-6 col-xl-3">
             <div class="ac-stat-card">
                 <div class="d-flex align-items-center justify-content-between gap-3">
-                    <div>
+                                                        <div>
                         <p class="text-secondary-light text-sm mb-4">Pending leave</p>
                         <h4 class="fw-semibold mb-0 text-warning-600">{{ $pendingLeave }}</h4>
-                    </div>
+                                                        </div>
                     <span class="stat-icon bg-warning-100 text-warning-600"><i class="ri-calendar-event-line"></i></span>
-                </div>
-            </div>
-        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
         <div class="col-sm-6 col-xl-3">
             <div class="ac-stat-card">
                 <div class="d-flex align-items-center justify-content-between gap-3">
-                    <div>
+                                                        <div>
                         <p class="text-secondary-light text-sm mb-4">Present (last 30)</p>
                         <h4 class="fw-semibold mb-0 text-success-600">{{ $presentDays }}</h4>
-                    </div>
+                                                        </div>
                     <span class="stat-icon bg-success-100 text-success-600"><i class="ri-calendar-check-line"></i></span>
-                </div>
-            </div>
-        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
         <div class="col-sm-6 col-xl-3">
             <div class="ac-stat-card">
                 <div class="d-flex align-items-center justify-content-between gap-3">
-                    <div>
+                                                        <div>
                         <p class="text-secondary-light text-sm mb-4">Latest net pay</p>
                         <h5 class="fw-semibold mb-0">{{ $latestSlip ? \App\Support\Money::ghs($latestSlip->net) : '—' }}</h5>
-                    </div>
+                                                        </div>
                     <span class="stat-icon bg-info-100 text-info-600"><i class="ri-wallet-3-line"></i></span>
-                </div>
-            </div>
-        </div>
-    </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
 
     <ul class="nav sp-tabs" role="tablist">
         <li><button class="nav-link {{ $activeTab === 'overview' ? 'active' : '' }}" data-bs-toggle="pill" data-bs-target="#tab-overview" type="button"><i class="ri-user-line"></i> Overview</button></li>
@@ -254,7 +254,7 @@
         <li><button class="nav-link {{ $activeTab === 'leave' ? 'active' : '' }}" data-bs-toggle="pill" data-bs-target="#tab-leave" type="button"><i class="ri-calendar-event-line"></i> Leave</button></li>
         <li><button class="nav-link {{ $activeTab === 'att' ? 'active' : '' }}" data-bs-toggle="pill" data-bs-target="#tab-att" type="button"><i class="ri-calendar-check-line"></i> Attendance</button></li>
         <li><button class="nav-link {{ $activeTab === 'pay' ? 'active' : '' }}" data-bs-toggle="pill" data-bs-target="#tab-pay" type="button"><i class="ri-file-paper-2-line"></i> Payslips</button></li>
-    </ul>
+                                                </ul>
 
     <div class="tab-content">
         <div class="tab-pane fade {{ $activeTab === 'overview' ? 'show active' : '' }}" id="tab-overview">
@@ -267,7 +267,7 @@
                         <div class="col-sm-6 col-xl-3"><div class="sp-fact"><span>Marital status</span><strong>{{ $staff->marital_status ?: '—' }}</strong></div></div>
                         <div class="col-sm-6 col-xl-3"><div class="sp-fact"><span>Nationality</span><strong>{{ $staff->country?->name ?: '—' }}</strong></div></div>
                         <div class="col-12"><div class="sp-fact"><span>Residential address</span><strong>{{ $staff->residential_address ?: '—' }}</strong></div></div>
-                    </div>
+                                </div>
 
                     <h6 class="sp-section-title">Employment</h6>
                     <div class="row g-3 mb-24">
@@ -279,23 +279,23 @@
                         <div class="col-sm-6 col-xl-3"><div class="sp-fact"><span>Confirmation</span><strong>{{ $staff->confirmation_date?->format('d M Y') ?: '—' }}</strong></div></div>
                         <div class="col-sm-6 col-xl-3"><div class="sp-fact"><span>Contract end</span><strong>{{ $staff->contract_end_date?->format('d M Y') ?: '—' }}</strong></div></div>
                         <div class="col-sm-6 col-xl-3"><div class="sp-fact"><span>Basic salary</span><strong>{{ $staff->resolvedBasicSalary() > 0 ? \App\Support\Money::ghs($staff->resolvedBasicSalary()) : '—' }}</strong></div></div>
-                    </div>
+                            </div>
 
                     <h6 class="sp-section-title">Statutory</h6>
-                    <div class="row g-3">
+                                    <div class="row g-3">
                         <div class="col-sm-6"><div class="sp-fact"><span>SSNIT number</span><strong>{{ $staff->ssnit_number ?: '—' }}</strong></div></div>
                         <div class="col-sm-6"><div class="sp-fact"><span>TIN</span><strong>{{ $staff->tin ?: '—' }}</strong></div></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
 
         <div class="tab-pane fade {{ $activeTab === 'edu' ? 'show active' : '' }}" id="tab-edu">
             <div class="card ac-list-wrapper">
                 <div class="table-responsive">
                     <table class="table bordered-table mb-0">
                         <thead><tr><th>Level</th><th>Year</th><th>Qualification</th><th>Institution</th><th></th></tr></thead>
-                        <tbody>
+                                    <tbody>
                             @forelse($listdoc as $list)
                                 <tr>
                                     <td><span class="ac-pill ac-pill-indigo">{{ $list->level }}</span></td>
@@ -310,16 +310,16 @@
                                         @else
                                             <span class="text-secondary-light">No file</span>
                                         @endif
-                                    </td>
-                                </tr>
+                                            </td>
+                                        </tr>
                             @empty
                                 <tr><td colspan="5"><div class="sp-empty"><i class="ri-graduation-cap-line"></i>No qualifications recorded.</div></td></tr>
                             @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
 
         <div class="tab-pane fade {{ $activeTab === 'bank' ? 'show active' : '' }}" id="tab-bank">
             <div class="card ac-list-wrapper">
@@ -330,45 +330,45 @@
                         <div class="col-sm-6 col-xl-3"><div class="sp-fact"><span>Branch</span><strong>{{ $staff->bank_branch ?: '—' }}</strong></div></div>
                         <div class="col-sm-6 col-xl-3"><div class="sp-fact"><span>Account name</span><strong>{{ $staff->account_name ?: '—' }}</strong></div></div>
                         <div class="col-sm-6 col-xl-3"><div class="sp-fact"><span>Account number</span><strong>{{ $staff->account_number ?: '—' }}</strong></div></div>
-                    </div>
+                            </div>
                     <h6 class="sp-section-title">Next of kin</h6>
                     <div class="row g-3">
                         <div class="col-sm-6 col-xl-4"><div class="sp-fact"><span>Name</span><strong>{{ $staff->next_of_kin_name ?: '—' }}</strong></div></div>
                         <div class="col-sm-6 col-xl-4"><div class="sp-fact"><span>Phone</span><strong>{{ $staff->next_of_kin_phone ?: '—' }}</strong></div></div>
                         <div class="col-sm-6 col-xl-4"><div class="sp-fact"><span>Relationship</span><strong>{{ $staff->next_of_kin_relationship ?: '—' }}</strong></div></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+                                    </div>
+                                </div>
+                                    </div>
+                                </div>
 
         <div class="tab-pane fade {{ $activeTab === 'leave' ? 'show active' : '' }}" id="tab-leave">
             <div class="card ac-list-wrapper">
                 <div class="table-responsive">
                     <table class="table bordered-table mb-0">
                         <thead><tr><th>Type</th><th>Dates</th><th>Days</th><th>Status</th></tr></thead>
-                        <tbody>
+                                            <tbody>
                             @forelse($leaveRequests as $leave)
                                 <tr>
                                     <td><span class="leave-type-pill leave-pill-{{ $typeTheme($leave->leaveType) }}">{{ $leave->leaveType?->name ?: '—' }}</span></td>
                                     <td>{{ $leave->start_date->format('d M Y') }} – {{ $leave->end_date->format('d M Y') }}</td>
                                     <td>{{ $leave->days }}</td>
                                     <td><span class="ac-pill {{ $leavePill($leave->status) }}">{{ ucfirst($leave->status) }}</span></td>
-                                </tr>
+                                                </tr>
                             @empty
                                 <tr><td colspan="4"><div class="sp-empty"><i class="ri-calendar-event-line"></i>No leave records.</div></td></tr>
                             @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    </div>
+                                </div>
 
         <div class="tab-pane fade {{ $activeTab === 'att' ? 'show active' : '' }}" id="tab-att">
             <div class="card ac-list-wrapper">
                 <div class="table-responsive">
                     <table class="table bordered-table mb-0">
                         <thead><tr><th>Date</th><th>Status</th><th>In</th><th>Out</th><th>Remarks</th></tr></thead>
-                        <tbody>
+                                            <tbody>
                             @forelse($attendance as $row)
                                 <tr>
                                     <td>{{ $row->date->format('d M Y') }}</td>
@@ -376,29 +376,29 @@
                                     <td>{{ $row->check_in ?: '—' }}</td>
                                     <td>{{ $row->check_out ?: '—' }}</td>
                                     <td>{{ $row->remarks ?: '—' }}</td>
-                                </tr>
+                                                </tr>
                             @empty
                                 <tr><td colspan="5"><div class="sp-empty"><i class="ri-calendar-check-line"></i>No attendance records in the last 30 days.</div></td></tr>
                             @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
 
         <div class="tab-pane fade {{ $activeTab === 'pay' ? 'show active' : '' }}" id="tab-pay">
             <div class="card ac-list-wrapper">
                 <div class="table-responsive">
                     <table class="table bordered-table mb-0">
-                        <thead>
-                            <tr>
+                                    <thead>
+                                        <tr>
                                 <th>Period</th>
                                 <th class="text-end">Gross</th>
                                 <th class="text-end">Net</th>
                                 <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
                             @forelse($payslips as $slip)
                                 <tr>
                                     <td class="fw-semibold">{{ $slip->payrollRun?->periodLabel() }}</td>
@@ -408,16 +408,16 @@
                                         <a href="{{ route('hr-payslip-print', $slip->id) }}" target="_blank" class="btn btn-sm btn-outline-primary-600">
                                             <i class="ri-printer-line"></i> Print
                                         </a>
-                                    </td>
-                                </tr>
+                                            </td>
+                                        </tr>
                             @empty
                                 <tr><td colspan="4"><div class="sp-empty"><i class="ri-file-paper-2-line"></i>No payslips yet.</div></td></tr>
                             @endforelse
-                        </tbody>
-                    </table>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-    </div>
 </div>
 @endsection

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\MediaUrl;
 use Illuminate\Database\Eloquent\Model;
 
 class SchoolSetting extends Model
@@ -22,6 +23,52 @@ class SchoolSetting extends Model
     public static function current()
     {
         return static::firstOrCreate([]);
+    }
+
+    public static function dummyLogoPath(): string
+    {
+        return 'assets/images/logo-icon.png';
+    }
+
+    public function logoUrl(): string
+    {
+        $path = $this->uploadedLogoPath();
+
+        if ($path === null) {
+            return asset(static::dummyLogoPath());
+        }
+
+        if (preg_match('#^https?://#i', $path) || str_starts_with($path, '//')) {
+            return $path;
+        }
+
+        return asset($path);
+    }
+
+    public function logoFilePath(): string
+    {
+        $path = $this->uploadedLogoPath();
+
+        if ($path === null || preg_match('#^https?://#i', $path) || str_starts_with($path, '//')) {
+            return str_replace('\\', '/', public_path(static::dummyLogoPath()));
+        }
+
+        return str_replace('\\', '/', public_path($path));
+    }
+
+    public function uploadedLogoPath(): ?string
+    {
+        if (! filled($this->logo_path)) {
+            return null;
+        }
+
+        $path = ltrim(str_replace('\\', '/', trim((string) $this->logo_path)), '/');
+
+        if (preg_match('#^https?://#i', $path) || str_starts_with($path, '//')) {
+            return MediaUrl::resolve($path);
+        }
+
+        return is_file(public_path($path)) ? $path : null;
     }
 
     public function defaultAcademicYear()

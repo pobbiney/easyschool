@@ -384,8 +384,14 @@ body.swal2-toast-shown .swal2-container .swal2-popup {
         class="profile-dropdown__button d-flex align-items-center justify-content-between p-10 w-100 overflow-hidden bg-neutral-50 radius-12 "
         data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
         <span class="d-flex align-items-start gap-10">
-          <img src="{{asset('assets/images/thumbs/leave-request-img2.png')}}" alt="Thumbnail"
-            class="w-40-px h-40-px rounded-circle object-fit-cover flex-shrink-0">
+          @php $navPhoto = auth()->user()->profilePhotoUrl(); @endphp
+          @if($navPhoto)
+            <img src="{{ $navPhoto }}" alt="{{ auth()->user()->name }}"
+              class="w-40-px h-40-px rounded-circle object-fit-cover flex-shrink-0">
+          @else
+            <img src="{{ asset('assets/images/thumbs/leave-request-img2.png') }}" alt="Thumbnail"
+              class="w-40-px h-40-px rounded-circle object-fit-cover flex-shrink-0">
+          @endif
           <span class="profile-dropdown__contents">
              <span class="h6 mb-0 text-md d-block text-primary-light">{{auth()->user()->name}}</span>
             <span class="text-secondary-light text-sm mb-0 d-block">{{auth()->user()->getUserCategory()}}</span>
@@ -720,8 +726,11 @@ body.swal2-toast-shown .swal2-container .swal2-popup {
     }
   };
 
-  var chart = new ApexCharts(document.querySelector("#revenueStatistic"), options);
-  chart.render()
+  var revenueEl = document.querySelector("#revenueStatistic");
+  if (revenueEl) {
+    var chart = new ApexCharts(revenueEl, options);
+    chart.render();
+  }
   // ============================ Revenue Statistics Chart End ===============================
 
   // ===================== Income Vs Expense Start =============================== 
@@ -843,7 +852,11 @@ body.swal2-toast-shown .swal2-container .swal2-popup {
       }
     };
 
-    var chart = new ApexCharts(document.querySelector(`#${chartId}`), options);
+    const incomeEl = document.querySelector(`#${chartId}`);
+    if (!incomeEl) {
+      return;
+    }
+    var chart = new ApexCharts(incomeEl, options);
     chart.render();
   }
 
@@ -896,8 +909,11 @@ body.swal2-toast-shown .swal2-container .swal2-popup {
     }],
   };
 
-  var chart = new ApexCharts(document.querySelector("#newAdmissions"), options);
-  chart.render();
+  var admissionsEl = document.querySelector("#newAdmissions");
+  if (admissionsEl) {
+    var chart = new ApexCharts(admissionsEl, options);
+    chart.render();
+  }
   // ================================ New Admissions Chart End ================================ 
 
   // ================================ Animated Radial Progress Bar Start ================================ 

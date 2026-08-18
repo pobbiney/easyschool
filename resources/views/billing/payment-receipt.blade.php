@@ -30,9 +30,12 @@
 <body>
     <div class="receipt">
         <div class="header">
-            <div>
-                <div class="school-name">{{ $school->school_name ?? 'School' }}</div>
-                <div class="meta">{{ $school->address ?? '' }}</div>
+            <div style="display:flex;align-items:center;gap:14px;">
+                <img src="{{ $school->logoUrl() }}" alt="{{ $school->name ?? $school->school_name ?? 'School' }}" style="width:64px;height:64px;object-fit:contain;border-radius:12px;background:#f8fafc;border:1px solid #e5e7eb;">
+                <div>
+                    <div class="school-name">{{ $school->name ?? $school->school_name ?? 'School' }}</div>
+                    <div class="meta">{{ $school->address ?? '' }}</div>
+                </div>
             </div>
             <div class="meta" style="text-align:right;">
                 <div><strong>Receipt No:</strong> {{ $payment->receipt_no }}</div>

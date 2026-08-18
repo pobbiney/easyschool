@@ -337,42 +337,60 @@ class StaffController extends Controller
 
     public function getstaffprofileView()
     {
+        $user = Auth::user();
+        $datas = $user?->staff;
 
-        $datas = Staff::where('id', Auth::user()->staff_id)->first();
-        return view('staff.profile',['datas'=>$datas]);
+        if (! $datas && filled($user?->email)) {
+            $datas = Staff::query()->where('email', $user->email)->first();
+        }
+
+        $datas?->load(['country', 'hrPosition', 'department']);
+
+        return view('staff.profile', [
+            'datas' => $datas,
+            'user' => $user,
+        ]);
     }
 
     public function updatePhoto(Request $request)
-{
-    $request->validate([
-        'staff_id' => 'required',
-        'image' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048',
-    ]);
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048',
+        ]);
 
-    $insertstaff = Staff::find($request->staff_id);
+        $user = Auth::user();
+        $staff = $user?->staff;
 
-    if (!$insertstaff) {
-        return back()->with('message_error', 'Staff record not found.');
+        if (! $staff && filled($user?->email)) {
+            $staff = Staff::query()->where('email', $user->email)->first();
+        }
+
+        $directory = public_path('uploads/profile-photo');
+        if (! is_dir($directory)) {
+            mkdir($directory, 0755, true);
+        }
+
+        $file = $request->file('image');
+        $filename = time().'_'.$user->id.'.'.$file->getClientOriginalExtension();
+        $path = 'uploads/profile-photo/'.$filename;
+
+        $oldPath = $staff?->picture ?: $user->photo;
+        if ($oldPath && is_file(public_path($oldPath))) {
+            @unlink(public_path($oldPath));
+        }
+
+        $file->move($directory, $filename);
+
+        $user->photo = $path;
+        $user->save();
+
+        if ($staff) {
+            $staff->picture = $path;
+            $staff->save();
+        }
+
+        return back()->with('message_success', 'Photo uploaded successfully');
     }
-
-    $file = $request->file('image');
-    $ext = $file->getClientOriginalExtension();
-    $filename = time() . '.' . $ext;
-
-    // Delete old picture if it exists, before saving the new one
-    if (!empty($insertstaff->picture) && file_exists(public_path($insertstaff->picture))) {
-        unlink(public_path($insertstaff->picture));
-    }
-
-    $file->move(public_path('uploads/profile-photo'), $filename);
-
-    $insertstaff->picture = 'uploads/profile-photo/' . $filename;
-    $status = $insertstaff->save();
-
-    return $status
-        ? back()->with('message_success', 'Photo uploaded successfully')
-        : back()->with('message_error', 'Something went wrong, please try again.');
-   }
 
    //Updating User Password
 
@@ -391,7 +409,7 @@ class StaffController extends Controller
 
     // Check if the old password matches
     if (!Hash::check($request->current_password, $user->password)) {
-        return back()->with('error_message', 'Current password is incorrect.');
+        return back()->with('message_error', 'Current password is incorrect.');
     }
 
     // Update new password

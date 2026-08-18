@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log; // Add this import for Log
 use App\Http\Controllers\SMS\SMSController;
 use App\Models\Staff;
+use App\Models\SchoolSetting;
 use App\Models\UsrUserLog;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\SendMail;
@@ -24,7 +25,9 @@ use Illuminate\Support\Str;
 class AuthenticationController extends Controller
 {
     public function getAdminLoginPage(){
-        return view('authentication.login');
+        return view('authentication.login', [
+            'school' => SchoolSetting::current(),
+        ]);
     }
 
     

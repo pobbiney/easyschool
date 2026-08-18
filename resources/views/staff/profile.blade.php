@@ -1,287 +1,225 @@
-<!-- page title -->
-@php $pageName = "hr"; $subpageName = "profile"; @endphp
-@php $activeTab = session('active_tab', '#pills-studentDetails'); @endphp
-@php session()->forget('active_tab'); @endphp
+@php
+    $pageName = 'hr';
+    $subpageName = 'profile';
+    $displayName = $datas?->full_name ?: ($user->name ?? 'My account');
+    $nameParts = preg_split('/\s+/', trim($displayName)) ?: [];
+    $initials = strtoupper(mb_substr($nameParts[0] ?? 'U', 0, 1).mb_substr($nameParts[count($nameParts) - 1] ?? '', 0, 1));
+    $photoUrl = $datas && ! empty($datas->picture)
+        ? asset($datas->picture)
+        : ($user?->profilePhotoUrl());
+    $roleName = $user?->getUserCategory() ?: 'Staff';
+    $positionName = $datas?->hrPosition?->name ?: ($datas?->position ?: '—');
+    $facts = $datas ? [
+        ['label' => 'Email', 'value' => $datas->email ?: ($user->email ?? '—'), 'icon' => 'ri-mail-line', 'grad' => 'gradient-bg-end-4', 'tone' => 'bg-primary-600'],
+        ['label' => 'Mobile', 'value' => $datas->mobile ?: '—', 'icon' => 'ri-phone-line', 'grad' => 'gradient-bg-end-5', 'tone' => 'bg-success-600'],
+        ['label' => 'Position', 'value' => $positionName, 'icon' => 'ri-briefcase-4-line', 'grad' => 'gradient-bg-end-2', 'tone' => 'bg-blue-600'],
+        ['label' => 'Department', 'value' => $datas->department?->name ?: '—', 'icon' => 'ri-building-4-line', 'grad' => 'gradient-bg-end-3', 'tone' => 'bg-purple-600'],
+        ['label' => 'Gender', 'value' => $datas->gender ?: '—', 'icon' => 'ri-user-smile-line', 'grad' => 'gradient-bg-end-1', 'tone' => 'bg-warning-600'],
+        ['label' => 'Nationality', 'value' => $datas->country?->name ?: '—', 'icon' => 'ri-earth-line', 'grad' => 'gradient-bg-end-6', 'tone' => 'bg-cyan-600'],
+    ] : [
+        ['label' => 'Name', 'value' => $user->name, 'icon' => 'ri-user-3-line', 'grad' => 'gradient-bg-end-4', 'tone' => 'bg-primary-600'],
+        ['label' => 'Email', 'value' => $user->email, 'icon' => 'ri-mail-line', 'grad' => 'gradient-bg-end-5', 'tone' => 'bg-success-600'],
+        ['label' => 'Role', 'value' => $roleName, 'icon' => 'ri-shield-user-line', 'grad' => 'gradient-bg-end-2', 'tone' => 'bg-blue-600'],
+    ];
+@endphp
 @extends('layouts.app')
- 
+
+@section('css')
+@include('partials._academic-ui-styles')
+<style>
+    .pf-hero {
+        position: relative; overflow: hidden; border-radius: 22px; padding: 28px 32px; margin-bottom: 24px;
+        background: linear-gradient(120deg, #ecfeff 0%, #e0e7ff 45%, #fce7f3 100%);
+        border: 1px solid #c7d2fe; box-shadow: 0 18px 40px rgba(99, 102, 241, .12);
+    }
+    .pf-photo {
+        width: 112px; height: 112px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+        border: 4px solid #fff; box-shadow: 0 12px 28px rgba(37, 161, 148, .28);
+        background: linear-gradient(135deg, #25A194, #6366f1); color: #fff;
+        display: flex; align-items: center; justify-content: center; font-size: 34px; font-weight: 800;
+    }
+    .pf-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .pf-name { font-size: 1.45rem; font-weight: 800; letter-spacing: -.03em; color: #0f172a; margin: 0 0 6px; }
+    .pf-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pf-card {
+        border: 1px solid #e5e7eb; border-radius: 20px; background: #fff;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, .05); overflow: hidden; height: 100%;
+    }
+    .pf-card-head {
+        padding: 18px 22px; border-bottom: 1px solid #eef2f6;
+        background: linear-gradient(90deg, #f0fdfa, #eef2ff);
+        display: flex; align-items: center; gap: 12px;
+    }
+    .pf-card-icon {
+        width: 40px; height: 40px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center;
+        color: #fff; font-size: 18px; flex-shrink: 0;
+    }
+    .pf-card-body { padding: 22px; }
+    .pf-kpi-icon {
+        width: 40px; height: 40px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+        color: #fff; font-size: 18px; flex-shrink: 0;
+    }
+    .pf-preview {
+        width: 148px; height: 148px; border-radius: 50%; margin: 0 auto 18px; overflow: hidden;
+        border: 4px solid #ccfbf1; background: #f8fafc; display: flex; align-items: center; justify-content: center;
+        font-size: 42px; font-weight: 800; color: #25A194;
+        box-shadow: 0 10px 24px rgba(37, 161, 148, .16);
+    }
+    .pf-preview img { width: 100%; height: 100%; object-fit: cover; }
+    .pf-file {
+        position: relative; display: block; border: 1px dashed #99f6e4; border-radius: 14px;
+        padding: 16px; text-align: center; background: #f0fdfa; cursor: pointer; color: #0f766e; font-weight: 700;
+    }
+    .pf-file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .pf-note { font-size: 12px; color: #64748b; }
+    @media (max-width: 767px) { .pf-hero { padding: 22px 18px; } }
+</style>
+@endsection
+
 @section('content')
-
 <div class="dashboard-main-body">
+    @include('partials._page-header', [
+        'section' => 'Account',
+        'crumbs' => [
+            ['label' => 'Dashboard', 'url' => route('dashboard')],
+            ['label' => 'My profile', 'active' => true],
+        ],
+        'title' => 'My profile',
+        'subtitle' => 'Your photo, contact details, and password.',
+    ])
 
-        <div class="page-header breadcrumb d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-            <div class="">
-                <h1 class="fw-semibold mb-4 h6 text-primary-light">HR</h1>
-                <div class="">
-                <a href="{{ route('dashboard') }}" class="text-secondary-light hover-text-primary hover-underline">Dashboard </a>
-                <span class="text-secondary-light"> / Profile</span>
-                </div>
-            </div>
-            
+    <div class="pf-hero d-flex flex-wrap align-items-center gap-20">
+        <div class="pf-photo">
+            @if($photoUrl)
+                <img src="{{ $photoUrl }}" alt="{{ $displayName }}">
+            @else
+                {{ $initials }}
+            @endif
         </div>
+        <div class="flex-grow-1">
+            <div class="pf-name">{{ $displayName }}</div>
+            <div class="pf-meta">
+                <span class="ac-pill ac-pill-indigo"><i class="ri-shield-user-line"></i> {{ $roleName }}</span>
+                @if($datas)
+                    <span class="ac-pill ac-pill-teal"><i class="ri-id-card-line"></i> {{ $datas->employee_id ?: 'No staff ID' }}</span>
+                    @if($datas->status === 'Active')
+                        <span class="ac-pill ac-pill-emerald">Active</span>
+                    @elseif($datas->status)
+                        <span class="ac-pill ac-pill-rose">{{ $datas->status }}</span>
+                    @endif
+                @else
+                    <span class="ac-pill ac-pill-amber">Login only</span>
+                @endif
+            </div>
+            @if(! $datas)
+                <p class="text-sm text-secondary-light mb-0 mt-10" style="max-width:560px;">
+                    This login is not linked to an employee record. You can still change your password. Ask an administrator to attach a staff profile for photo and HR details.
+                </p>
+            @elseif($datas->residential_address)
+                <p class="text-sm text-secondary-light mb-0 mt-10"><i class="ri-map-pin-line"></i> {{ $datas->residential_address }}</p>
+            @endif
+        </div>
+    </div>
 
-         <div class="mt-24">
-            <div class="card h-100">
-                <div class="card-body p-24">
-                    <div class="d-flex gap-32 flex-md-row flex-column">
-                        <div class="max-w-300-px w-100 text-center">
-
-                               
-                            <figure class="mb-24 w-120-px h-120-px mx-auto rounded-circle overflow-hidden">
-                                @if(!empty($datas->picture))
-                                 <img src="{{ $datas->picture }}" alt="Student Image" class="w-100 h-100 object-fit-cover">
-                                 @elseif(strtolower($datas->gender) == 'male')
-                                    <img src="{{ asset('assets/images/thumbs/edit-profile-img.png') }}"
-                                        alt="Male Staff"
-                                        class="flex-shrink-0 me-12 radius-8"  >
-                                @else
-                                    <img src="{{ asset('assets/images/thumbs/studnt-edit-profile-img.png') }}"
-                                        alt="Female Staff"
-                                        class="flex-shrink-0 me-12 radius-8"  >
-                                @endif
-                            </figure>
-                            <h2 class="h6 text-primary-light mb-16 fw-semibold">{{ $datas->surname. ' '.$datas->firstname }}</h2>
-                            <p class="mb-0">Staff No: <span class="text-primary-600 fw-semibold">{{ $datas->employee_id }}</span>
-                            </p>
-                             
-                            
+    <div class="row gy-4 mb-24">
+        @foreach($facts as $fact)
+            <div class="col-sm-6 col-xl-4">
+                <div class="card shadow-1 radius-8 {{ $fact['grad'] }} h-100">
+                    <div class="card-body p-20">
+                        <div class="d-flex flex-wrap align-items-center gap-3 mb-10">
+                            <div class="pf-kpi-icon {{ $fact['tone'] }}"><i class="{{ $fact['icon'] }}"></i></div>
+                            <p class="fw-medium text-primary-light mb-0">{{ $fact['label'] }}</p>
                         </div>
-                        <div class="">
-                            <span class="h-100 w-1-px bg-neutral-200"></span>
-                        </div>
-                        <div class="flex-grow-1">
-                            <div class="pb-16 border-bottom d-flex align-items-center justify-content-between gap-20">
-                                <h3 class="h6 text-primary-light text-lg mb-0 fw-semibold">Personal Info</h3>
-                               
-                                @if ($datas->status == "Active")
-                                    <span class="bg-success-100 text-success-600 px-16 py-4 radius-4 fw-medium text-sm">{{ $datas->status }}</span>
-                                    @elseif ($datas->status == "Inactive")
-                                    <span class="bg-success-100 text-danger-600 px-16 py-4 radius-4 fw-medium text-sm">{{ $datas->status }}</span>
-                                @endif
-                                    
-                            </div>
-                            <div class="mt-16 d-flex flex-column gap-8">
-                                 <div class="d-flex gap-4">
-                                    <span class="fw-semibold text-sm text-primary-light w-110-px">Gender</span>
-                                    <span class="fw-normal text-sm text-secondary-light">: {{ $datas->gender }}</span>
-                                </div>
-                                <div class="d-flex gap-4">
-                                    <span class="fw-semibold text-sm text-primary-light w-110-px">Email</span>
-                                    <span class="fw-normal text-sm text-secondary-light">: {{ $datas->email }}</span>
-                                </div>
-                                <div class="d-flex gap-4">
-                                    <span class="fw-semibold text-sm text-primary-light w-110-px">Mobile No</span>
-                                    <span class="fw-normal text-sm text-secondary-light">: {{ $datas->mobile }}</span>
-                                </div>
-                                <div class="d-flex gap-4">
-                                    <span class="fw-semibold text-sm text-primary-light w-110-px">Marital Status</span>
-                                    <span class="fw-normal text-sm text-secondary-light">: {{ $datas->marital_status }}</span>
-                                </div>
-                                <div class="d-flex gap-4">
-                                    <span class="fw-semibold text-sm text-primary-light w-110-px">Position</span>
-                                    <span class="fw-normal text-sm text-secondary-light">: {{ $datas->position }}</span>
-                                </div>
-                                <div class="d-flex gap-4">
-                                    <span class="fw-semibold text-sm text-primary-light w-110-px">Nationality</span>
-                                    <span class="fw-normal text-sm text-secondary-light">: {{ $datas->country->name }}</span>
-                                </div>
-                                <div class="d-flex gap-4">
-                                    <span class="fw-semibold text-sm text-primary-light w-110-px">Residential Address</span>
-                                    <span class="fw-normal text-sm text-secondary-light">: {{ $datas->residential_address }}</span>
-                                </div>
-                                
-                                
-                            </div>
-                        </div>
+                        <h6 class="mb-0 fw-bold">{{ $fact['value'] }}</h6>
                     </div>
                 </div>
             </div>
+        @endforeach
+    </div>
 
-            <div class="my-16">
-                <ul class="nav nav-pills bordered-tab mb-3" id="pills-tab" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button
-                            class="nav-link d-flex align-items-center gap-8 text-secondary-light fw-medium text-sm text-hover-primary-600 text-capitalize bg-transparent px-20 py-12  active"
-                            id="pills-studentDetails-tab" data-bs-toggle="pill" data-bs-target="#pills-studentDetails"
-                            type="button" role="tab" aria-controls="pills-studentDetails" aria-selected="true">
-                            <span class="d-flex tab-icon line-height-1 text-md">
-                                <i class="ri-camera-line"></i>
-                            </span>
-                             Change Photo
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button
-                            class="nav-link d-flex align-items-center gap-8 text-secondary-light fw-medium text-sm text-hover-primary-600 text-capitalize bg-transparent px-20 py-12 "
-                            id="pills-attendance-tab" data-bs-toggle="pill" data-bs-target="#pills-attendance"
-                            type="button" role="tab" aria-controls="pills-attendance" aria-selected="false">
-                            <span class="d-flex tab-icon line-height-1 text-md">
-                                   <i class="ri-lock-line"></i>
-                            </span>
-                           Change Password
-                        </button>
-                    </li>  
-                </ul>
-
-
-                <div class="tab-content" id="pills-tabContent">
-
-                    <!-- Student Details tab start -->
-                    <div class="tab-pane fade show active" id="pills-studentDetails" role="tabpanel"
-                        aria-labelledby="pills-studentDetails-tab" tabindex="0">
-                        <div class="row gy-4">
-                            <div class="col-3"></div>
-                            <div class="col-6">
-                                <div class="shadow-1 radius-12 bg-base h-100 overflow-hidden">
-                                    <div
-                                        class="card-header border-bottom bg-base py-16 px-24 d-flex align-items-center justify-content-between" >
-                                        <h6 class="text-lg fw-semibold mb-0">Change Photo</h6>
-                                    </div>
-                                    <div class="card-body p-0">
-                                        <div class="row" style="margin-left: 20px;margin-right:20px">
-                                            
-                                            <form enctype="multipart/form-data" method="POST" action="{{ route('update-photo-process')}}">
-                                                @csrf
-                                            
-                                                <div class="avatar-upload mt-16" style="margin-bottom: 30px; width: 200px; margin-left: auto; margin-right: auto;">
-                                                    <div class="avatar-preview style-two" style="height: 200px;width:200px">
-                                                        <div id="previewImage1" style="height: 200px;width:200px"></div>
-                                                    </div>
-                                                </div><br/>
-                                                <label for="imageUpload"
-                                                    class="form-label fw-semibold text-secondary-light text-md mb-8">Upload Photo  </label>
-                                                <input type="file" class="form-control radius-8" name="image" id="imageUpload">
-                                                 @error('image') <small style="color:red;">{{$message}}</small>@enderror
-                                                <br/>
-                                               
-                                                <button type="submit"  class="btn btn-primary-600 border border-primary-600 text-md px-28 py-12 radius-8" style="margin-bottom: 20px;"> Update</button>
-                                            
-                                                 <input type="hidden" name="staff_id" value="{{ $datas->id }}"/>
-                                                 <br/>
-                                                 <input type="hidden" name="active_tab" class="active_tab" value="{{ $activeTab }}">
-                                            </form>
-                                            </div>
-                                        
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-6"></div>
-                           
-                        </div>
+    <div class="row gy-4">
+        <div class="col-lg-6">
+            <div class="pf-card">
+                <div class="pf-card-head">
+                    <span class="pf-card-icon bg-primary-600"><i class="ri-camera-line"></i></span>
+                    <div>
+                        <h6 class="mb-0 fw-semibold">Profile photo</h6>
+                        <div class="pf-note">JPG, PNG or WebP · max 2 MB</div>
                     </div>
-                    <!-- Student Details tab end -->
-
-                    <!-- Attendance tab start -->
-                    <div class="tab-pane fade" id="pills-attendance" role="tabpanel"
-                        aria-labelledby="pills-attendance-tab" tabindex="0">
-                         <div class="row gy-4">
-                             
-                            <form enctype="multipart/form-data" method="POST" action="update-password-process">
-                                 @csrf
-                                
-                                <div class="col-6" style="margin-left: auto; margin-right: auto;">
-                                    <div class="shadow-1 radius-12 bg-base h-100 overflow-hidden">
-                                        <div
-                                            class="card-header border-bottom bg-base py-16 px-24 d-flex align-items-center justify-content-between">
-                                            <h6 class="text-lg fw-semibold mb-0">Change Password</h6>
-                                        </div>
-                                        <div class="card-body p-0" style="margin-left: 20px;margin-right:20px">
-                                            <div class="" style="margin-bottom: 15px;">
-                                                <label for="guardianName"
-                                                    class="form-label fw-semibold text-secondary-light text-md mb-8"> 
-                                                    Current Password
-                                                </label>
-                                                 <input type="password" name="current_password" class="form-control"   placeholder="Current Password">
-                                      
-                                                @error('current_password') <small style="color:red"> {{ $message}}</small> @enderror
-                                            </div>
-                                            <div class="" style="margin-bottom: 15px;">
-                                                <label for="guardianName"
-                                                     class="form-label fw-semibold text-secondary-light text-md mb-8"> 
-                                                    Current Password
-                                                </label>
-                                                 <input type="password" name="new_password" class="form-control"   placeholder="Current Password">
-                                      
-                                                 @error('new_password') <small style="color:red"> {{ $message}}</small> @enderror
-                                            </div>
-                                            <div class="" style="margin-bottom: 15px;">
-                                                <label for="guardianName"
-                                                     class="form-label fw-semibold text-secondary-light text-md mb-8""> 
-                                                    Current Password
-                                                </label>
-                                                 <input type="password" name="confirm_password" class="form-control"   placeholder="Current Password">
-                                      
-                                                @error('confirm_password') <small style="color:red"> {{ $message}}</small> @enderror
-                                            </div>
-                                            <button type="submit"  class="btn btn-primary-600 border border-primary-600 text-md px-28 py-12 radius-8" style="margin-bottom: 20px;"> Change Password</button>
-                                            
-                                        </div>
-                                    </div>
-                                </div>
-                                <input type="hidden" name="active_tab" class="active_tab" value="{{ $activeTab }}">
-                                <input type="hidden" name="staff_id" value="{{ $datas->id }}"/>
-                            </form>
-                           
+                </div>
+                <div class="pf-card-body">
+                    <form enctype="multipart/form-data" method="POST" action="{{ route('update-photo-process') }}">
+                        @csrf
+                        @if($datas)
+                            <input type="hidden" name="staff_id" value="{{ $datas->id }}">
+                        @endif
+                        <div class="pf-preview" id="profilePreview">
+                            @if($photoUrl)
+                                <img src="{{ $photoUrl }}" alt="Current photo">
+                            @else
+                                {{ $initials }}
+                            @endif
                         </div>
-                    </div>
-                    <!-- Attendance tab end -->
- 
+                        <label class="pf-file mb-12" for="imageUpload">
+                            <input type="file" name="image" id="imageUpload" accept="image/jpeg,image/png,image/webp" required>
+                            <span class="d-block"><i class="ri-upload-2-line"></i> Choose a photo</span>
+                            <span class="pf-note d-block mt-4" id="photoFileName">Click here or drop an image</span>
+                        </label>
+                        @error('image') <small class="text-danger-600 d-block mb-12">{{ $message }}</small> @enderror
+                        <button type="submit" class="btn btn-primary-600 w-100"><i class="ri-save-line"></i> Save photo</button>
+                    </form>
                 </div>
             </div>
         </div>
-            
-          
+        <div class="col-lg-6">
+            <div class="pf-card">
+                <div class="pf-card-head">
+                    <span class="pf-card-icon bg-purple-600"><i class="ri-lock-password-line"></i></span>
+                    <div>
+                        <h6 class="mb-0 fw-semibold">Password</h6>
+                        <div class="pf-note">Use at least 8 characters</div>
+                    </div>
+                </div>
+                <div class="pf-card-body">
+                    <form method="POST" action="{{ route('update-password-process') }}">
+                        @csrf
+                        <div class="mb-16">
+                            <label class="form-label fw-semibold text-secondary-light text-md mb-8" for="current_password">Current password</label>
+                            <input type="password" name="current_password" id="current_password" class="form-control" placeholder="Enter current password" autocomplete="current-password">
+                            @error('current_password') <small class="text-danger-600">{{ $message }}</small> @enderror
+                        </div>
+                        <div class="mb-16">
+                            <label class="form-label fw-semibold text-secondary-light text-md mb-8" for="new_password">New password</label>
+                            <input type="password" name="new_password" id="new_password" class="form-control" placeholder="Enter new password" autocomplete="new-password">
+                            @error('new_password') <small class="text-danger-600">{{ $message }}</small> @enderror
+                        </div>
+                        <div class="mb-20">
+                            <label class="form-label fw-semibold text-secondary-light text-md mb-8" for="confirm_password">Confirm new password</label>
+                            <input type="password" name="confirm_password" id="confirm_password" class="form-control" placeholder="Re-enter new password" autocomplete="new-password">
+                            @error('confirm_password') <small class="text-danger-600">{{ $message }}</small> @enderror
+                        </div>
+                        <button type="submit" class="btn btn-primary-600 w-100"><i class="ri-shield-keyhole-line"></i> Update password</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
 
 @section('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-    let activeTab = "{{ $activeTab }}";
-
-    if (activeTab) {
-        let trigger = document.querySelector(
-            'button[data-bs-toggle="tab"][data-bs-target="' + activeTab + '"]'
-        );
-        if (trigger) {
-            new bootstrap.Tab(trigger).show();
-        }
-    }
-
-    document.querySelectorAll('.active_tab').forEach(input => {
-        input.value = activeTab;
+    document.getElementById('imageUpload')?.addEventListener('change', function () {
+        const file = this.files && this.files[0];
+        const preview = document.getElementById('profilePreview');
+        if (! file || ! preview) return;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            preview.innerHTML = '<img src="' + e.target.result + '" alt="New photo">';
+        };
+        reader.readAsDataURL(file);
+        const nameLabel = document.getElementById('photoFileName');
+        if (nameLabel) nameLabel.textContent = file.name;
     });
-
-    document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(tab => {
-        tab.addEventListener('shown.bs.tab', function (e) {
-            document.querySelectorAll('.active_tab').forEach(input => {
-                input.value = e.target.getAttribute('data-bs-target');
-            });
-        });
-    });
-});
 </script>
- <script>
-    // ================== Image Upload Js Start ===========================
-    function readURL(input, previewElementId) {
-        if (input.files && input.files[0]) {
-            var reader = new FileReader();
-            reader.onload = function (e) {
-                $('#' + previewElementId).css('background-image', 'url(' + e.target.result + ')');
-                $('#' + previewElementId).hide();
-                $('#' + previewElementId).fadeIn(650);
-            }
-            reader.readAsDataURL(input.files[0]);
-        }
-    }
-
-    $("#imageUpload").change(function () {
-        readURL(this, 'previewImage1');
-    });
-
-    $("#imageUploadTwo").change(function () {
-        readURL(this, 'previewImage2');
-    });
-    // ================== Image Upload Js End ===========================
-</script>
-
 @endsection
