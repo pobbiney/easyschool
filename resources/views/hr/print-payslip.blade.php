@@ -262,7 +262,7 @@
     $earnings = $lines->where('type', 'earning')->values();
     $deductions = $lines->where('type', 'deduction')->values();
     $totalDeductions = (float) $deductions->sum('amount');
-    $logoUrl = !empty($school->logo_path) ? asset($school->logo_path) : asset('assets/images/logo-icon.png');
+    $logoUrl = $school->logoUrl();
     $period = $run?->periodLabel() ?: '—';
     $slipNo = 'PS-'.str_pad((string) $payslip->id, 5, '0', STR_PAD_LEFT);
     $status = strtolower((string) ($run?->status ?: 'draft'));

@@ -6,12 +6,16 @@ use App\Models\BillPayment;
 use App\Models\SchoolSetting;
 use App\Models\Student;
 use App\Services\MNotifyService;
+use App\Services\ParentPortal\ParentCommunicationLogService;
 use App\Support\GhanaPhone;
 use Illuminate\Support\Facades\Log;
 
 class BillPaymentSmsService
 {
-    public function __construct(private MNotifyService $mnotify) {}
+    public function __construct(
+        private MNotifyService $mnotify,
+        private ParentCommunicationLogService $communicationLogService,
+    ) {}
 
     /**
      * @return array{sent: bool, phone: string|null, message: string|null}
@@ -49,6 +53,8 @@ class BillPaymentSmsService
             'phone' => $phone,
             'campaign_id' => data_get($result, 'summary._id') ?? data_get($result, 'campaign_id'),
         ]);
+
+        $this->communicationLogService->logPaymentSms($payment, $message);
 
         return ['sent' => true, 'phone' => $phone, 'message' => 'SMS sent to parent.'];
     }

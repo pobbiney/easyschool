@@ -25,6 +25,8 @@ class BillPaymentTransaction extends Model
         'gateway_response',
         'bill_payment_id',
         'created_by',
+        'initiated_by',
+        'parent_account_id',
     ];
 
     protected $casts = [

@@ -3,16 +3,21 @@
 namespace App\Services\Sms;
 
 use App\Models\SchoolClass;
+use App\Models\SmsMessage;
 use App\Models\Staff;
 use App\Models\Student;
 use App\Services\MNotifyService;
+use App\Services\ParentPortal\ParentCommunicationLogService;
 use App\Support\GhanaPhone;
 use App\Support\TeacherCategory;
 use RuntimeException;
 
 class SchoolSmsService
 {
-    public function __construct(private MNotifyService $mnotify) {}
+    public function __construct(
+        private MNotifyService $mnotify,
+        private ParentCommunicationLogService $communicationLogService,
+    ) {}
 
     /**
      * @return array{label: string, recipients: array<int, array{phone: string, name: string}>, skipped: int}
@@ -44,6 +49,26 @@ class SchoolSmsService
             throw new RuntimeException('The SMS gateway could not send this message.');
         }
 
+        if (in_array($audience, ['school', 'class', 'individual'], true)) {
+            foreach ($resolved['recipients'] as $recipient) {
+                $student = null;
+
+                if ($audience === 'individual' && ($options['target_type'] ?? '') === 'student') {
+                    $studentId = (int) ($options['target_ids'][0] ?? $options['target_id'] ?? 0);
+                    $student = Student::find($studentId);
+                }
+
+                $this->communicationLogService->logForPhone(
+                    $recipient['phone'],
+                    $student,
+                    'sms',
+                    $message,
+                    SmsMessage::class,
+                    null,
+                );
+            }
+        }
+
         return [
             'label' => $resolved['label'],
             'sent' => count($phones),
@@ -71,7 +96,7 @@ class SchoolSmsService
             ),
             'individual' => $this->fromIndividual(
                 (string) ($options['target_type'] ?? ''),
-                (int) ($options['target_id'] ?? 0)
+                $this->targetIds($options)
             ),
             default => throw new RuntimeException('Choose who should receive this message.'),
         };
@@ -155,27 +180,60 @@ class SchoolSmsService
         return $this->fromStudents($students, $class->name.' (parents / guardians)');
     }
 
-    private function fromIndividual(string $type, int $id): array
+    /**
+     * @param  array<int, int>  $ids
+     */
+    private function fromIndividual(string $type, array $ids): array
     {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+
+        if ($ids === []) {
+            throw new RuntimeException('Choose at least one person.');
+        }
+
         if ($type === 'staff') {
-            $staff = Staff::find($id);
-            if (! $staff) {
+            $staff = Staff::query()->whereIn('id', $ids)->orderBy('surname')->orderBy('firstname')->get();
+            if ($staff->isEmpty()) {
                 throw new RuntimeException('Choose a staff member.');
             }
 
-            return $this->fromStaff(collect([$staff]), $staff->full_name);
+            $names = $staff->pluck('full_name');
+            $label = $names->count() === 1
+                ? (string) $names->first()
+                : ($names->count() <= 4 ? $names->implode(', ') : $names->count().' selected staff');
+
+            return $this->fromStaff($staff, $label);
         }
 
         if ($type === 'student') {
-            $student = Student::find($id);
-            if (! $student) {
+            $students = Student::query()->whereIn('id', $ids)->orderBy('surname')->orderBy('firstname')->get();
+            if ($students->isEmpty()) {
                 throw new RuntimeException('Choose a student.');
             }
 
-            return $this->fromStudents(collect([$student]), 'Guardian of '.$student->full_name);
+            $label = $students->count() === 1
+                ? 'Guardian of '.$students->first()->full_name
+                : $students->count().' selected students (parents / guardians)';
+
+            return $this->fromStudents($students, $label);
         }
 
         throw new RuntimeException('Choose a staff member or student.');
+    }
+
+    /**
+     * @param  array<string, mixed>  $options
+     * @return array<int, int>
+     */
+    private function targetIds(array $options): array
+    {
+        $ids = $options['target_ids'] ?? $options['target_id'] ?? [];
+
+        if (! is_array($ids)) {
+            $ids = [$ids];
+        }
+
+        return array_values(array_filter(array_map('intval', $ids)));
     }
 
     private function studentPhone(Student $student): ?string

@@ -2,7 +2,7 @@
 
 @section('content')
 @php
-    $logoUrl = !empty($school->logo_path) ? asset($school->logo_path) : asset('assets/images/logo-icon.png');
+    $logoUrl = $school->logoUrl();
     $statusClass = strtolower($student->status);
     $autoPrint = $autoPrint ?? false;
     $isPublicView = $isPublicView ?? false;

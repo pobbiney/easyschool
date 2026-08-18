@@ -14,7 +14,6 @@ use App\Models\TimetablePeriod;
 use App\Services\Timetable\BellScheduleBuilder;
 use App\Services\Timetable\GesTimetableGenerator;
 use App\Support\AcademicPeriodDefaults;
-use App\Support\MediaUrl;
 use Illuminate\Http\Request;
 use RuntimeException;
 
@@ -85,7 +84,7 @@ class TimetableController extends Controller
             'days' => GesTimetableGenerator::DAYS,
             'period' => $context['period'],
             'school' => $school,
-            'logoUrl' => MediaUrl::resolve($school->logo_path) ?: asset('assets/images/logo-icon.png'),
+            'logoUrl' => $school->logoUrl(),
             'themes' => $this->subjectThemes($this->grid($periods, $timetable)),
         ]);
     }

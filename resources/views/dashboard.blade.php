@@ -1,1105 +1,337 @@
-<!-- page title -->
-@php $pageName = "dashboard"; $subpageName = ""; @endphp
-
+@php
+    $pageName = "dashboard";
+    $subpageName = "";
+    $hasWork = count($kpis) > 0 || count($shortcuts) > 0 || count($charts) > 0 || $isTeacher;
+    $kpiSkins = [
+        ['grad' => 'gradient-bg-end-1', 'icon' => 'bg-warning-600'],
+        ['grad' => 'gradient-bg-end-2', 'icon' => 'bg-blue-600'],
+        ['grad' => 'gradient-bg-end-3', 'icon' => 'bg-purple-600'],
+        ['grad' => 'gradient-bg-end-4', 'icon' => 'bg-primary-600'],
+        ['grad' => 'gradient-bg-end-5', 'icon' => 'bg-success-600'],
+        ['grad' => 'gradient-bg-end-6', 'icon' => 'bg-cyan-600'],
+    ];
+    $shortcutSkins = [
+        'teal' => ['grad' => 'gradient-bg-end-4', 'icon' => 'bg-primary-600'],
+        'indigo' => ['grad' => 'gradient-bg-end-2', 'icon' => 'bg-blue-600'],
+        'sky' => ['grad' => 'gradient-bg-end-6', 'icon' => 'bg-cyan-600'],
+        'amber' => ['grad' => 'gradient-bg-end-1', 'icon' => 'bg-warning-600'],
+        'violet' => ['grad' => 'gradient-bg-end-3', 'icon' => 'bg-purple-600'],
+        'rose' => ['grad' => 'gradient-bg-end-1', 'icon' => 'bg-danger-600'],
+        'orange' => ['grad' => 'gradient-bg-end-1', 'icon' => 'bg-warning-600'],
+        'emerald' => ['grad' => 'gradient-bg-end-5', 'icon' => 'bg-success-600'],
+        'slate' => ['grad' => 'gradient-bg-end-2', 'icon' => 'bg-neutral-600'],
+    ];
+    $donutCharts = collect($charts ?? [])->where('type', 'donut')->values();
+    $otherCharts = collect($charts ?? [])->where('type', '!=', 'donut')->values();
+    $sideChart = $donutCharts->first() ?: $otherCharts->first();
+    $mainCharts = collect($charts ?? [])->reject(fn ($c) => ($sideChart['id'] ?? null) && $c['id'] === $sideChart['id'])->values();
+@endphp
 @extends('layouts.app')
+
+@section('css')
+<style>
+    .dash-kpi-icon,
+    .dash-action-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+    .dash-action-card {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+        height: 100%;
+    }
+    .dash-action-card:hover { color: inherit; }
+    .dash-empty { text-align: center; padding: 48px 16px; color: #64748b; }
+    .dash-empty i { font-size: 34px; color: #25A194; display: block; margin-bottom: 8px; }
+</style>
+@endsection
 
 @section('content')
 <div class="dashboard-main-body">
-
     <div class="page-header breadcrumb d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-        <div class="">
+        <div>
             <h6 class="fw-semibold mb-0">Dashboard</h6>
-            <p class="text-neutral-600 mt-4 mb-0">School -> Manage your school, track attendance, expense, and net worth.</p>
+            <p class="text-neutral-600 mt-4 mb-0">{{ $greeting }}, {{ $displayName }} · {{ $heroLine }}</p>
+        </div>
+        <div class="d-flex flex-wrap align-items-center gap-8">
+            <span class="badge bg-primary-600">{{ $roleName }}</span>
+            @if($isTeacher)
+                <span class="badge bg-purple-600">Teacher</span>
+            @endif
+            @if(! empty($period['year_name']))
+                <span class="badge bg-info-600">{{ $period['year_name'] }} · {{ $period['term_name'] }}</span>
+            @endif
         </div>
     </div>
-</div>
- <div class="mt-24">
-      <div class="row gy-4">
-        <div class="col-xxl-8">
-          <div class="row gy-4">
+
+    @if(! $hasWork)
+        <div class="card radius-8">
+            <div class="dash-empty">
+                <i class="ri-shield-user-line"></i>
+                No modules are assigned to this account yet. Ask an administrator to grant menu access.
+            </div>
+                    </div>
+    @else
+        <div class="row gy-4">
+            <div class="{{ $sideChart ? 'col-xxl-8' : 'col-12' }}">
+                @if(count($kpis))
+                    <div class="row gy-4">
+                        @foreach($kpis as $kpi)
+                            @php $skin = $kpiSkins[$loop->index % 6]; @endphp
             <div class="col-xxl-4 col-sm-6">
-              <div class="card shadow-1 radius-8 gradient-bg-end-1 h-100">
+                                <div class="card shadow-1 radius-8 {{ $skin['grad'] }} h-100">
                 <div class="card-body p-20">
                   <div class="d-flex flex-wrap align-items-center gap-3 mb-16">
-                    <div
-                      class="w-44-px h-44-px bg-warning-600 rounded-circle d-flex justify-content-center align-items-center">
-                      <img src="assets/images/icons/dashboard-icon1.png" alt="Icon">
+                                            <div class="dash-kpi-icon {{ $skin['icon'] }}">
+                                                <i class="{{ $kpi['icon'] }}"></i>
                     </div>
-                    <p class="fw-medium text-primary-light mb-1">Total Student</p>
+                                            <p class="fw-medium text-primary-light mb-0">{{ $kpi['label'] }}</p>
                   </div>
-                  <h6 class="mb-0">20,000</h6>
-                  <p class="fw-medium text-sm text-primary-light mt-12 mb-0 d-flex align-items-center gap-2">
-                    <span class="d-inline-flex align-items-center gap-1 text-primary-600 text-sm fw-semibold">
-                      10%
-                      <iconify-icon icon="bxs:up-arrow" class="text-xs"></iconify-icon>
-                    </span>
-                    +5 This Month
-                  </p>
+                                        <h4 class="mb-0 fw-bold">{{ number_format($kpi['value']) }}</h4>
+                                        <p class="fw-medium text-sm text-primary-light mt-12 mb-0">{{ $schoolName }}</p>
                 </div>
               </div>
             </div>
-            <div class="col-xxl-4 col-sm-6">
-              <div class="card shadow-1 radius-8 gradient-bg-end-2 h-100">
-                <div class="card-body p-20">
-                  <div class="d-flex flex-wrap align-items-center gap-3 mb-16">
-                    <div
-                      class="w-44-px h-44-px bg-blue-600 rounded-circle d-flex justify-content-center align-items-center">
-                      <img src="assets/images/icons/dashboard-icon2.png" alt="Icon">
+                        @endforeach
                     </div>
-                    <p class="fw-medium text-primary-light mb-1">Total Student</p>
-                  </div>
-                  <h6 class="mb-0">20,000</h6>
-                  <p class="fw-medium text-sm text-primary-light mt-12 mb-0 d-flex align-items-center gap-2">
-                    <span class="d-inline-flex align-items-center gap-1 text-primary-600 text-sm fw-semibold">
-                      10%
-                      <iconify-icon icon="bxs:up-arrow" class="text-xs"></iconify-icon>
-                    </span>
-                    +5 This Month
-                  </p>
-                </div>
-              </div>
+                @endif
             </div>
-            <div class="col-xxl-4 col-sm-6">
-              <div class="card shadow-1 radius-8 gradient-bg-end-3 h-100">
-                <div class="card-body p-20">
-                  <div class="d-flex flex-wrap align-items-center gap-3 mb-16">
-                    <div
-                      class="w-44-px h-44-px bg-purple-600 rounded-circle d-flex justify-content-center align-items-center">
-                      <img src="assets/images/icons/dashboard-icon3.png" alt="Icon">
-                    </div>
-                    <p class="fw-medium text-primary-light mb-1">Total Student</p>
-                  </div>
-                  <h6 class="mb-0">20,000</h6>
-                  <p class="fw-medium text-sm text-primary-light mt-12 mb-0 d-flex align-items-center gap-2">
-                    <span class="d-inline-flex align-items-center gap-1 text-primary-600 text-sm fw-semibold">
-                      10%
-                      <iconify-icon icon="bxs:up-arrow" class="text-xs"></iconify-icon>
-                    </span>
-                    +5 This Month
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div class="col-xxl-4 col-sm-6">
-              <div class="card shadow-1 radius-8 gradient-bg-end-4 h-100">
-                <div class="card-body p-20">
-                  <div class="d-flex flex-wrap align-items-center gap-3 mb-16">
-                    <div
-                      class="w-44-px h-44-px bg-primary-600 rounded-circle d-flex justify-content-center align-items-center">
-                      <img src="assets/images/icons/dashboard-icon4.png" alt="Icon">
-                    </div>
-                    <p class="fw-medium text-primary-light mb-1">Total Student</p>
-                  </div>
-                  <h6 class="mb-0">20,000</h6>
-                  <p class="fw-medium text-sm text-primary-light mt-12 mb-0 d-flex align-items-center gap-2">
-                    <span class="d-inline-flex align-items-center gap-1 text-primary-600 text-sm fw-semibold">
-                      10%
-                      <iconify-icon icon="bxs:up-arrow" class="text-xs"></iconify-icon>
-                    </span>
-                    +5 This Month
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div class="col-xxl-4 col-sm-6">
-              <div class="card shadow-1 radius-8 gradient-bg-end-5 h-100">
-                <div class="card-body p-20">
-                  <div class="d-flex flex-wrap align-items-center gap-3 mb-16">
-                    <div
-                      class="w-44-px h-44-px bg-success-600 rounded-circle d-flex justify-content-center align-items-center">
-                      <img src="assets/images/icons/dashboard-icon5.png" alt="Icon">
-                    </div>
-                    <p class="fw-medium text-primary-light mb-1">Total Student</p>
-                  </div>
-                  <h6 class="mb-0">20,000</h6>
-                  <p class="fw-medium text-sm text-primary-light mt-12 mb-0 d-flex align-items-center gap-2">
-                    <span class="d-inline-flex align-items-center gap-1 text-primary-600 text-sm fw-semibold">
-                      10%
-                      <iconify-icon icon="bxs:up-arrow" class="text-xs"></iconify-icon>
-                    </span>
-                    +5 This Month
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div class="col-xxl-4 col-sm-6">
-              <div class="card shadow-1 radius-8 gradient-bg-end-6 h-100">
-                <div class="card-body p-20">
-                  <div class="d-flex flex-wrap align-items-center gap-3 mb-16">
-                    <div
-                      class="w-44-px h-44-px bg-cyan-600 rounded-circle d-flex justify-content-center align-items-center">
-                      <img src="assets/images/icons/dashboard-icon6.png" alt="Icon">
-                    </div>
-                    <p class="fw-medium text-primary-light mb-1">Total Student</p>
-                  </div>
-                  <h6 class="mb-0">20,000</h6>
-                  <p class="fw-medium text-sm text-primary-light mt-12 mb-0 d-flex align-items-center gap-2">
-                    <span class="d-inline-flex align-items-center gap-1 text-primary-600 text-sm fw-semibold">
-                      10%
-                      <iconify-icon icon="bxs:up-arrow" class="text-xs"></iconify-icon>
-                    </span>
-                    +5 This Month
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+
+            @if($sideChart)
         <div class="col-xxl-4">
-          <div class="card h-100">
+                    <div class="card h-100 radius-8 shadow-1">
             <div class="card-body p-0">
-              <div
-                class="d-flex flex-wrap align-items-center justify-content-between px-20 py-16 border-bottom border-neutral-200">
-                <h6 class="text-lg mb-0">Student Attendance</h6>
-              </div>
-              <div class="p-20">
-                <div class="d-flex gap-6">
-                  <div class="h-44-px bg-primary-600 rounded" style="width: 87%;"></div>
-                  <div class="h-44-px bg-warning-600 rounded" style="width: 40%;"></div>
-                  <div class="h-44-px bg-purple-600 rounded" style="width: 20%;"></div>
-                  <div class="h-44-px bg-success-600 rounded" style="width: 20%;"></div>
-                </div>
-                <div class="mt-32 d-flex flex-column gap-24">
-                  <div class="d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center gap-2">
-                      <span class="w-12-px h-12-px radius-2 bg-primary-600"></span>
-                      <span class="text-neutral-600">Present </span>
+                            <div class="d-flex flex-wrap align-items-center justify-content-between px-20 py-16 border-bottom border-neutral-200">
+                                <h6 class="text-lg mb-0">{{ $sideChart['title'] }}</h6>
+                                <span class="text-sm text-secondary-light">{{ $sideChart['help'] }}</span>
+                            </div>
+                            <div class="p-20">
+                                @php
+                                    $hasSeries = ($sideChart['type'] ?? '') === 'donut'
+                                        ? collect($sideChart['series'] ?? [])->sum() > 0
+                                        : collect($sideChart['categories'] ?? [])->isNotEmpty();
+                                @endphp
+                                @if($hasSeries)
+                                    <div id="{{ $sideChart['id'] }}"></div>
+                                @else
+                                    <div class="dash-empty py-40">No data yet for this chart.</div>
+                                @endif
+                      </div>
                     </div>
-                    <span class="fw-semibold text-primary-light">87%</span>
-                  </div>
-                  <div class="d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center gap-2">
-                      <span class="w-12-px h-12-px radius-2 bg-warning-600"></span>
-                      <span class="text-neutral-600">Absent: </span>
-                    </div>
-                    <span class="fw-semibold text-primary-light">40%</span>
-                  </div>
-                  <div class="d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center gap-2">
-                      <span class="w-12-px h-12-px radius-2 bg-purple-600"></span>
-                      <span class="text-neutral-600">Late </span>
-                    </div>
-                    <span class="fw-semibold text-primary-light">20%</span>
-                  </div>
-                  <div class="d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center gap-2">
-                      <span class="w-12-px h-12-px radius-2 bg-success-600"></span>
-                      <span class="text-neutral-600">Half day </span>
-                    </div>
-                    <span class="fw-semibold text-primary-light">20%</span>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-12">
-          <div class="row gy-4">
-            <div class="col-xxl-8">
-              <div class="row gy-4">
+            @endif
+
+            @foreach($mainCharts as $chart)
+                <div class="{{ $chart['col'] ?? 'col-lg-6' }}">
+                    <div class="card h-100 radius-8 shadow-1">
+                    <div class="card-body p-0">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between px-20 py-16 border-bottom border-neutral-200">
+                                <h6 class="text-lg mb-0">{{ $chart['title'] }}</h6>
+                                <span class="text-sm text-secondary-light">{{ $chart['help'] }}</span>
+                            </div>
+                            <div class="p-20">
+                                @php
+                                    $hasSeries = ($chart['type'] ?? '') === 'donut'
+                                        ? collect($chart['series'] ?? [])->sum() > 0
+                                        : collect($chart['categories'] ?? [])->isNotEmpty();
+                                @endphp
+                                @if($hasSeries)
+                                    <div id="{{ $chart['id'] }}"></div>
+                                @else
+                                    <div class="dash-empty py-40">No data yet for this chart.</div>
+                                @endif
+                      </div>
+                    </div>
+                  </div>
+                </div>
+            @endforeach
+
+            @if(count($shortcuts))
                 <div class="col-12">
-                  <div class="card h-100">
-                    <div class="card-body p-0">
-                      <div
-                        class="d-flex flex-wrap align-items-center justify-content-between px-20 py-16 border-bottom border-neutral-200">
-                        <h6 class="text-lg mb-0">Revenue Statistic</h6>
-                      </div>
-                      <div class="p-20">
-                        <ul class="d-flex flex-wrap align-items-center justify-content-center mb-16 gap-3">
-                          <li class="d-flex align-items-center gap-8">
-                            <span class="w-12-px h-12-px radius-2 rotate-45-deg bg-primary-600"></span>
-                            <span class="text-secondary-light text-sm fw-semibold">
-                              Total Fee:
-                              <span class="text-primary-light fw-bold">$500</span>
-                            </span>
-                          </li>
-                          <li class="d-flex align-items-center gap-8">
-                            <span class="w-12-px h-12-px radius-2 rotate-45-deg bg-warning-600"></span>
-                            <span class="text-secondary-light text-sm font-semibold">
-                              Collected Fee:
-                              <span class="text-primary-light fw-bold"> $300</span>
-                            </span>
-                          </li>
-                        </ul>
-                        <div id="revenueStatistic"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="card h-100">
-                    <div class="card-body p-0">
-                      <div
-                        class="d-flex flex-wrap align-items-center justify-content-between px-20 py-16 border-bottom border-neutral-200">
-                        <h6 class="text-lg mb-0">Notice Board</h6>
-                        <div class="dropdown">
-                          <button type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <iconify-icon icon="entypo:dots-three-vertical"
-                              class="icon text-secondary-light"></iconify-icon>
-                          </button>
-                          <ul class="dropdown-menu p-12 border bg-base shadow">
-                            <li>
-                              <button type="button"
-                                class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-10"
-                                data-bs-toggle="modal" data-bs-target="#exampleModalView">
-                                <iconify-icon icon="hugeicons:view" class="icon text-lg line-height-1"></iconify-icon>
-                                View
-                              </button>
-                            </li>
-                            <li>
-                              <button type="button"
-                                class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-10"
-                                data-bs-toggle="modal" data-bs-target="#exampleModalEdit">
-                                <iconify-icon icon="lucide:edit" class="icon text-lg line-height-1"></iconify-icon>
-                                Edit
-                              </button>
-                            </li>
-                            <li>
-                              <button type="button"
-                                class="delete-item dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-danger-100 text-hover-danger-600 d-flex align-items-center gap-10"
-                                data-bs-toggle="modal" data-bs-target="#exampleModalDelete">
-                                <iconify-icon icon="fluent:delete-24-regular"
-                                  class="icon text-lg line-height-1"></iconify-icon>
-                                Delete
-                              </button>
-                            </li>
-                          </ul>
+                    <div class="row gy-4">
+                        @foreach($shortcuts as $item)
+                            @php $skin = $shortcutSkins[$item['tone']] ?? $kpiSkins[$loop->index % 6]; @endphp
+                            <div class="col-sm-6 col-xl-3">
+                                <a href="{{ route($item['url']) }}" class="dash-action-card">
+                                    <div class="card shadow-1 radius-8 {{ $skin['grad'] }} h-100">
+                                        <div class="card-body p-20">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="dash-action-icon {{ $skin['icon'] }}">
+                                                    <i class="{{ $item['icon'] }}"></i>
                         </div>
-                      </div>
-                      <div class="ps-20 pt-20 pb-20">
-                        <div class="pe-20 d-flex flex-column gap-20 max-h-462-px overflow-y-auto scroll-sm">
-                          <div class="d-flex align-items-start gap-16">
-                            <img src="assets/images/thumbs/notice-board-img1.png" alt="Thumbnail"
-                              class="w-40-px h-40-px rounded-circle object-fit-cover flex-shrink-0">
-                            <div class="">
-                              <h6 class="mb-4 text-lg">Admin</h6>
-                              <p class="text-secondary-light text-sm mb-0">Lorem Ipsum is simply dummy text of the
-                                printing and typesetti</p>
-                              <span class="text-secondary-light text-sm mb-0 mt-4">25 Jan 2024</span>
-                            </div>
-                          </div>
-                          <div class="d-flex align-items-start gap-16">
-                            <img src="assets/images/thumbs/notice-board-img2.png" alt="Thumbnail"
-                              class="w-40-px h-40-px rounded-circle object-fit-cover flex-shrink-0">
-                            <div class="">
-                              <h6 class="mb-4 text-lg">Kathryn Murphy</h6>
-                              <p class="text-secondary-light text-sm mb-0">Lorem Ipsum is simply dummy text of the
-                                printing and typesett ing industry Lorem Ipsum is simply dummy text of the printing and
-                                typesetting industry.</p>
-                              <span class="text-secondary-light text-sm mb-0 mt-4">25 Jan 2024</span>
-                            </div>
-                          </div>
-                          <div class="d-flex align-items-start gap-16">
-                            <img src="assets/images/thumbs/notice-board-img3.png" alt="Thumbnail"
-                              class="w-40-px h-40-px rounded-circle object-fit-cover flex-shrink-0">
-                            <div class="">
-                              <h6 class="mb-4 text-lg">Admin</h6>
-                              <p class="text-secondary-light text-sm mb-0">Lorem Ipsum is simply dummy text of the
-                                printing and typesetti</p>
-                              <span class="text-secondary-light text-sm mb-0 mt-4">25 Jan 2024</span>
-                            </div>
-                          </div>
-                          <div class="d-flex align-items-start gap-16">
-                            <img src="assets/images/thumbs/notice-board-img2.png" alt="Thumbnail"
-                              class="w-40-px h-40-px rounded-circle object-fit-cover flex-shrink-0">
-                            <div class="">
-                              <h6 class="mb-4 text-lg">John Doe</h6>
-                              <p class="text-secondary-light text-sm mb-0">Lorem ipsum dolor sit amet consectetur
-                                adipisicing elit. Laborum voluptas corporis qui dolore est odit officia fuga?</p>
-                              <span class="text-secondary-light text-sm mb-0 mt-4">25 Jan 2024</span>
-                            </div>
-                          </div>
+                        <div>
+                                                    <h6 class="mb-4">{{ $item['label'] }}</h6>
+                                                    <p class="text-sm text-primary-light mb-0">{{ $item['help'] }}</p>
                         </div>
                       </div>
                     </div>
                   </div>
+                                </a>
                 </div>
-                <div class="col-md-6">
-                  <div class="card h-100">
-                    <div class="card-body p-0">
-                      <div
-                        class="d-flex flex-wrap align-items-center justify-content-between px-20 py-16 border-bottom border-neutral-200">
-                        <h6 class="text-lg mb-0">Leave Requests</h6>
-                        <div class="dropdown">
-                          <button type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <iconify-icon icon="entypo:dots-three-vertical"
-                              class="icon text-secondary-light"></iconify-icon>
-                          </button>
-                          <ul class="dropdown-menu p-12 border bg-base shadow">
-                            <li>
-                              <button type="button"
-                                class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-10"
-                                data-bs-toggle="modal" data-bs-target="#exampleModalView">
-                                <iconify-icon icon="hugeicons:view" class="icon text-lg line-height-1"></iconify-icon>
-                                View
-                              </button>
-                            </li>
-                            <li>
-                              <button type="button"
-                                class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-10"
-                                data-bs-toggle="modal" data-bs-target="#exampleModalEdit">
-                                <iconify-icon icon="lucide:edit" class="icon text-lg line-height-1"></iconify-icon>
-                                Edit
-                              </button>
-                            </li>
-                            <li>
-                              <button type="button"
-                                class="delete-item dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-danger-100 text-hover-danger-600 d-flex align-items-center gap-10"
-                                data-bs-toggle="modal" data-bs-target="#exampleModalDelete">
-                                <iconify-icon icon="fluent:delete-24-regular"
-                                  class="icon text-lg line-height-1"></iconify-icon>
-                                Delete
-                              </button>
-                            </li>
-                          </ul>
-                        </div>
-                      </div>
-                      <div class="ps-20 pt-20 pb-20">
-                        <div class="pe-20 d-flex flex-column gap-28 max-h-462-px overflow-y-auto scroll-sm">
-                          <div class="d-flex align-items-center justify-content-between gap-16">
-                            <div class="d-flex align-items-start gap-16">
-                              <img src="assets/images/thumbs/leave-request-img1.png" alt="Thumbnail"
-                                class="w-40-px h-40-px rounded-circle object-fit-cover flex-shrink-0">
-                              <div class="">
-                                <h6 class="mb-0 text-lg">Darlene Robertson</h6>
-                                <span class="text-secondary-light text-sm mb-0">English Teacher</span>
-                              </div>
-                            </div>
-                            <div class="text-end">
-                              <span class="d-block fw-bold text-primary-light">3 Days</span>
-                              <p class="text-secondary-light text-sm mb-0">Apply on: 10 April</p>
-                            </div>
-                          </div>
-                          <div class="d-flex align-items-center justify-content-between gap-16">
-                            <div class="d-flex align-items-start gap-16">
-                              <img src="assets/images/thumbs/leave-request-img2.png" alt="Thumbnail"
-                                class="w-40-px h-40-px rounded-circle object-fit-cover flex-shrink-0">
-                              <div class="">
-                                <h6 class="mb-0 text-lg">Esther Howard</h6>
-                                <span class="text-secondary-light text-sm mb-0">English Teacher</span>
-                              </div>
-                            </div>
-                            <div class="text-end">
-                              <span class="d-block fw-bold text-primary-light">3 Days</span>
-                              <p class="text-secondary-light text-sm mb-0">Apply on: 10 April</p>
-                            </div>
-                          </div>
-                          <div class="d-flex align-items-center justify-content-between gap-16">
-                            <div class="d-flex align-items-start gap-16">
-                              <img src="assets/images/thumbs/leave-request-img3.png" alt="Thumbnail"
-                                class="w-40-px h-40-px rounded-circle object-fit-cover flex-shrink-0">
-                              <div class="">
-                                <h6 class="mb-0 text-lg">Kristin Watson</h6>
-                                <span class="text-secondary-light text-sm mb-0">English Teacher</span>
-                              </div>
-                            </div>
-                            <div class="text-end">
-                              <span class="d-block fw-bold text-primary-light">3 Days</span>
-                              <p class="text-secondary-light text-sm mb-0">Apply on: 10 April</p>
-                            </div>
-                          </div>
-                          <div class="d-flex align-items-center justify-content-between gap-16">
-                            <div class="d-flex align-items-start gap-16">
-                              <img src="assets/images/thumbs/leave-request-img4.png" alt="Thumbnail"
-                                class="w-40-px h-40-px rounded-circle object-fit-cover flex-shrink-0">
-                              <div class="">
-                                <h6 class="mb-0 text-lg">Leslie Alexander</h6>
-                                <span class="text-secondary-light text-sm mb-0">English Teacher</span>
-                              </div>
-                            </div>
-                            <div class="text-end">
-                              <span class="d-block fw-bold text-primary-light">3 Days</span>
-                              <p class="text-secondary-light text-sm mb-0">Apply on: 10 April</p>
-                            </div>
-                          </div>
-                          <div class="d-flex align-items-center justify-content-between gap-16">
-                            <div class="d-flex align-items-start gap-16">
-                              <img src="assets/images/thumbs/leave-request-img5.png" alt="Thumbnail"
-                                class="w-40-px h-40-px rounded-circle object-fit-cover flex-shrink-0">
-                              <div class="">
-                                <h6 class="mb-0 text-lg">Dianne Russell</h6>
-                                <span class="text-secondary-light text-sm mb-0">English Teacher</span>
-                              </div>
-                            </div>
-                            <div class="text-end">
-                              <span class="d-block fw-bold text-primary-light">3 Days</span>
-                              <p class="text-secondary-light text-sm mb-0">Apply on: 10 April</p>
-                            </div>
-                          </div>
-                          <div class="d-flex align-items-center justify-content-between gap-16">
-                            <div class="d-flex align-items-start gap-16">
-                              <img src="assets/images/thumbs/leave-request-img3.png" alt="Thumbnail"
-                                class="w-40-px h-40-px rounded-circle object-fit-cover flex-shrink-0">
-                              <div class="">
-                                <h6 class="mb-0 text-lg">Kristin Watson</h6>
-                                <span class="text-secondary-light text-sm mb-0">English Teacher</span>
-                              </div>
-                            </div>
-                            <div class="text-end">
-                              <span class="d-block fw-bold text-primary-light">3 Days</span>
-                              <p class="text-secondary-light text-sm mb-0">Apply on: 10 April</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                        @endforeach
                   </div>
                 </div>
-              </div>
-            </div>
-            <div class="col-xxl-4">
-              <div class="card h-100">
-                <div class="card-body p-0">
-                  <div
-                    class="d-flex flex-wrap align-items-center justify-content-between px-20 py-16 border-bottom border-neutral-200">
-                    <h6 class="text-lg mb-0">Calendar</h6>
-                  </div>
+            @endif
 
-                  <div class="p-20">
-                    <div class="calendar">
-                      <div class="calendar__header">
-                        <button type="button" class="calendar__arrow left">
-                          <i class="ri-arrow-left-s-line"></i>
-                        </button>
-                        <p class="display text-md text-secondary-light fw-semibold mb-0">""</p>
-                        <button type="button" class="calendar__arrow right">
-                          <i class="ri-arrow-right-s-line"></i>
-                        </button>
-                      </div>
-
-                      <div class="calendar__week week">
-                        <div class="calendar__week-text">Su</div>
-                        <div class="calendar__week-text">Mo</div>
-                        <div class="calendar__week-text">Tu</div>
-                        <div class="calendar__week-text">We</div>
-                        <div class="calendar__week-text">Th</div>
-                        <div class="calendar__week-text">Fr</div>
-                        <div class="calendar__week-text">Sa</div>
-                      </div>
-                      <div class="days"></div>
-                    </div>
-                  </div>
-
-                  <div class="ps-20 pt-20 pb-20 border-top border-neutral-200">
-                    <h6 class="text-lg mb-20">Upcoming Events</h6>
-                    <div class="pe-20 d-flex flex-column gap-32 overflow-y-auto max-h-500-px scroll-sm">
-                      <div class="d-flex align-items-center justify-content-between gap-16">
-                        <div class="ps-10 border-start-width-3-px border-purple-600">
-                          <div class="d-flex align-items-end gap-6">
-                            <h6 class="text-lg fw-normal mb-0">09:00 - 09:45</h6>
-                            <span class="text-xs text-secondary-light line-height-1 mb-2">AM</span>
-                          </div>
-                          <p class="text-secondary-light mt-4 mb-2 text-sm">Marketing Strategy Kickoff</p>
-                          <p class="text-xs text-secondary-light mb-0">Lead by <a href="javascript:void(0)"
-                              class="text-primary-600 hover-underline">Robert Fox</a></p>
-                        </div>
-                        <div>
-                          <a href="javascript:void(0)"
-                            class="py-6 px-16 radius-4 bg-neutral-100 text-secondary-light fw-semibold bg-hover-primary-600 hover-text-white">View</a>
-                        </div>
-                      </div>
-                      <div class="d-flex align-items-center justify-content-between gap-16">
-                        <div class="ps-10 border-start-width-3-px border-warning-600">
-                          <div class="d-flex align-items-end gap-6">
-                            <h6 class="text-lg fw-normal mb-0">11:15 - 12:00</h6>
-                            <span class="text-xs text-secondary-light line-height-1 mb-2">AM</span>
-                          </div>
-                          <p class="text-secondary-light mt-4 mb-2 text-sm">Product Design Brainstorm</p>
-                          <p class="text-xs text-secondary-light mb-0">Lead by <a href="javascript:void(0)"
-                              class="text-primary-600 hover-underline">Leslie Alexander</a></p>
-                        </div>
-                        <div>
-                          <a href="javascript:void(0)"
-                            class="py-6 px-16 radius-4 bg-neutral-100 text-secondary-light fw-semibold bg-hover-primary-600 hover-text-white">View</a>
-                        </div>
-                      </div>
-                      <div class="d-flex align-items-center justify-content-between gap-16">
-                        <div class="ps-10 border-start-width-3-px border-blue-600">
-                          <div class="d-flex align-items-end gap-6">
-                            <h6 class="text-lg fw-normal mb-0">02:00 - 03:00</h6>
-                            <span class="text-xs text-secondary-light line-height-1 mb-2">PM</span>
-                          </div>
-                          <p class="text-secondary-light mt-4 mb-2 text-sm">Client Feedback Review</p>
-                          <p class="text-xs text-secondary-light mb-0">Lead by <a href="javascript:void(0)"
-                              class="text-primary-600 hover-underline">Courtney Henry</a></p>
-                        </div>
-                        <div>
-                          <a href="javascript:void(0)"
-                            class="py-6 px-16 radius-4 bg-neutral-100 text-secondary-light fw-semibold bg-hover-primary-600 hover-text-white">View</a>
-                        </div>
-                      </div>
-                      <div class="d-flex align-items-center justify-content-between gap-16">
-                        <div class="ps-10 border-start-width-3-px border-success-600">
-                          <div class="d-flex align-items-end gap-6">
-                            <h6 class="text-lg fw-normal mb-0">04:15 - 05:00</h6>
-                            <span class="text-xs text-secondary-light line-height-1 mb-2">PM</span>
-                          </div>
-                          <p class="text-secondary-light mt-4 mb-2 text-sm">Sprint Planning & Task Allocation</p>
-                          <p class="text-xs text-secondary-light mb-0">Lead by <a href="javascript:void(0)"
-                              class="text-primary-600 hover-underline">Eleanor Pena</a></p>
-                        </div>
-                        <div>
-                          <a href="javascript:void(0)"
-                            class="py-6 px-16 radius-4 bg-neutral-100 text-secondary-light fw-semibold bg-hover-primary-600 hover-text-white">View</a>
-                        </div>
-                      </div>
-                      <div class="d-flex align-items-center justify-content-between gap-16">
-                        <div class="ps-10 border-start-width-3-px border-primary-600">
-                          <div class="d-flex align-items-end gap-6">
-                            <h6 class="text-lg fw-normal mb-0">01:15 - 02:00</h6>
-                            <span class="text-xs text-secondary-light line-height-1 mb-2">PM</span>
-                          </div>
-                          <p class="text-secondary-light mt-4 mb-2 text-sm">Client Feedback Review</p>
-                          <p class="text-xs text-secondary-light mb-0">Lead by <a href="javascript:void(0)"
-                              class="text-primary-600 hover-underline">John</a></p>
-                        </div>
-                        <div>
-                          <a href="javascript:void(0)"
-                            class="py-6 px-16 radius-4 bg-neutral-100 text-secondary-light fw-semibold bg-hover-primary-600 hover-text-white">View</a>
-                        </div>
-                      </div>
-                      <div class="d-flex align-items-center justify-content-between gap-16">
-                        <div class="ps-10 border-start-width-3-px border-warning-600">
-                          <div class="d-flex align-items-end gap-6">
-                            <h6 class="text-lg fw-normal mb-0">11:15 - 12:00</h6>
-                            <span class="text-xs text-secondary-light line-height-1 mb-2">AM</span>
-                          </div>
-                          <p class="text-secondary-light mt-4 mb-2 text-sm">Product Design Brainstorm</p>
-                          <p class="text-xs text-secondary-light mb-0">Lead by <a href="javascript:void(0)"
-                              class="text-primary-600 hover-underline">Leslie Alexander</a></p>
-                        </div>
-                        <div>
-                          <a href="javascript:void(0)"
-                            class="py-6 px-16 radius-4 bg-neutral-100 text-secondary-light fw-semibold bg-hover-primary-600 hover-text-white">View</a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-xxl-4 col-lg-6">
-          <div class="card h-100">
+            @if($isTeacher)
+                <div class="col-lg-6">
+                    <div class="card h-100 radius-8 shadow-1">
             <div class="card-body p-0">
-              <div
-                class="d-flex flex-wrap align-items-center justify-content-between px-20 py-16 border-bottom border-neutral-200">
-                <h6 class="text-lg mb-0">User Overview</h6>
-                <div class="dropdown">
-                  <button type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <iconify-icon icon="entypo:dots-three-vertical" class="icon text-secondary-light"></iconify-icon>
-                  </button>
-                  <ul class="dropdown-menu p-12 border bg-base shadow">
-                    <li>
-                      <button type="button"
-                        class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-10"
-                        data-bs-toggle="modal" data-bs-target="#exampleModalView">
-                        <iconify-icon icon="hugeicons:view" class="icon text-lg line-height-1"></iconify-icon>
-                        View
-                      </button>
-                    </li>
-                    <li>
-                      <button type="button"
-                        class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-10"
-                        data-bs-toggle="modal" data-bs-target="#exampleModalEdit">
-                        <iconify-icon icon="lucide:edit" class="icon text-lg line-height-1"></iconify-icon>
-                        Edit
-                      </button>
-                    </li>
-                    <li>
-                      <button type="button"
-                        class="delete-item dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-danger-100 text-hover-danger-600 d-flex align-items-center gap-10"
-                        data-bs-toggle="modal" data-bs-target="#exampleModalDelete">
-                        <iconify-icon icon="fluent:delete-24-regular" class="icon text-lg line-height-1"></iconify-icon>
-                        Delete
-                      </button>
-                    </li>
-                  </ul>
-                </div>
+                            <div class="d-flex flex-wrap align-items-center justify-content-between px-20 py-16 border-bottom border-neutral-200">
+                                <h6 class="text-lg mb-0">My homeroom classes</h6>
+                                <span class="badge bg-primary-600">Class teacher</span>
               </div>
               <div class="p-20">
-                <div>
-                  <div class="mt-40 mb-24 pe-110 position-relative max-w-288-px mx-auto">
-                    <div
-                      class="w-170-px h-170-px rounded-circle z-1 position-relative d-inline-flex justify-content-center align-items-center">
-                      <img src="assets/images/icons/radial-bg1.png" alt="Image"
-                        class="position-absolute top-0 start-0 z-n1 w-100 h-100 object-fit-cover">
-                      <h5 class="text-white"> 60% </h5>
-                    </div>
-                    <div
-                      class="w-144-px h-144-px rounded-circle z-1 position-relative d-inline-flex justify-content-center align-items-center position-absolute top-0 end-0 mt--36">
-                      <img src="assets/images/icons/radial-bg2.png" alt="Image"
-                        class="position-absolute top-0 start-0 z-n1 w-100 h-100 object-fit-cover">
-                      <h5 class="text-white"> 30% </h5>
-                    </div>
-                    <div
-                      class="w-110-px h-110-px rounded-circle z-1 position-relative d-inline-flex justify-content-center align-items-center position-absolute bottom-0 start-50 translate-middle-x ms-48">
-                      <img src="assets/images/icons/radial-bg3.png" alt="Image"
-                        class="position-absolute top-0 start-0 z-n1 w-100 h-100 object-fit-cover">
-                      <h5 class="text-white"> 10% </h5>
-                    </div>
-                  </div>
-
-                  <div class="d-flex align-items-center flex-wrap gap-24 justify-content-evenly">
-                    <div class="d-flex flex-column align-items-start">
-                      <div class="d-flex align-items-center gap-2">
-                        <span class="w-12-px h-12-px rounded-pill bg-success-600"></span>
-                        <span class="text-secondary-light text-sm fw-normal">Student</span>
-                      </div>
-                      <h6 class="text-primary-light fw-semibold mb-0 mt-4 text-lg">750</h6>
-                    </div>
-                    <div class="d-flex flex-column align-items-start">
-                      <div class="d-flex align-items-center gap-2">
-                        <span class="w-12-px h-12-px rounded-pill bg-warning-600"></span>
-                        <span class="text-secondary-light text-sm fw-normal">Teacher</span>
-                      </div>
-                      <h6 class="text-primary-light fw-semibold mb-0 mt-4 text-lg">56</h6>
-                    </div>
-                    <div class="d-flex flex-column align-items-start">
-                      <div class="d-flex align-items-center gap-2">
-                        <span class="w-12-px h-12-px rounded-pill bg-blue-600"></span>
-                        <span class="text-secondary-light text-sm fw-normal">Staffs </span>
-                      </div>
-                      <h6 class="text-primary-light fw-semibold mb-0 mt-4 text-lg">15</h6>
-                    </div>
-                  </div>
-                </div>
+                                @forelse($homeroomClasses as $class)
+                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-12 {{ $loop->last ? '' : 'mb-16 pb-16 border-bottom border-neutral-200' }}">
+                                        <div>
+                                            <h6 class="mb-4">{{ $class->name }}</h6>
+                                            <span class="text-sm text-secondary-light">Homeroom</span>
               </div>
+                                        <div class="d-flex flex-wrap gap-8">
+                                            <a href="{{ route('teacher-class-workspace', $class) }}" class="btn btn-sm btn-primary-600">Roster</a>
+                                            <a href="{{ route('teacher-class-attendance', $class) }}" class="btn btn-sm btn-warning-600">Attendance</a>
+                                            <a href="{{ route('teacher-class-assessments', $class) }}" class="btn btn-sm btn-purple-600">Assessments</a>
+                                            <a href="{{ route('teacher-class-gradebook', $class) }}" class="btn btn-sm btn-success-600">Gradebook</a>
             </div>
           </div>
-        </div>
-        <div class="col-xxl-8 col-lg-6">
-          <div class="card h-100">
-            <div class="card-body p-0">
-              <div
-                class="d-flex flex-wrap align-items-center justify-content-between px-20 py-16 border-bottom border-neutral-200">
-                <h6 class="text-lg mb-0">Income Vs Expense </h6>
-                <div class="dropdown">
-                  <button type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <iconify-icon icon="entypo:dots-three-vertical" class="icon text-secondary-light"></iconify-icon>
-                  </button>
-                  <ul class="dropdown-menu p-12 border bg-base shadow">
-                    <li>
-                      <button type="button"
-                        class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-10"
-                        data-bs-toggle="modal" data-bs-target="#exampleModalView">
-                        <iconify-icon icon="hugeicons:view" class="icon text-lg line-height-1"></iconify-icon>
-                        View
-                      </button>
-                    </li>
-                    <li>
-                      <button type="button"
-                        class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-10"
-                        data-bs-toggle="modal" data-bs-target="#exampleModalEdit">
-                        <iconify-icon icon="lucide:edit" class="icon text-lg line-height-1"></iconify-icon>
-                        Edit
-                      </button>
-                    </li>
-                    <li>
-                      <button type="button"
-                        class="delete-item dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-danger-100 text-hover-danger-600 d-flex align-items-center gap-10"
-                        data-bs-toggle="modal" data-bs-target="#exampleModalDelete">
-                        <iconify-icon icon="fluent:delete-24-regular" class="icon text-lg line-height-1"></iconify-icon>
-                        Delete
-                      </button>
-                    </li>
-                  </ul>
+                                @empty
+                                    <p class="text-secondary-light mb-0">No homeroom class assigned yet.</p>
+                                @endforelse
+                      </div>
+                    </div>
+                  </div>
                 </div>
+                <div class="col-lg-6">
+                    <div class="card h-100 radius-8 shadow-1">
+            <div class="card-body p-0">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between px-20 py-16 border-bottom border-neutral-200">
+                                <h6 class="text-lg mb-0">My subject assignments</h6>
+                                <span class="badge bg-purple-600">Course teacher</span>
               </div>
               <div class="p-20">
-                <ul class="d-flex flex-wrap align-items-center justify-content-center mb-16 gap-3">
-                  <li class="d-flex align-items-center gap-8">
-                    <span class="w-12-px h-12-px rounded-circle bg-primary-600"></span>
-                    <span class="text-secondary-light text-sm fw-semibold">
-                      Income:
-                      <span class="text-primary-light fw-bold">$500</span>
-                    </span>
-                  </li>
-                  <li class="d-flex align-items-center gap-8">
-                    <span class="w-12-px h-12-px rounded-circle bg-warning-600"></span>
-                    <span class="text-secondary-light text-sm font-semibold">
-                      Expense:
-                      <span class="text-primary-light fw-bold"> $300</span>
-                    </span>
-                  </li>
-                </ul>
-                <div id="incomeExpense" class="apexcharts-tooltip-style-1"></div>
+                                @forelse($subjectAssignments as $assignment)
+                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-12 {{ $loop->last ? '' : 'mb-16 pb-16 border-bottom border-neutral-200' }}">
+                                        <div>
+                                            <h6 class="mb-4">{{ $assignment->course?->name }}</h6>
+                                            <span class="text-sm text-secondary-light">{{ $assignment->schoolClass?->name }}</span>
+                  </div>
+                                        <div class="d-flex flex-wrap gap-8">
+                                            <a href="{{ route('teacher-course-workspace', [$assignment->course_id, $assignment->school_class_id]) }}" class="btn btn-sm btn-primary-600">Roster</a>
+                                            <a href="{{ route('teacher-course-assessments', [$assignment->course_id, $assignment->school_class_id]) }}" class="btn btn-sm btn-purple-600">Assessments</a>
               </div>
             </div>
-          </div>
+                                @empty
+                                    <p class="text-secondary-light mb-0">No subject assignments for this term.</p>
+                                @endforelse
+              </div>
+            </div>
+                  </div>
+                </div>
+            @endif
+
+            @if($showPendingLeave)
+                <div class="col-12">
+                    <div class="card radius-8 shadow-1">
+                        <div class="card-body p-0">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between px-20 py-16 border-bottom border-neutral-200">
+                                <h6 class="text-lg mb-0">Pending leave</h6>
+                                @if(\Illuminate\Support\Facades\Route::has('hr-leave'))
+                                    <a href="{{ route('hr-leave') }}" class="btn btn-sm btn-primary-600">View all</a>
+                                @endif
+                    </div>
+                            <div class="table-responsive">
+                                <table class="table bordered-table mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Staff</th>
+                                            <th>Type</th>
+                                            <th>Dates</th>
+                                            <th>Days</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse($pendingLeave as $leave)
+                                            <tr>
+                                                <td class="fw-semibold">{{ $leave->staff?->full_name ?: '—' }}</td>
+                                                <td><span class="badge bg-warning-600">{{ $leave->leaveType?->name ?: '—' }}</span></td>
+                                                <td>{{ $leave->start_date?->format('d M') }} – {{ $leave->end_date?->format('d M Y') }}</td>
+                                                <td>{{ $leave->days }}</td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="4" class="text-center text-secondary-light py-20">No pending leave requests.</td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                  </div>
+                </div>
+                  </div>
+                </div>
+            @endif
         </div>
-        <div class="col-xxl-4 col-lg-6">
-          <div class="card h-100">
-            <div class="card-body p-0">
-              <div
-                class="d-flex flex-wrap align-items-center justify-content-between px-20 py-16 border-bottom border-neutral-200">
-                <h6 class="text-lg mb-0">Top Teachers</h6>
-                <div class="dropdown">
-                  <button type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <iconify-icon icon="entypo:dots-three-vertical" class="icon text-secondary-light"></iconify-icon>
-                  </button>
-                  <ul class="dropdown-menu p-12 border bg-base shadow">
-                    <li>
-                      <button type="button"
-                        class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-10"
-                        data-bs-toggle="modal" data-bs-target="#exampleModalView">
-                        <iconify-icon icon="hugeicons:view" class="icon text-lg line-height-1"></iconify-icon>
-                        View
-                      </button>
-                    </li>
-                    <li>
-                      <button type="button"
-                        class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-10"
-                        data-bs-toggle="modal" data-bs-target="#exampleModalEdit">
-                        <iconify-icon icon="lucide:edit" class="icon text-lg line-height-1"></iconify-icon>
-                        Edit
-                      </button>
-                    </li>
-                    <li>
-                      <button type="button"
-                        class="delete-item dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-danger-100 text-hover-danger-600 d-flex align-items-center gap-10"
-                        data-bs-toggle="modal" data-bs-target="#exampleModalDelete">
-                        <iconify-icon icon="fluent:delete-24-regular" class="icon text-lg line-height-1"></iconify-icon>
-                        Delete
-                      </button>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-              <div class="ps-20 pt-20 pb-20">
-                <div class="pe-20 d-flex flex-column gap-20 max-h-462-px overflow-y-auto scroll-sm">
-                  <div class="d-flex align-items-center justify-content-between gap-16">
-                    <div class="d-flex align-items-start gap-16">
-                      <img src="assets/images/thumbs/top-teacher-img1.png" alt="Thumbnail"
-                        class="w-40-px h-40-px rounded-circle object-fit-cover flex-shrink-0">
-                      <div class="">
-                        <h6 class="mb-0 text-lg">Theresa Webb</h6>
-                        <span class="text-secondary-light text-sm mb-0">example@gmail.com</span>
-                      </div>
-                    </div>
-                    <div class="text-end">
-                      <span class="d-block fw-semibold text-primary-light">Mathematics</span>
-                    </div>
-                  </div>
-                  <div class="d-flex align-items-center justify-content-between gap-16">
-                    <div class="d-flex align-items-start gap-16">
-                      <img src="assets/images/thumbs/top-teacher-img2.png" alt="Thumbnail"
-                        class="w-40-px h-40-px rounded-circle object-fit-cover flex-shrink-0">
-                      <div class="">
-                        <h6 class="mb-0 text-lg">Darrell Steward</h6>
-                        <span class="text-secondary-light text-sm mb-0">example@gmail.com</span>
-                      </div>
-                    </div>
-                    <div class="text-end">
-                      <span class="d-block fw-semibold text-primary-light">Physics</span>
-                    </div>
-                  </div>
-                  <div class="d-flex align-items-center justify-content-between gap-16">
-                    <div class="d-flex align-items-start gap-16">
-                      <img src="assets/images/thumbs/top-teacher-img3.png" alt="Thumbnail"
-                        class="w-40-px h-40-px rounded-circle object-fit-cover flex-shrink-0">
-                      <div class="">
-                        <h6 class="mb-0 text-lg">Jane Cooper</h6>
-                        <span class="text-secondary-light text-sm mb-0">example@gmail.com</span>
-                      </div>
-                    </div>
-                    <div class="text-end">
-                      <span class="d-block fw-semibold text-primary-light">Biology</span>
-                    </div>
-                  </div>
-                  <div class="d-flex align-items-center justify-content-between gap-16">
-                    <div class="d-flex align-items-start gap-16">
-                      <img src="assets/images/thumbs/top-teacher-img4.png" alt="Thumbnail"
-                        class="w-40-px h-40-px rounded-circle object-fit-cover flex-shrink-0">
-                      <div class="">
-                        <h6 class="mb-0 text-lg">Savannah Nguyen</h6>
-                        <span class="text-secondary-light text-sm mb-0">example@gmail.com</span>
-                      </div>
-                    </div>
-                    <div class="text-end">
-                      <span class="d-block fw-semibold text-primary-light">English</span>
-                    </div>
-                  </div>
-                  <div class="d-flex align-items-center justify-content-between gap-16">
-                    <div class="d-flex align-items-start gap-16">
-                      <img src="assets/images/thumbs/top-teacher-img5.png" alt="Thumbnail"
-                        class="w-40-px h-40-px rounded-circle object-fit-cover flex-shrink-0">
-                      <div class="">
-                        <h6 class="mb-0 text-lg">Eleanor Pena</h6>
-                        <span class="text-secondary-light text-sm mb-0">example@gmail.com</span>
-                      </div>
-                    </div>
-                    <div class="text-end">
-                      <span class="d-block fw-semibold text-primary-light">Math</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-xxl-4 col-lg-6">
-          <div class="card h-100">
-            <div class="card-body p-0">
-              <div
-                class="d-flex flex-wrap align-items-center justify-content-between px-20 py-16 border-bottom border-neutral-200">
-                <h6 class="text-lg mb-0">New Admissions</h6>
-                <div class="dropdown">
-                  <button type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <iconify-icon icon="entypo:dots-three-vertical" class="icon text-secondary-light"></iconify-icon>
-                  </button>
-                  <ul class="dropdown-menu p-12 border bg-base shadow">
-                    <li>
-                      <button type="button"
-                        class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-10"
-                        data-bs-toggle="modal" data-bs-target="#exampleModalView">
-                        <iconify-icon icon="hugeicons:view" class="icon text-lg line-height-1"></iconify-icon>
-                        View
-                      </button>
-                    </li>
-                    <li>
-                      <button type="button"
-                        class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-10"
-                        data-bs-toggle="modal" data-bs-target="#exampleModalEdit">
-                        <iconify-icon icon="lucide:edit" class="icon text-lg line-height-1"></iconify-icon>
-                        Edit
-                      </button>
-                    </li>
-                    <li>
-                      <button type="button"
-                        class="delete-item dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-danger-100 text-hover-danger-600 d-flex align-items-center gap-10"
-                        data-bs-toggle="modal" data-bs-target="#exampleModalDelete">
-                        <iconify-icon icon="fluent:delete-24-regular" class="icon text-lg line-height-1"></iconify-icon>
-                        Delete
-                      </button>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-              <div class="p-20">
-                <div class="position-relative text-center">
-                  <div id="newAdmissions" class="y-value-left apexcharts-tooltip-z-none"></div>
-                  <div class="text-center position-absolute top-50 start-50 translate-middle">
-                    <h5 class="mb-4">50</h5>
-                    <span class="text-secondary-light">Total Admissions</span>
-                  </div>
-                </div>
-                <ul class="d-flex flex-wrap align-items-center justify-content-center mt-48 gap-24">
-                  <li class="d-flex align-items-center gap-2">
-                    <span class="w-12-px h-12-px radius-2 bg-success-600 rotate-45-deg"></span>
-                    <div class="">
-                      <span class="text-secondary-light fw-medium">
-                        English:
-                        <span class="fw-bold text-primary-light">15</span>
-                      </span>
-                    </div>
-                  </li>
-                  <li class="d-flex align-items-center gap-2">
-                    <span class="w-12-px h-12-px radius-2 bg-blue-600 rotate-45-deg"></span>
-                    <div class="">
-                      <span class="text-secondary-light fw-medium">
-                        Math:
-                        <span class="fw-bold text-primary-light">15</span>
-                      </span>
-                    </div>
-                  </li>
-                  <li class="d-flex align-items-center gap-2">
-                    <span class="w-12-px h-12-px radius-2 bg-warning-600 rotate-45-deg"></span>
-                    <div class="">
-                      <span class="text-secondary-light fw-medium">
-                        Biology:
-                        <span class="fw-bold text-primary-light">5</span>
-                      </span>
-                    </div>
-                  </li>
-                  <li class="d-flex align-items-center gap-2">
-                    <span class="w-12-px h-12-px radius-2 bg-primary-600 rotate-45-deg"></span>
-                    <div class="">
-                      <span class="text-secondary-light fw-medium">
-                        Physics:
-                        <span class="fw-bold text-primary-light">10</span>
-                      </span>
-                    </div>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-xxl-4">
-          <div class="card radius-12 border-0 h-100">
-            <div
-              class="d-flex align-items-center flex-wrap gap-2 justify-content-between py-12 px-20 border-bottom border-neutral-200">
-              <h6 class="mb-2 fw-bold text-lg">Top Student</h6>
-              <div class="dropdown">
-                <button type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                  <iconify-icon icon="entypo:dots-three-vertical" class="icon text-secondary-light"></iconify-icon>
-                </button>
-                <ul class="dropdown-menu p-12 border bg-base shadow">
-                  <li>
-                    <button type="button"
-                      class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-10"
-                      data-bs-toggle="modal" data-bs-target="#exampleModalView">
-                      <iconify-icon icon="hugeicons:view" class="icon text-lg line-height-1"></iconify-icon>
-                      View
-                    </button>
-                  </li>
-                  <li>
-                    <button type="button"
-                      class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-10"
-                      data-bs-toggle="modal" data-bs-target="#exampleModalEdit">
-                      <iconify-icon icon="lucide:edit" class="icon text-lg line-height-1"></iconify-icon>
-                      Edit
-                    </button>
-                  </li>
-                  <li>
-                    <button type="button"
-                      class="delete-item dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-danger-100 text-hover-danger-600 d-flex align-items-center gap-10"
-                      data-bs-toggle="modal" data-bs-target="#exampleModalDelete">
-                      <iconify-icon icon="fluent:delete-24-regular" class="icon text-lg line-height-1"></iconify-icon>
-                      Delete
-                    </button>
-                  </li>
-                </ul>
-              </div>
-            </div>
-            <div class="card-body">
-              <div class="d-flex flex-column gap-28">
-                <div class="d-flex align-items-center justify-content-between gap-10">
-                  <div class="d-flex align-items-center gap-12">
-                    <span class="w-44-px h-44-px rounded-circle d-flex justify-content-center align-items-center">
-                      <img src="assets/images/thumbs/avatar-img1.png"
-                        class="w-44-px h-44-px object-fit-cover rounded-circle" alt="Icon">
-                    </span>
-                    <div class="">
-                      <h6 class="text-sm mb-2">Brooklyn Simmons</h6>
-                      <span class="text-xs text-secondary-light">Class: Six</span>
-                    </div>
-                  </div>
-                  <div class="d-flex align-items-center gap-8">
-                    <span class="text-sm text-secondary-light">Marks</span>
-                    <span class="text-primary-light text-sm d-block text-end">
-                      <svg class="radial-progress w-44-px" data-percentage="20" viewBox="0 0 80 80">
-                        <circle class="incomplete stroke-8-px opacity-02 stroke-blue" cx="40" cy="40" r="35"></circle>
-                        <circle class="complete stroke-8-px stroke-blue" cx="40" cy="40" r="35">
-                        </circle>
-                        <text class="percentage fill-black" x="50%" y="57%"
-                          transform="matrix(0, 1, -1, 0, 80, 0)">20</text>
-                      </svg>
-                    </span>
-                  </div>
-                </div>
-
-                <div class="d-flex align-items-center justify-content-between gap-10">
-                  <div class="d-flex align-items-center gap-12">
-                    <span class="w-44-px h-44-px rounded-circle d-flex justify-content-center align-items-center">
-                      <img src="assets/images/thumbs/avatar-img2.png"
-                        class="w-44-px h-44-px object-fit-cover rounded-circle" alt="Icon">
-                    </span>
-                    <div class="">
-                      <h6 class="text-sm mb-2">Floyd Miles</h6>
-                      <span class="text-xs text-secondary-light">Class: Seven</span>
-                    </div>
-                  </div>
-                  <div class="d-flex align-items-center gap-8">
-                    <span class="text-sm text-secondary-light">Marks</span>
-                    <span class="text-primary-light text-sm d-block text-end">
-                      <svg class="radial-progress w-44-px" data-percentage="35" viewBox="0 0 80 80">
-                        <circle class="incomplete stroke-8-px opacity-02 stroke-red" cx="40" cy="40" r="35"></circle>
-                        <circle class="complete stroke-8-px stroke-red" cx="40" cy="40" r="35">
-                        </circle>
-                        <text class="percentage fill-black" x="50%" y="57%"
-                          transform="matrix(0, 1, -1, 0, 80, 0)">35</text>
-                      </svg>
-                    </span>
-                  </div>
-                </div>
-
-                <div class="d-flex align-items-center justify-content-between gap-10">
-                  <div class="d-flex align-items-center gap-12">
-                    <span class="w-44-px h-44-px rounded-circle d-flex justify-content-center align-items-center">
-                      <img src="assets/images/thumbs/avatar-img2.png"
-                        class="w-44-px h-44-px object-fit-cover rounded-circle" alt="Icon">
-                    </span>
-                    <div class="">
-                      <h6 class="text-sm mb-2">Courtney Henry</h6>
-                      <span class="text-xs text-secondary-light">Class: Eight</span>
-                    </div>
-                  </div>
-                  <div class="d-flex align-items-center gap-8">
-                    <span class="text-sm text-secondary-light">Marks</span>
-                    <span class="text-primary-light text-sm d-block text-end">
-                      <svg class="radial-progress w-44-px" data-percentage="45" viewBox="0 0 80 80">
-                        <circle class="incomplete stroke-8-px opacity-02 stroke-warning" cx="40" cy="40" r="35">
-                        </circle>
-                        <circle class="complete stroke-8-px stroke-warning" cx="40" cy="40" r="35">
-                        </circle>
-                        <text class="percentage fill-black" x="50%" y="57%"
-                          transform="matrix(0, 1, -1, 0, 80, 0)">45</text>
-                      </svg>
-                    </span>
-                  </div>
-                </div>
-
-                <div class="d-flex align-items-center justify-content-between gap-10">
-                  <div class="d-flex align-items-center gap-12">
-                    <span class="w-44-px h-44-px rounded-circle d-flex justify-content-center align-items-center">
-                      <img src="assets/images/thumbs/avatar-img4.png"
-                        class="w-44-px h-44-px object-fit-cover rounded-circle" alt="Icon">
-                    </span>
-                    <div class="">
-                      <h6 class="text-sm mb-2">Kathryn Murphy</h6>
-                      <span class="text-xs text-secondary-light">Class: Nine</span>
-                    </div>
-                  </div>
-                  <div class="d-flex align-items-center gap-8">
-                    <span class="text-sm text-secondary-light">Marks</span>
-                    <span class="text-primary-light text-sm d-block text-end">
-                      <svg class="radial-progress w-44-px" data-percentage="65" viewBox="0 0 80 80">
-                        <circle class="incomplete stroke-8-px opacity-02 stroke-green" cx="40" cy="40" r="35"></circle>
-                        <circle class="complete stroke-8-px stroke-green" cx="40" cy="40" r="35">
-                        </circle>
-                        <text class="percentage fill-black" x="50%" y="57%"
-                          transform="matrix(0, 1, -1, 0, 80, 0)">65</text>
-                      </svg>
-                    </span>
-                  </div>
-                </div>
-
-                <div class="d-flex align-items-center justify-content-between gap-10">
-                  <div class="d-flex align-items-center gap-12">
-                    <span class="w-44-px h-44-px rounded-circle d-flex justify-content-center align-items-center">
-                      <img src="assets/images/thumbs/avatar-img5.png"
-                        class="w-44-px h-44-px object-fit-cover rounded-circle" alt="Icon">
-                    </span>
-                    <div class="">
-                      <h6 class="text-sm mb-2">Annette Black</h6>
-                      <span class="text-xs text-secondary-light">Class: Ten</span>
-                    </div>
-                  </div>
-                  <div class="d-flex align-items-center gap-8">
-                    <span class="text-sm text-secondary-light">Marks</span>
-                    <span class="text-primary-light text-sm d-block text-end">
-                      <svg class="radial-progress w-44-px" data-percentage="65" viewBox="0 0 80 80">
-                        <circle class="incomplete stroke-8-px opacity-02 stroke-blue" cx="40" cy="40" r="35"></circle>
-                        <circle class="complete stroke-8-px stroke-blue" cx="40" cy="40" r="35">
-                        </circle>
-                        <text class="percentage fill-black" x="50%" y="57%"
-                          transform="matrix(0, 1, -1, 0, 80, 0)">65</text>
-                      </svg>
-                    </span>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+    @endif
     </div>
 @endsection
 
 @section('scripts')
-    
+<script>
+    (function () {
+        const charts = @json($charts ?? []);
+        if (typeof ApexCharts === 'undefined') return;
+
+        charts.forEach(function (spec) {
+            const el = document.querySelector('#' + spec.id);
+            if (!el) return;
+
+            const base = {
+                chart: { fontFamily: 'inherit', toolbar: { show: false }, zoom: { enabled: false } },
+                colors: spec.colors || ['#25A194', '#FF7A2C', '#487FFF', '#8252E9'],
+                legend: { position: 'bottom', fontSize: '13px' },
+                dataLabels: { enabled: false },
+                grid: { borderColor: '#eef2f7', strokeDashArray: 4 },
+            };
+
+            let options;
+            if (spec.type === 'donut') {
+                options = Object.assign({}, base, {
+                    chart: Object.assign({}, base.chart, { type: 'donut', height: 280 }),
+                    series: spec.series || [],
+                    labels: spec.labels || [],
+                    stroke: { width: 0 },
+                    plotOptions: { pie: { donut: { size: '68%' } } },
+                });
+            } else if (spec.type === 'area') {
+                options = Object.assign({}, base, {
+                    chart: Object.assign({}, base.chart, { type: 'area', height: 280 }),
+                    series: spec.series || [],
+                    xaxis: { categories: spec.categories || [] },
+                    stroke: { curve: 'smooth', width: 3 },
+                    fill: { type: 'gradient', gradient: { opacityFrom: 0.45, opacityTo: 0.08 } },
+                    yaxis: { min: 0, labels: { formatter: function (v) { return Number(v).toLocaleString(); } } },
+                });
+            } else {
+                options = Object.assign({}, base, {
+                    chart: Object.assign({}, base.chart, { type: 'bar', height: 280, stacked: !!spec.stacked }),
+                    series: spec.series || [],
+                    xaxis: { categories: spec.categories || [] },
+                    plotOptions: { bar: { borderRadius: 4, columnWidth: '46%' } },
+                    yaxis: { min: 0, labels: { formatter: function (v) { return Number(v).toLocaleString(); } } },
+                });
+            }
+
+            new ApexCharts(el, options).render();
+        });
+    })();
+</script>
 @endsection

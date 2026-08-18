@@ -6,7 +6,7 @@
         ['key' => 'staff', 'label' => 'All staff', 'help' => 'Every active employee', 'icon' => 'ri-team-line', 'theme' => 'teal'],
         ['key' => 'class', 'label' => 'A class', 'help' => 'Parents / guardians', 'icon' => 'ri-layout-grid-line', 'theme' => 'sky'],
         ['key' => 'school', 'label' => 'Entire school', 'help' => 'All student guardians', 'icon' => 'ri-building-4-line', 'theme' => 'violet'],
-        ['key' => 'individual', 'label' => 'Individual', 'help' => 'One staff or student', 'icon' => 'ri-user-heart-line', 'theme' => 'indigo'],
+        ['key' => 'individual', 'label' => 'Individual', 'help' => 'Pick one or more people', 'icon' => 'ri-user-heart-line', 'theme' => 'indigo'],
     ];
     $audiencePills = [
         'teachers' => 'ac-pill-amber',
@@ -44,6 +44,7 @@
         background: #fff;
         overflow: hidden;
     }
+    .sms-compose { overflow: visible; }
     .sms-compose .card-header,
     .sms-side .card-header,
     .sms-history .card-header {
@@ -197,6 +198,70 @@
     }
     .sms-empty { text-align: center; padding: 48px 16px; color: #64748b; }
     .sms-empty i { font-size: 34px; color: #25A194; display: block; margin-bottom: 8px; }
+    .sms-typeahead { position: relative; }
+    .sms-selected {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        min-height: 0;
+    }
+    .sms-selected:empty { display: none; }
+    .sms-chip-pick {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 8px 4px 10px;
+        border-radius: 999px;
+        background: #eef2ff;
+        border: 1px solid #c7d2fe;
+        color: #3730a3;
+        font-size: 12px;
+        font-weight: 600;
+        max-width: 100%;
+    }
+    .sms-chip-pick button {
+        border: 0;
+        background: transparent;
+        color: #4338ca;
+        padding: 0;
+        line-height: 1;
+        font-size: 16px;
+        cursor: pointer;
+    }
+    .sms-suggest {
+        position: absolute;
+        inset-inline: 0;
+        top: calc(100% + 4px);
+        z-index: 30;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        max-height: 260px;
+        overflow-y: auto;
+        box-shadow: 0 16px 36px rgba(15, 23, 42, .14);
+        display: none;
+    }
+    .sms-suggest.is-open { display: block; }
+    .sms-suggest-item {
+        display: block;
+        width: 100%;
+        text-align: left;
+        border: 0;
+        background: #fff;
+        padding: 10px 12px;
+        font-size: 13px;
+        color: #0f172a;
+        cursor: pointer;
+    }
+    .sms-suggest-item:hover,
+    .sms-suggest-item.is-active { background: #eef2ff; }
+    .sms-suggest-meta { color: #64748b; font-weight: 500; }
+    .sms-suggest-empty {
+        padding: 14px 12px;
+        text-align: center;
+        color: #94a3b8;
+        font-size: 13px;
+    }
     .sms-modal {
         position: fixed;
         inset: 0;
@@ -234,7 +299,7 @@
             ['label' => 'Send SMS', 'url' => null, 'active' => true],
         ],
         'title' => 'Send SMS',
-        'subtitle' => 'Compose once. Reach teachers, staff, a class, the whole school, or one person.',
+        'subtitle' => 'Compose once. Reach teachers, staff, a class, the whole school, or selected people.',
         'actions' => $configured
             ? '<span class="ac-pill ac-pill-emerald"><i class="ri-checkbox-circle-line"></i> Ready · '.e($senderId).'</span>'
             : '<span class="ac-pill ac-pill-rose"><i class="ri-error-warning-line"></i> Gateway not ready</span>',
@@ -333,24 +398,16 @@
                                 </select>
                             </div>
                             <div class="col-md-8 extra extra-individual d-none">
-                                <label class="text-sm fw-semibold mb-8">Person</label>
-                                <input type="search" id="personSearch" class="form-control mb-8" placeholder="Search name, ID, or class…">
-                                <select name="target_id" id="targetStaff" class="form-control form-select person-select">
-                                    <option value="">Select staff</option>
-                                    @foreach($staffMembers as $member)
-                                        <option value="{{ $member->id }}" data-search="{{ strtolower($member->full_name.' '.($member->employee_id ?? '')) }}" @selected(old('target_type', 'staff') === 'staff' && (string) old('target_id') === (string) $member->id)>
-                                            {{ $member->full_name }}{{ $member->employee_id ? ' · '.$member->employee_id : '' }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <select id="targetStudent" class="form-control form-select person-select d-none" disabled>
-                                    <option value="">Select student</option>
-                                    @foreach($students as $student)
-                                        <option value="{{ $student->id }}" data-search="{{ strtolower($student->full_name.' '.($student->student_id ?? '').' '.($student->class_name ?? '')) }}">
-                                            {{ $student->full_name }}{{ $student->class_name ? ' · '.$student->class_name : '' }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                                <div class="d-flex justify-content-between align-items-center mb-8">
+                                    <label class="text-sm fw-semibold mb-0" for="personSearch">People</label>
+                                    <small class="text-secondary-light" id="selectedCount">0 selected</small>
+                                </div>
+                                <div class="sms-typeahead mb-8" id="personPicker">
+                                    <input type="search" id="personSearch" class="form-control" autocomplete="off" placeholder="Type a name, then pick from the list…">
+                                    <div class="sms-suggest" id="personSuggest" role="listbox"></div>
+                                </div>
+                                <div id="selectedPeople" class="sms-selected"></div>
+                                <div id="targetIds"></div>
                             </div>
                         </div>
 
@@ -493,6 +550,26 @@
 @endsection
 
 @section('scripts')
+@php
+    $staffPeople = $staffMembers->map(function ($member) {
+        return [
+            'id' => (int) $member->id,
+            'name' => $member->full_name,
+            'meta' => $member->employee_id ?: '',
+            'search' => strtolower(trim($member->full_name.' '.($member->employee_id ?? ''))),
+        ];
+    })->values();
+    $studentPeople = $students->map(function ($student) {
+        return [
+            'id' => (int) $student->id,
+            'name' => $student->full_name,
+            'meta' => $student->class_name ?: ($student->student_id ?: ''),
+            'search' => strtolower(trim($student->full_name.' '.($student->student_id ?? '').' '.($student->class_name ?? ''))),
+        ];
+    })->values();
+    $oldSmsTargetType = old('target_type', 'staff');
+    $oldSmsTargetIds = array_values(array_map('intval', (array) old('target_ids', old('target_id') ? [old('target_id')] : [])));
+@endphp
 <script>
     (function () {
         const form = document.getElementById('smsForm');
@@ -503,9 +580,12 @@
         const smsMeter = document.getElementById('smsMeter');
         const smsBubble = document.getElementById('smsBubble');
         const targetType = document.getElementById('targetType');
-        const targetStaff = document.getElementById('targetStaff');
-        const targetStudent = document.getElementById('targetStudent');
         const personSearch = document.getElementById('personSearch');
+        const personSuggest = document.getElementById('personSuggest');
+        const personPicker = document.getElementById('personPicker');
+        const selectedPeople = document.getElementById('selectedPeople');
+        const selectedCount = document.getElementById('selectedCount');
+        const targetIds = document.getElementById('targetIds');
         const previewCount = document.getElementById('previewCount');
         const previewLabel = document.getElementById('previewLabel');
         const previewNote = document.getElementById('previewNote');
@@ -513,33 +593,144 @@
         const schoolConfirm = document.getElementById('schoolConfirm');
         const sendBtn = document.getElementById('sendBtn');
         const recipientsUrl = @json(route('send-sms-recipients'));
+        const people = {
+            staff: @json($staffPeople),
+            student: @json($studentPeople),
+        };
+        const selected = { staff: [], student: [] };
+        const oldTargetType = @json($oldSmsTargetType);
+        const oldTargetIds = @json($oldSmsTargetIds);
         let schoolConfirmed = false;
+        let previewTimer = null;
+        let activeIndex = 0;
+        let matches = [];
+
+        (oldTargetIds || []).forEach(function (id) {
+            const person = (people[oldTargetType] || []).find(function (row) { return Number(row.id) === Number(id); });
+            if (person && !selected[oldTargetType].some(function (row) { return Number(row.id) === Number(person.id); })) {
+                selected[oldTargetType].push(person);
+            }
+        });
 
         function audience() {
             const checked = form.querySelector('input[name="audience"]:checked');
             return checked ? checked.value : 'teachers';
         }
 
+        function currentType() {
+            return targetType.value === 'student' ? 'student' : 'staff';
+        }
+
+        function selectedForType() {
+            return selected[currentType()];
+        }
+
         function syncExtras() {
             const value = audience();
             document.querySelectorAll('.extra').forEach(function (el) { el.classList.add('d-none'); });
             document.querySelectorAll('.extra-' + value).forEach(function (el) { el.classList.remove('d-none'); });
-            syncPersonSelect();
+            closeSuggest();
+            if (personSearch) personSearch.value = '';
+            renderSelected();
             loadPreview();
         }
 
-        function syncPersonSelect() {
-            const isStudent = targetType.value === 'student';
-            targetStaff.classList.toggle('d-none', isStudent);
-            targetStudent.classList.toggle('d-none', !isStudent);
-            targetStaff.disabled = isStudent;
-            targetStudent.disabled = !isStudent;
-            targetStaff.name = isStudent ? '' : 'target_id';
-            targetStudent.name = isStudent ? 'target_id' : '';
+        function closeSuggest() {
+            personSuggest.classList.remove('is-open');
+            personSuggest.innerHTML = '';
+            matches = [];
+            activeIndex = 0;
         }
 
-        function activePersonSelect() {
-            return targetType.value === 'student' ? targetStudent : targetStaff;
+        function renderSelected() {
+            const picks = selectedForType();
+            selectedCount.textContent = picks.length + ' selected';
+            selectedPeople.innerHTML = '';
+            targetIds.innerHTML = '';
+            picks.forEach(function (person) {
+                const chip = document.createElement('span');
+                chip.className = 'sms-chip-pick';
+                chip.innerHTML = '<span></span><button type="button" aria-label="Remove">&times;</button>';
+                chip.querySelector('span').textContent = person.name;
+                chip.querySelector('button').addEventListener('click', function () {
+                    removePerson(person.id);
+                });
+                selectedPeople.appendChild(chip);
+
+                if (audience() === 'individual') {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'target_ids[]';
+                    input.value = person.id;
+                    targetIds.appendChild(input);
+                }
+            });
+        }
+
+        function addPerson(person) {
+            if (!person) return;
+            if (selectedForType().some(function (row) { return Number(row.id) === Number(person.id); })) return;
+            selectedForType().push(person);
+            personSearch.value = '';
+            closeSuggest();
+            renderSelected();
+            loadPreview();
+            personSearch.focus();
+        }
+
+        function removePerson(id) {
+            selected[currentType()] = selectedForType().filter(function (row) { return Number(row.id) !== Number(id); });
+            renderSelected();
+            loadPreview();
+            personSearch.focus();
+        }
+
+        function filterPeople() {
+            const q = (personSearch.value || '').trim().toLowerCase();
+            if (!q) {
+                closeSuggest();
+                return;
+            }
+            const picked = new Set(selectedForType().map(function (row) { return Number(row.id); }));
+            matches = (people[currentType()] || []).filter(function (row) {
+                return !picked.has(Number(row.id)) && (row.search || '').includes(q);
+            }).slice(0, 12);
+            activeIndex = 0;
+            renderSuggest();
+        }
+
+        function renderSuggest() {
+            personSuggest.innerHTML = '';
+            if (matches.length === 0) {
+                personSuggest.innerHTML = '<div class="sms-suggest-empty">No matching people</div>';
+                personSuggest.classList.add('is-open');
+                return;
+            }
+            matches.forEach(function (person, index) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'sms-suggest-item' + (index === activeIndex ? ' is-active' : '');
+                btn.setAttribute('role', 'option');
+                btn.innerHTML = '<strong></strong>' + (person.meta ? ' <span class="sms-suggest-meta">· </span>' : '');
+                btn.querySelector('strong').textContent = person.name;
+                if (person.meta) btn.querySelector('.sms-suggest-meta').textContent = '· ' + person.meta;
+                btn.addEventListener('mousedown', function (event) {
+                    event.preventDefault();
+                    addPerson(person);
+                });
+                personSuggest.appendChild(btn);
+            });
+            personSuggest.classList.add('is-open');
+        }
+
+        function moveActive(delta) {
+            if (!matches.length) return;
+            activeIndex = (activeIndex + delta + matches.length) % matches.length;
+            const items = personSuggest.querySelectorAll('.sms-suggest-item');
+            items.forEach(function (item, index) {
+                item.classList.toggle('is-active', index === activeIndex);
+            });
+            if (items[activeIndex]) items[activeIndex].scrollIntoView({ block: 'nearest' });
         }
 
         function setPreview(count, label, note, sample) {
@@ -556,11 +747,18 @@
         }
 
         function loadPreview() {
+            clearTimeout(previewTimer);
+            previewTimer = setTimeout(fetchPreview, 120);
+        }
+
+        function fetchPreview() {
             const params = new URLSearchParams();
             params.set('audience', audience());
             params.set('school_class_id', form.school_class_id.value || '');
             params.set('target_type', targetType.value || '');
-            params.set('target_id', activePersonSelect().value || '');
+            selectedForType().forEach(function (person) {
+                params.append('target_ids[]', person.id);
+            });
 
             setPreview('…', 'Counting', 'Counting recipients…', []);
 
@@ -599,20 +797,34 @@
         });
         form.school_class_id.addEventListener('change', loadPreview);
         targetType.addEventListener('change', function () {
-            syncPersonSelect();
+            if (personSearch) personSearch.value = '';
+            closeSuggest();
+            renderSelected();
             loadPreview();
         });
-        targetStaff.addEventListener('change', loadPreview);
-        targetStudent.addEventListener('change', loadPreview);
         message.addEventListener('input', updateCount);
 
-        personSearch.addEventListener('input', function () {
-            const q = this.value.trim().toLowerCase();
-            const select = activePersonSelect();
-            Array.from(select.options).forEach(function (option, index) {
-                if (index === 0) return;
-                option.hidden = q && !(option.getAttribute('data-search') || '').includes(q);
-            });
+        personSearch.addEventListener('input', filterPeople);
+        personSearch.addEventListener('keydown', function (event) {
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                moveActive(1);
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                moveActive(-1);
+            } else if (event.key === 'Enter') {
+                if (personSuggest.classList.contains('is-open') && matches[activeIndex]) {
+                    event.preventDefault();
+                    addPerson(matches[activeIndex]);
+                }
+            } else if (event.key === 'Escape') {
+                closeSuggest();
+            } else if (event.key === 'Backspace' && !personSearch.value && selectedForType().length) {
+                removePerson(selectedForType()[selectedForType().length - 1].id);
+            }
+        });
+        document.addEventListener('click', function (event) {
+            if (personPicker && !personPicker.contains(event.target)) closeSuggest();
         });
 
         form.addEventListener('submit', function (event) {

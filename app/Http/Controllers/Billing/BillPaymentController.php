@@ -4,18 +4,15 @@ namespace App\Http\Controllers\Billing;
 
 use App\Http\Controllers\Controller;
 use App\Models\BillPayment;
-use App\Models\BillPaymentAllocation;
 use App\Http\Controllers\Pos\PosSaleController;
 use App\Models\BillPaymentTransaction;
 use App\Models\SchoolSetting;
 use App\Models\Student;
-use App\Models\StudentBill;
-use App\Models\StudentBillCreditTransaction;
+use App\Services\Billing\BillPaymentProcessor;
 use App\Services\Billing\BillPaymentSmsService;
 use App\Services\Billing\PaystackService;
 use App\Services\Billing\StudentBillCreditService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -27,12 +24,13 @@ class BillPaymentController extends Controller
         private PaystackService $paystackService,
         private StudentBillCreditService $creditService,
         private BillPaymentSmsService $billPaymentSmsService,
+        private BillPaymentProcessor $paymentProcessor,
     ) {}
 
     public function cashier($id)
     {
         $student = Student::with(['schoolClass.category'])->findOrFail($id);
-        $bills = $this->outstandingBillsForStudent($student);
+        $bills = $this->paymentProcessor->outstandingBillsForStudent($student);
         $totalOutstanding = $bills->sum('balance');
 
         $creditBalance = $this->creditService->creditBalance($student);
@@ -80,14 +78,14 @@ class BillPaymentController extends Controller
 
         try {
             $payment = DB::transaction(function () use ($validated, $student, $cashAmount, $creditApplied) {
-                $allocations = $this->resolveAllocations(
+                $allocations = $this->paymentProcessor->resolveAllocations(
                     $student->id,
                     $cashAmount,
                     $creditApplied,
                     collect($validated['allocations'] ?? [])
                 );
 
-                return $this->finalizePayment(
+                return $this->paymentProcessor->finalizePayment(
                     student: $student,
                     cashAmount: $cashAmount,
                     creditApplied: $creditApplied,
@@ -96,6 +94,7 @@ class BillPaymentController extends Controller
                     allocations: $allocations,
                     reference: $validated['reference'] ?? null,
                     notes: $validated['notes'] ?? null,
+                    createdBy: Auth::id(),
                 );
             });
         } catch (InvalidArgumentException $e) {
@@ -135,7 +134,7 @@ class BillPaymentController extends Controller
         }
 
         try {
-            $allocations = $this->resolveAllocations(
+            $allocations = $this->paymentProcessor->resolveAllocations(
                 $student->id,
                 $cashAmount,
                 $creditApplied,
@@ -157,11 +156,12 @@ class BillPaymentController extends Controller
             'status' => BillPaymentTransaction::STATUS_PENDING,
             'allocations' => $allocations->values()->all(),
             'created_by' => Auth::id(),
+            'initiated_by' => 'cashier',
         ]);
 
         if ($cashAmount <= 0) {
             try {
-                $payment = DB::transaction(fn () => $this->finalizePayment(
+                $payment = DB::transaction(fn () => $this->paymentProcessor->finalizePayment(
                     student: $student,
                     cashAmount: 0,
                     creditApplied: $creditApplied,
@@ -170,6 +170,7 @@ class BillPaymentController extends Controller
                     allocations: $allocations,
                     reference: $reference,
                     notes: 'Paid fully from credit balance.',
+                    createdBy: Auth::id(),
                 ));
 
                 $transaction->update([
@@ -296,6 +297,8 @@ class BillPaymentController extends Controller
             'payment' => $payment,
             'school' => SchoolSetting::current(),
             'statementUrl' => route('student-bill-print', $payment->student_id),
+            'backUrl' => route('student-bills'),
+            'backLabel' => 'Back to Student Bills',
         ]);
     }
 
@@ -342,7 +345,7 @@ class BillPaymentController extends Controller
             $allocations = collect($lockedTransaction->allocations ?? []);
             $creditApplied = round((float) $lockedTransaction->credit_applied, 2);
 
-            $payment = $this->finalizePayment(
+            $payment = $this->paymentProcessor->finalizePayment(
                 student: $student,
                 cashAmount: $verifiedAmount,
                 creditApplied: $creditApplied,
@@ -353,6 +356,7 @@ class BillPaymentController extends Controller
                 notes: null,
                 paymentChannel: $paystackData['channel'] ?? null,
                 gatewayTransactionId: isset($paystackData['id']) ? (string) $paystackData['id'] : null,
+                createdBy: $lockedTransaction->created_by,
             );
 
             $lockedTransaction->update([
@@ -369,102 +373,6 @@ class BillPaymentController extends Controller
         });
     }
 
-    private function finalizePayment(
-        Student $student,
-        float $cashAmount,
-        float $creditApplied,
-        string $paymentMethod,
-        string $paidAt,
-        Collection $allocations,
-        ?string $reference = null,
-        ?string $notes = null,
-        ?string $paymentChannel = null,
-        ?string $gatewayTransactionId = null,
-    ): BillPayment {
-        $cashAmount = round($cashAmount, 2);
-        $creditApplied = round($creditApplied, 2);
-        $allocatedTotal = round($allocations->sum('amount'), 2);
-        $totalFunding = round($cashAmount + $creditApplied, 2);
-
-        if ($allocatedTotal <= 0) {
-            throw new InvalidArgumentException('No outstanding bills to allocate this payment to.');
-        }
-
-        if ($allocatedTotal > $totalFunding + 0.009) {
-            throw new InvalidArgumentException('Allocated amount exceeds available payment and credit.');
-        }
-
-        if ($creditApplied > $this->creditService->creditBalance($student) + 0.009) {
-            throw new InvalidArgumentException('Insufficient credit balance.');
-        }
-
-        $payment = BillPayment::create([
-            'student_id' => $student->id,
-            'receipt_no' => $this->generateReceiptNumber(),
-            'amount' => $cashAmount,
-            'credit_applied' => $creditApplied,
-            'credit_generated' => 0,
-            'payment_method' => $paymentMethod,
-            'reference' => $reference,
-            'payment_channel' => $paymentChannel,
-            'gateway_transaction_id' => $gatewayTransactionId,
-            'paid_at' => $paidAt,
-            'notes' => $notes,
-            'created_by' => Auth::id(),
-        ]);
-
-        if ($creditApplied > 0) {
-            $this->creditService->applyCredit(
-                $student,
-                $creditApplied,
-                $payment->id,
-                'Applied to bill payment '.$payment->receipt_no
-            );
-        }
-
-        foreach ($allocations as $allocation) {
-            $bill = StudentBill::query()
-                ->where('id', $allocation['student_bill_id'])
-                ->where('student_id', $student->id)
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            $amount = min((float) $allocation['amount'], (float) $bill->balance);
-
-            if ($amount <= 0) {
-                continue;
-            }
-
-            BillPaymentAllocation::create([
-                'bill_payment_id' => $payment->id,
-                'student_bill_id' => $bill->id,
-                'amount' => $amount,
-            ]);
-
-            $bill->amount_paid = round((float) $bill->amount_paid + $amount, 2);
-            $bill->refreshTotals();
-            $bill->save();
-        }
-
-        $appliedTotal = round($payment->allocations()->sum('amount'), 2);
-        $surplus = round($totalFunding - $appliedTotal, 2);
-
-        if ($surplus > 0.009) {
-            $this->creditService->addCredit(
-                $student,
-                $surplus,
-                StudentBillCreditTransaction::SOURCE_OVERPAYMENT,
-                $payment->id,
-                'Overpayment saved from '.$payment->receipt_no
-            );
-
-            $payment->credit_generated = $surplus;
-            $payment->save();
-        }
-
-        return $payment->load(['student', 'allocations.studentBill.billingItem']);
-    }
-
     private function notifyParentBySms(BillPayment $payment): array
     {
         try {
@@ -478,110 +386,6 @@ class BillPaymentController extends Controller
                 'message' => 'Unable to send SMS notification.',
             ];
         }
-    }
-
-    private function resolveAllocations(
-        int $studentId,
-        float $cashAmount,
-        float $creditApplied,
-        Collection $allocations,
-    ): Collection {
-        $totalFunding = round($cashAmount + $creditApplied, 2);
-
-        if ($allocations->isEmpty()) {
-            $allocations = $this->buildAutoAllocations($studentId, $totalFunding);
-        }
-
-        $allocatedTotal = round($allocations->sum('amount'), 2);
-
-        if ($allocatedTotal <= 0) {
-            throw new InvalidArgumentException('No outstanding bills to allocate this payment to.');
-        }
-
-        if ($allocatedTotal > $totalFunding + 0.009) {
-            throw new InvalidArgumentException('Allocated amount exceeds available payment and credit.');
-        }
-
-        foreach ($allocations as $allocation) {
-            $bill = StudentBill::query()
-                ->where('id', $allocation['student_bill_id'])
-                ->where('student_id', $studentId)
-                ->first();
-
-            if (! $bill) {
-                throw new InvalidArgumentException('One or more selected bills are invalid for this student.');
-            }
-        }
-
-        return $allocations;
-    }
-
-    private function buildAutoAllocations(int $studentId, float $paymentAmount): Collection
-    {
-        $remaining = $paymentAmount;
-        $allocations = collect();
-
-        $bills = StudentBill::query()
-            ->with('billingItem')
-            ->where('student_id', $studentId)
-            ->where('balance', '>', 0)
-            ->get()
-            ->sortByDesc(fn (StudentBill $bill) => $bill->billingItem?->is_compulsory ? 1 : 0)
-            ->values();
-
-        foreach ($bills as $bill) {
-            if ($remaining <= 0) {
-                break;
-            }
-
-            $amount = min((float) $bill->balance, $remaining);
-            $allocations->push([
-                'student_bill_id' => $bill->id,
-                'amount' => $amount,
-            ]);
-            $remaining -= $amount;
-        }
-
-        return $allocations;
-    }
-
-    private function outstandingBillsForStudent(Student $student)
-    {
-        return StudentBill::query()
-            ->with(['billingItem', 'setup.academicTerm', 'setup.academicYear'])
-            ->where('student_id', $student->id)
-            ->where('balance', '>', 0)
-            ->get()
-            ->sortByDesc(fn (StudentBill $bill) => $bill->billingItem?->is_compulsory ? 1 : 0)
-            ->values()
-            ->map(fn (StudentBill $bill) => [
-                'id' => $bill->id,
-                'item_name' => $bill->billingItem?->name,
-                'is_compulsory' => (bool) $bill->billingItem?->is_compulsory,
-                'term_name' => $bill->setup?->academicTerm?->name,
-                'year_name' => $bill->setup?->academicYear?->name,
-                'amount_due' => (float) $bill->amount_due,
-                'amount_paid' => (float) $bill->amount_paid,
-                'balance' => (float) $bill->balance,
-            ]);
-    }
-
-    private function generateReceiptNumber(): string
-    {
-        $year = now()->format('Y');
-        $prefix = 'RCP-' . $year . '-';
-        $last = BillPayment::query()
-            ->where('receipt_no', 'like', $prefix . '%')
-            ->orderByDesc('id')
-            ->value('receipt_no');
-
-        $sequence = 1;
-
-        if ($last && preg_match('/-(\d+)$/', $last, $matches)) {
-            $sequence = ((int) $matches[1]) + 1;
-        }
-
-        return $prefix . str_pad((string) $sequence, 5, '0', STR_PAD_LEFT);
     }
 
     private function generatePaystackReference(): string

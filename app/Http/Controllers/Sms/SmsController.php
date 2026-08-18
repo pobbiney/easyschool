@@ -40,7 +40,7 @@ class SmsController extends Controller
         try {
             $preview = $this->sms->preview(
                 (string) $request->input('audience'),
-                $request->only(['school_class_id', 'target_type', 'target_id'])
+                $request->only(['school_class_id', 'target_type', 'target_id', 'target_ids'])
             );
         } catch (RuntimeException $exception) {
             return response()->json([
@@ -68,11 +68,12 @@ class SmsController extends Controller
             'message' => 'required|string|min:3|max:1000',
             'school_class_id' => 'required_if:audience,class|nullable|exists:school_classes,id',
             'target_type' => 'required_if:audience,individual|nullable|in:staff,student',
-            'target_id' => 'required_if:audience,individual|nullable|integer',
+            'target_ids' => 'required_if:audience,individual|nullable|array|min:1',
+            'target_ids.*' => 'integer',
         ]);
 
         $audience = $request->input('audience');
-        $options = $request->only(['school_class_id', 'target_type', 'target_id']);
+        $options = $request->only(['school_class_id', 'target_type', 'target_ids']);
         $message = trim($request->input('message'));
 
         try {
@@ -106,7 +107,7 @@ class SmsController extends Controller
             'audience' => $audience,
             'school_class_id' => $request->input('school_class_id'),
             'target_type' => $request->input('target_type'),
-            'target_id' => $request->input('target_id'),
+            'target_id' => collect($request->input('target_ids', []))->filter()->first(),
             'audience_label' => $result['label'] ?? ucfirst($audience),
             'message' => $message,
             'recipient_count' => (int) ($result['recipient_count'] ?? 0),

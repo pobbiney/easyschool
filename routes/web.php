@@ -47,6 +47,48 @@ use App\Http\Controllers\Pos\PosCategoryController;
 use App\Http\Controllers\Pos\PosProductController;
 use App\Http\Controllers\Pos\PosStockController;
 use App\Http\Controllers\Pos\PosSaleController;
+use App\Http\Controllers\Expense\ExpenseController;
+use App\Http\Controllers\Expense\ExpenseCategoryController;
+use App\Http\Controllers\Reports\ReportController;
+use App\Services\Reports\ReportCatalog;
+use App\Http\Controllers\ParentPortal\ParentAuthController;
+use App\Http\Controllers\ParentPortal\ParentDashboardController;
+use App\Http\Controllers\ParentPortal\ParentChildController;
+use App\Http\Controllers\ParentPortal\ParentAcademicsController;
+use App\Http\Controllers\ParentPortal\ParentBillsController;
+use App\Http\Controllers\ParentPortal\ParentPaymentsController;
+use App\Http\Controllers\ParentPortal\ParentReportCardController;
+use App\Http\Controllers\ParentPortal\ParentCommunicationsController;
+use App\Http\Controllers\ParentPortal\ParentBillPaymentController;
+use App\Http\Controllers\ParentPortal\AdminParentMessageController;
+
+/* Parent Portal (separate auth) */
+Route::prefix('parent')->group(function () {
+    Route::get('login', [ParentAuthController::class, 'showLogin'])->name('parent.login');
+    Route::post('login', [ParentAuthController::class, 'login'])->name('parent.login.process');
+
+    Route::middleware(['auth:parent', 'parent'])->group(function () {
+        Route::post('logout', [ParentAuthController::class, 'logout'])->name('parent.logout');
+        Route::get('/', [ParentDashboardController::class, 'index'])->name('parent.dashboard');
+
+        Route::post('messages', [ParentCommunicationsController::class, 'storeMessage'])->name('parent.messages.store');
+        Route::get('communications', [ParentCommunicationsController::class, 'index'])->name('parent.communications');
+
+        Route::middleware('parent.owns.student')->group(function () {
+            Route::get('children/{student}', [ParentChildController::class, 'show'])->name('parent.child');
+            Route::get('children/{student}/academics', [ParentAcademicsController::class, 'show'])->name('parent.academics');
+            Route::get('children/{student}/bills', [ParentBillsController::class, 'index'])->name('parent.bills');
+            Route::get('children/{student}/payments', [ParentPaymentsController::class, 'index'])->name('parent.payments');
+            Route::get('children/{student}/payments/{payment}/receipt', [ParentPaymentsController::class, 'receipt'])->name('parent.payment.receipt');
+            Route::get('children/{student}/report-card', [ParentReportCardController::class, 'index'])->name('parent.report-card');
+            Route::get('children/{student}/report-card/print', [ParentReportCardController::class, 'print'])->name('parent.report-card.print');
+            Route::get('children/{student}/communications', [ParentCommunicationsController::class, 'index'])->name('parent.communications.child');
+            Route::post('children/{student}/paystack/initialize', [ParentBillPaymentController::class, 'initializePaystack'])->name('parent.paystack.initialize');
+            Route::post('children/{student}/paystack/verify', [ParentBillPaymentController::class, 'verifyPaystack'])->name('parent.paystack.verify');
+        });
+    });
+});
+/* End Parent Portal */
 
 Route::get('forgot-password',[AuthenticationController::class,'getForgetPassword'])->name('forgot-password');
 Route::post('forgot-password-process',[AuthenticationController::class,'forgotPass'])->name('forgot-password-process');
@@ -384,6 +426,11 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         Route::get('send-sms-recipients', 'recipients')->name('send-sms-recipients');
         Route::post('send-sms-process', 'send')->name('send-sms-process');
     });
+
+   Route::controller(AdminParentMessageController::class)->group(function () {
+        Route::get('parent-messages', 'index')->name('parent-messages');
+        Route::post('parent-messages/{message}/read', 'markRead')->name('parent-messages-read');
+    });
 /* End Send SMS */
 
 /* Timetable */
@@ -427,3 +474,30 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         Route::post('pos-stock-process', 'store')->name('pos-stock-process');
     });
 /* End POS */
+
+/* Expenses */
+   Route::controller(ExpenseController::class)->group(function () {
+        Route::get('expenses', 'index')->name('expenses');
+        Route::post('add-expense-process', 'store')->name('add-expense-process');
+        Route::get('get-expense-id/{id}', 'show')->name('get-expense-id');
+        Route::post('update-expense-process', 'update')->name('update-expense-process');
+        Route::post('delete-expense-process', 'destroy')->name('delete-expense-process');
+    });
+
+   Route::controller(ExpenseCategoryController::class)->group(function () {
+        Route::get('expense-categories', 'index')->name('expense-categories');
+        Route::post('add-expense-category-process', 'store')->name('add-expense-category-process');
+        Route::get('get-expense-category-id/{id}', 'show')->name('get-expense-category-id');
+        Route::post('update-expense-category-process', 'update')->name('update-expense-category-process');
+    });
+/* End Expenses */
+
+/* Reports */
+    foreach (ReportCatalog::KEYS as $reportKey => $reportTitle) {
+        $reportUrl = ReportCatalog::url($reportKey);
+        Route::get($reportUrl, [ReportController::class, 'show'])->defaults('key', $reportKey)->name($reportUrl);
+        Route::get($reportUrl.'-print', [ReportController::class, 'print'])->defaults('key', $reportKey)->name($reportUrl.'-print');
+        Route::get($reportUrl.'-pdf', [ReportController::class, 'pdf'])->defaults('key', $reportKey)->name($reportUrl.'-pdf');
+        Route::get($reportUrl.'-excel', [ReportController::class, 'excel'])->defaults('key', $reportKey)->name($reportUrl.'-excel');
+    }
+/* End Reports */

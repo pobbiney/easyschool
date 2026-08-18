@@ -210,16 +210,28 @@
   }
 
   .logo {
-    width: 90px; height: 90px;
+    width: 80px;
+    height: 80px;
     border-radius: 50%;
     background: linear-gradient(135deg, rgba(37,161,148,0.18), rgba(37,161,148,0.03));
     border: 1.5px solid #25A194;
-    display: flex; align-items: center; justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     margin: 0 auto 18px;
+    padding: 10px;
+    overflow: hidden;
     font-family: 'Sora', sans-serif;
     font-weight: 700;
     font-size: 24px;
     color: #25A194;
+  }
+
+  .logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
   }
 
   .card h2 {
@@ -416,7 +428,7 @@
         
       <div class="card-border-glow"></div>
       <div class="card">
-        <div class="logo"><img src="assets/images/logo-icon.png" alt="Logo"></div>
+        <div class="logo"><img src="{{ $school?->logoUrl() ?: asset('assets/images/logo-icon.png') }}" alt="{{ $school?->name ?: 'EasySchool' }}"></div>
         <h2>Welcome back!</h2>
         <p class="sub">Sign in to continue to your dashboard</p>
          @if (session('login_error_message'))

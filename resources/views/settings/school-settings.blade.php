@@ -721,12 +721,8 @@
                                 <i class="ri-verified-badge-line"></i> Official Identity
                             </div>
                             <div class="brand-logo-ring" id="brandLogoRing">
-                                @if($hasLogo)
-                                    <img src="{{ asset($school->logo_path) }}" alt="Logo" id="brandLogoImg">
-                                @else
-                                    <i class="ri-building-4-line placeholder" id="brandLogoPlaceholder"></i>
-                                    <img src="" alt="" id="brandLogoImg" style="display:none;">
-                                @endif
+                                <img src="{{ $school->logoUrl() }}" alt="Logo" id="brandLogoImg">
+                                <i class="ri-building-4-line placeholder" id="brandLogoPlaceholder" style="display:none;"></i>
                             </div>
                             <h3 class="brand-card-name" id="brandName">{{ $school->name ?: 'Your School Name' }}</h3>
                             <p class="brand-card-motto" id="brandMotto" style="{{ empty($school->motto) ? 'display:none;' : '' }}">"{{ $school->motto }}"</p>
@@ -775,12 +771,8 @@
                     <div class="logo-dropzone" id="logoDropzone">
                         <input type="file" name="logo" id="schoolLogoInput" accept="image/*">
                         <div class="logo-dropzone-preview">
-                            @if($hasLogo)
-                                <img src="{{ asset($school->logo_path) }}" alt="Logo" id="uploadPreviewImg">
-                            @else
-                                <i class="ri-upload-cloud-2-line ph" id="uploadPlaceholder"></i>
-                                <img src="" alt="" id="uploadPreviewImg" style="display:none;">
-                            @endif
+                            <img src="{{ $school->logoUrl() }}" alt="Logo" id="uploadPreviewImg">
+                            <i class="ri-upload-cloud-2-line ph" id="uploadPlaceholder" style="display:none;"></i>
                         </div>
                         <div class="logo-dropzone-hint">Drop your logo here or click to browse</div>
                         <div class="logo-dropzone-sub">This logo appears on student printouts and official documents</div>

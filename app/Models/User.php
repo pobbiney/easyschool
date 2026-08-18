@@ -51,6 +51,7 @@ class User extends  Authenticatable
         'user_cat',
 		'cat_id',
 		'status',
+		'photo',
 	];
 
 	public function category()
@@ -93,4 +94,18 @@ class User extends  Authenticatable
 {
     return $this->belongsTo(Staff::class, 'staff_id', 'id');
 }
+
+	public function profilePhotoPath(): ?string
+	{
+		$path = $this->photo ?: $this->staff?->picture;
+
+		return filled($path) ? $path : null;
+	}
+
+	public function profilePhotoUrl(): ?string
+	{
+		$path = $this->profilePhotoPath();
+
+		return $path ? asset($path) : null;
+	}
 }

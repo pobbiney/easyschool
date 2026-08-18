@@ -30,9 +30,12 @@
 <body>
     <div class="receipt">
         <div class="header">
-            <div>
-                <div class="school-name">{{ $school->school_name ?? 'School' }}</div>
-                <div class="meta">{{ $school->address ?? '' }}</div>
+            <div style="display:flex;align-items:center;gap:14px;">
+                <img src="{{ $school->logoUrl() }}" alt="{{ $school->name ?? $school->school_name ?? 'School' }}" style="width:64px;height:64px;object-fit:contain;border-radius:12px;background:#f8fafc;border:1px solid #e5e7eb;">
+                <div>
+                    <div class="school-name">{{ $school->name ?? $school->school_name ?? 'School' }}</div>
+                    <div class="meta">{{ $school->address ?? '' }}</div>
+                </div>
             </div>
             <div class="meta" style="text-align:right;">
                 <div><strong>Receipt No:</strong> {{ $payment->receipt_no }}</div>
@@ -87,7 +90,7 @@
         <div class="actions">
             <button class="btn btn-primary" onclick="window.print()">Print Receipt</button>
             <a href="{{ $statementUrl }}" target="_blank" class="btn btn-secondary" style="text-decoration:none;display:inline-flex;align-items:center;">Print Bill Statement</a>
-            <a href="{{ route('student-bills') }}" class="btn btn-secondary" style="text-decoration:none;display:inline-flex;align-items:center;">Back to Student Bills</a>
+            <a href="{{ $backUrl ?? route('student-bills') }}" class="btn btn-secondary" style="text-decoration:none;display:inline-flex;align-items:center;">{{ $backLabel ?? 'Back to Student Bills' }}</a>
         </div>
     </div>
 </body>

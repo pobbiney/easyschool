@@ -11,6 +11,7 @@ use App\Models\SchoolClass;
 use App\Models\SchoolSetting;
 use App\Models\House;
 use App\Services\Billing\StudentBillSyncService;
+use App\Services\ParentPortal\ParentAccountService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
@@ -52,6 +53,7 @@ class StudentController extends Controller
 
         if ($student->status === 'Active') {
             app(StudentBillSyncService::class)->syncForStudent($student->fresh(['schoolClass.category']));
+            app(ParentAccountService::class)->syncFromStudent($student->fresh());
         }
 
         $this->saveStudentDocuments($request, $student->id);
@@ -168,6 +170,7 @@ class StudentController extends Controller
 
         if ($student->status === 'Active') {
             app(StudentBillSyncService::class)->syncForStudent($student->fresh(['schoolClass.category']));
+            app(ParentAccountService::class)->syncFromStudent($student->fresh());
         }
 
         $this->saveStudentDocuments($request, $student->id);

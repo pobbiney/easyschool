@@ -11,11 +11,19 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->redirectGuestsTo(fn () => route('admin-login'));
+        $middleware->redirectGuestsTo(function () {
+            if (request()->is('parent') || request()->is('parent/*')) {
+                return route('parent.login');
+            }
+
+            return route('admin-login');
+        });
 
         $middleware->alias([
             'teacher' => \App\Http\Middleware\EnsureTeacher::class,
             'teacher.owns.class' => \App\Http\Middleware\EnsureTeacherOwnsClass::class,
+            'parent' => \App\Http\Middleware\EnsureParent::class,
+            'parent.owns.student' => \App\Http\Middleware\EnsureParentOwnsStudent::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
