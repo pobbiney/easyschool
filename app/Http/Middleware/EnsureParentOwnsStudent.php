@@ -21,7 +21,7 @@ class EnsureParentOwnsStudent
 
         $parent = auth('parent')->user();
 
-        if (! $parent || ! $this->parentStudentService->ownsStudent($parent, $student)) {
+        if (! $parent || $student->school_id !== $parent->school_id || ! $this->parentStudentService->ownsStudent($parent, $student)) {
             abort(403, 'You do not have access to this student record.');
         }
 

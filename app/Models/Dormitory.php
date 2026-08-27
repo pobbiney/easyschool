@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 
 class Dormitory extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
+        'school_id',
         'house_id',
         'name',
         'bed_count',

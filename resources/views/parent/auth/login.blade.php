@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Parent Sign In — {{ $school->name ?? $school->school_name ?? 'EasySchool' }}</title>
+    <title>Parent Sign In — EasySchool</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
@@ -358,14 +358,7 @@
     <main class="pl-main">
         <div class="pl-card">
             <div class="pl-card-head">
-                @php $schoolName = $school->name ?? $school->school_name ?? 'EasySchool'; @endphp
-                @if(method_exists($school, 'logoUrl') && $school->logoUrl())
-                    <img src="{{ $school->logoUrl() }}" alt="{{ $schoolName }}" class="pl-logo">
-                @elseif(!empty($school?->logo))
-                    <img src="{{ asset($school->logo) }}" alt="{{ $schoolName }}" class="pl-logo">
-                @else
-                    <div class="pl-logo-fallback">{{ strtoupper(substr($schoolName, 0, 1)) }}</div>
-                @endif
+                <img src="{{ asset('assets/images/logo.png') }}" alt="EasySchool" class="pl-logo">
                 <h2>Welcome back</h2>
                 <p>Sign in with your guardian phone number</p>
             </div>
@@ -386,6 +379,20 @@
             <form method="POST" action="{{ route('parent.login.process') }}">
                 @csrf
                 <div class="pl-field">
+                    <label for="school_code">School code</label>
+                    <div class="pl-input-wrap">
+                        <i class="field-icon ri-building-line"></i>
+                        <input type="text"
+                               id="school_code"
+                               name="school_code"
+                               value="{{ old('school_code') }}"
+                               placeholder="SCH-2026-XXXX"
+                               required
+                               autofocus
+                               autocomplete="off">
+                    </div>
+                </div>
+                <div class="pl-field">
                     <label for="phone">Guardian phone</label>
                     <div class="pl-input-wrap">
                         <i class="field-icon ri-phone-line"></i>
@@ -395,7 +402,6 @@
                                value="{{ old('phone') }}"
                                placeholder="024xxxxxxx"
                                required
-                               autofocus
                                autocomplete="tel">
                     </div>
                 </div>

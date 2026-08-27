@@ -3,10 +3,13 @@
 namespace App\Models\Pos;
 
 use App\Models\Student;
+use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 
 class PosSaleTransaction extends Model
 {
+    use BelongsToSchool;
+
     public const STATUS_PENDING = 'pending';
 
     public const STATUS_SUCCESS = 'success';
@@ -14,6 +17,7 @@ class PosSaleTransaction extends Model
     public const STATUS_FAILED = 'failed';
 
     protected $fillable = [
+        'school_id',
         'reference',
         'subtotal',
         'discount',

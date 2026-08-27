@@ -2,14 +2,18 @@
 
 namespace App\Models\ParentPortal;
 
+use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class ParentAccount extends Authenticatable
 {
+    use BelongsToSchool;
+
     public const STATUS_ACTIVE = 'Active';
 
     protected $fillable = [
+        'school_id',
         'phone',
         'guardian_name',
         'password',

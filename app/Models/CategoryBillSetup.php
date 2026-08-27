@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 
 class CategoryBillSetup extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
+        'school_id',
         'class_category_id',
         'academic_year_id',
         'academic_term_id',

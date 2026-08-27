@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 
 class AssessmentType extends Model
 {
+    use BelongsToSchool;
+
     public const CATEGORY_CLASS = 'class_assessment';
 
     public const CATEGORY_EXAMINATION = 'examination_assessment';
@@ -16,6 +19,7 @@ class AssessmentType extends Model
     ];
 
     protected $fillable = [
+        'school_id',
         'name',
         'slug',
         'category',

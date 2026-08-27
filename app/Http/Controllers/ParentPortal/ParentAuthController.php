@@ -4,7 +4,9 @@ namespace App\Http\Controllers\ParentPortal;
 
 use App\Http\Controllers\Controller;
 use App\Models\ParentPortal\ParentAccount;
+use App\Models\School;
 use App\Models\SchoolSetting;
+use App\Support\TenantContext;
 use App\Services\MNotifyService;
 use App\Services\ParentPortal\ParentAccountService;
 use App\Services\ParentPortal\ParentCommunicationLogService;
@@ -23,27 +25,52 @@ class ParentAuthController extends Controller
             return redirect()->route('parent.dashboard');
         }
 
-        return view('parent.auth.login', [
-            'school' => SchoolSetting::current(),
-        ]);
+        return view('parent.auth.login');
     }
 
     public function login(Request $request)
     {
         $validated = $request->validate([
+            'school_code' => 'required|string|max:32',
             'phone' => 'required|string|max:30',
             'password' => 'required|string',
         ]);
+
+        $school = School::query()
+            ->where('code', strtoupper(trim($validated['school_code'])))
+            ->first();
+
+        if (! $school) {
+            return back()
+                ->withInput($request->only('school_code', 'phone'))
+                ->with('login_error_message', 'Invalid school code or school portal is unavailable.');
+        }
+
+        if ($school->isSuspended()) {
+            return back()
+                ->withInput($request->only('school_code', 'phone'))
+                ->with('login_error_message', "This school's account is suspended. Contact support.");
+        }
+
+        if (! $school->isApproved()) {
+            return back()
+                ->withInput($request->only('school_code', 'phone'))
+                ->with('login_error_message', 'Invalid school code or school portal is unavailable.');
+        }
 
         $phone = GhanaPhone::normalize($validated['phone']);
 
         if (! $phone) {
             return back()
-                ->withInput($request->only('phone'))
+                ->withInput($request->only('school_code', 'phone'))
                 ->with('login_error_message', 'Enter a valid phone number.');
         }
 
-        $parent = ParentAccount::query()->where('phone', $phone)->first();
+        $parent = ParentAccount::query()
+            ->withoutGlobalScopes()
+            ->where('school_id', $school->id)
+            ->where('phone', $phone)
+            ->first();
 
         if (! $parent || ! $parent->isActive()) {
             return back()
@@ -58,6 +85,7 @@ class ParentAuthController extends Controller
         }
 
         Auth::guard('parent')->login($parent, $request->boolean('remember'));
+        TenantContext::setSchool($school);
         $parent->update(['last_login_at' => now()]);
 
         if ($parent->must_change_password) {
@@ -72,6 +100,7 @@ class ParentAuthController extends Controller
     public function logout(Request $request)
     {
         Auth::guard('parent')->logout();
+        TenantContext::clear();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

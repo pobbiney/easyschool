@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 
 class Staff extends Model
 {
+    use BelongsToSchool;
+
     protected $casts = [
         'appointment_date' => 'date',
         'confirmation_date' => 'date',

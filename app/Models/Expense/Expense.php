@@ -4,10 +4,13 @@ namespace App\Models\Expense;
 
 use App\Models\AcademicYear;
 use App\Models\User;
+use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 
 class Expense extends Model
 {
+    use BelongsToSchool;
+
     public const PAYMENT_METHODS = [
         'Cash',
         'Bank Transfer',
@@ -16,6 +19,7 @@ class Expense extends Model
     ];
 
     protected $fillable = [
+        'school_id',
         'expense_category_id',
         'expense_date',
         'amount',

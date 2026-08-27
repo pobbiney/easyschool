@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 
 class Student extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
+        'school_id',
         'student_id',
         'academic_year',
         'academic_year_id',

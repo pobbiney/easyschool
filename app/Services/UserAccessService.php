@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use App\Support\TenantContext;
 use Illuminate\Support\Facades\DB;
 
 class UserAccessService
@@ -15,6 +16,17 @@ class UserAccessService
      */
     public function urls(?User $user = null): array
     {
+        if (\App\Support\TenantContext::isSuperAdminViewing() && auth('super_admin')->check()) {
+            return DB::table('user_links')
+                ->where('status', 'Active')
+                ->whereNotNull('link_url')
+                ->where('link_url', '!=', '')
+                ->pluck('link_url')
+                ->unique()
+                ->values()
+                ->all();
+        }
+
         $user = $user ?? auth()->user();
 
         if (! $user) {

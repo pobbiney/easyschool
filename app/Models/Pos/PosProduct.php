@@ -2,11 +2,15 @@
 
 namespace App\Models\Pos;
 
+use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 
 class PosProduct extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
+        'school_id',
         'pos_category_id',
         'name',
         'sku',

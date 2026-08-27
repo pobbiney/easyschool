@@ -13,6 +13,7 @@ use App\Models\Student;
 use App\Models\StudentBill;
 use App\Models\User;
 use App\Support\AcademicPeriodDefaults;
+use App\Support\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
@@ -30,11 +31,14 @@ class DashboardHomeService
     public function payload(?User $user = null): array
     {
         $user = $user ?? auth()->user();
+        $isSuperAdminView = TenantContext::isSuperAdminViewing() && auth('super_admin')->check();
         $staff = $user?->staff_id ? Staff::query()->find($user->staff_id) : null;
         $school = SchoolSetting::current();
         $period = AcademicPeriodDefaults::forFrontend();
-        $isTeacher = $this->teacherAccess->isTeacher($user);
-        $name = $staff?->full_name ?: ($user?->name ?: 'there');
+        $isTeacher = $isSuperAdminView ? false : $this->teacherAccess->isTeacher($user);
+        $name = $isSuperAdminView
+            ? (auth('super_admin')->user()->name ?? 'Super Admin')
+            : ($staff?->full_name ?: ($user?->name ?: 'there'));
 
         $homeroomClasses = collect();
         $subjectAssignments = collect();
@@ -71,12 +75,13 @@ class DashboardHomeService
         return [
             'staff' => $staff,
             'displayName' => $name,
-            'roleName' => $user?->getUserCategory() ?: 'Staff',
+            'roleName' => $isSuperAdminView ? 'Super Admin (viewing)' : ($user?->getUserCategory() ?: 'Staff'),
             'greeting' => $this->greeting(),
             'schoolName' => $school->name ?: 'EasySchool',
             'logoUrl' => $school->logoUrl(),
             'period' => $period,
             'isTeacher' => $isTeacher,
+            'isSuperAdminView' => $isSuperAdminView,
             'kpis' => $this->kpis($isTeacher, $teacherStats),
             'charts' => $this->charts($isTeacher, $homeroomClasses),
             'shortcuts' => $this->shortcuts(),
@@ -84,9 +89,11 @@ class DashboardHomeService
             'subjectAssignments' => $subjectAssignments,
             'pendingLeave' => $this->pendingLeave(),
             'showPendingLeave' => $this->access->can('hr-leave'),
-            'heroLine' => $isTeacher
+            'heroLine' => $isSuperAdminView
+                ? 'You are viewing this school as platform super admin.'
+                : ($isTeacher
                 ? 'Your classes, attendance, and subjects for this term.'
-                : 'Open only the modules your role can use.',
+                : 'Open only the modules your role can use.'),
         ];
     }
 

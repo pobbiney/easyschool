@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 
 class HrPayrollSetting extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
+        'school_id',
         'ssnit_employee_rate',
         'ssnit_employer_rate',
         'ssnit_ceiling',

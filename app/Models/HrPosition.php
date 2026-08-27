@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 
 class HrPosition extends Model
 {
-    protected $fillable = ['department_id', 'name', 'status', 'created_by', 'updated_by'];
+    use BelongsToSchool;
+
+    protected $fillable = [
+        'school_id','department_id', 'name', 'status', 'created_by', 'updated_by'];
 
     public function department()
     {

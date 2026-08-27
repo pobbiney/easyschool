@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 
 class HrPayrollRun extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
+        'school_id',
         'period_year',
         'period_month',
         'status',

@@ -2,12 +2,16 @@
 
 namespace App\Support;
 
+use App\Models\UserCat;
+
 class TeacherCategory
 {
-    public const ID = 2;
-
     public static function id(): int
     {
-        return self::ID;
+        $id = UserCat::query()
+            ->where('cat_name', 'Teacher')
+            ->value('cat_id');
+
+        return $id ? (int) $id : 2;
     }
 }

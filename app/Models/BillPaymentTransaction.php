@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 
 class BillPaymentTransaction extends Model
 {
+    use BelongsToSchool;
+
     public const STATUS_PENDING = 'pending';
 
     public const STATUS_SUCCESS = 'success';
@@ -13,6 +16,7 @@ class BillPaymentTransaction extends Model
     public const STATUS_FAILED = 'failed';
 
     protected $fillable = [
+        'school_id',
         'student_id',
         'reference',
         'amount',

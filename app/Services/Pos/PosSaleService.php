@@ -6,6 +6,7 @@ use App\Models\Pos\PosProduct;
 use App\Models\Pos\PosSale;
 use App\Models\Pos\PosSaleItem;
 use App\Models\Pos\PosStockMovement;
+use App\Support\TenantCodePrefix;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -99,7 +100,7 @@ class PosSaleService
     public function generateReceiptNumber(): string
     {
         $year = now()->format('Y');
-        $prefix = 'POS-'.$year.'-';
+        $prefix = TenantCodePrefix::segment().'POS-'.$year.'-';
         $last = PosSale::query()
             ->where('receipt_no', 'like', $prefix.'%')
             ->orderByDesc('id')

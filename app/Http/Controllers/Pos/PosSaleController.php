@@ -383,7 +383,7 @@ class PosSaleController extends Controller
     private function generatePaystackReference(): string
     {
         do {
-            $reference = 'POSPAY-'.now()->format('YmdHis').'-'.strtoupper(Str::random(8));
+            $reference = \App\Support\TenantCodePrefix::segment().'POSPAY-'.now()->format('YmdHis').'-'.strtoupper(Str::random(8));
         } while (PosSaleTransaction::query()->where('reference', $reference)->exists());
 
         return $reference;

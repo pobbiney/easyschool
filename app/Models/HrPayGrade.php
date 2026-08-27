@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 
 class HrPayGrade extends Model
 {
-    protected $fillable = ['name', 'basic_salary', 'status', 'created_by', 'updated_by'];
+    use BelongsToSchool;
+
+    protected $fillable = [
+        'school_id','name', 'basic_salary', 'status', 'created_by', 'updated_by'];
 
     protected $casts = [
         'basic_salary' => 'decimal:2',

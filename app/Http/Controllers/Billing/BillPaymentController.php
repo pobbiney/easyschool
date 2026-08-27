@@ -391,7 +391,7 @@ class BillPaymentController extends Controller
     private function generatePaystackReference(): string
     {
         $year = now()->format('Y');
-        $prefix = 'BILL-' . $year . '-';
+        $prefix = \App\Support\TenantCodePrefix::segment().'BILL-' . $year . '-';
         $last = BillPaymentTransaction::query()
             ->where('reference', 'like', $prefix . '%')
             ->orderByDesc('id')

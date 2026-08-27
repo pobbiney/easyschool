@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Authentication;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
  
+use App\Models\School;
 use App\Models\User;
+use App\Services\Tenant\SchoolActivityLogger;
+use App\Support\TenantContext;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Auth;
@@ -15,7 +18,6 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log; // Add this import for Log
 use App\Http\Controllers\SMS\SMSController;
 use App\Models\Staff;
-use App\Models\SchoolSetting;
 use App\Models\UsrUserLog;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\SendMail;
@@ -25,9 +27,7 @@ use Illuminate\Support\Str;
 class AuthenticationController extends Controller
 {
     public function getAdminLoginPage(){
-        return view('authentication.login', [
-            'school' => SchoolSetting::current(),
-        ]);
+        return view('authentication.login');
     }
 
     
@@ -42,14 +42,35 @@ class AuthenticationController extends Controller
      public function authenticationProcess(Request $request){
 
         $request->validate([
+        'school_code' => 'required|string|max:32',
         'email' => 'required|email',
         'password' => 'required'
     ]);
 
+    $school = School::query()
+        ->where('code', strtoupper(trim($request->school_code)))
+        ->first();
+
+    if (! $school) {
+        return back()->with('login_error_message', 'Invalid school code or school is not approved.');
+    }
+
+    if ($school->isSuspended()) {
+        return back()->with('login_error_message', "This school's account is suspended. Contact support.");
+    }
+
+    if (! $school->isApproved()) {
+        return back()->with('login_error_message', 'Invalid school code or school is not approved.');
+    }
+
     $maxAttempts = 5;
     $lockMinutes = 10;
 
-    $user = User::where('email', $request->email)->first();
+    $user = User::query()
+        ->withoutGlobalScopes()
+        ->where('school_id', $school->id)
+        ->where('email', $request->email)
+        ->first();
 
     if (!$user) {
         return back()->with('login_error_message','Email does not exist or wrong password.');
@@ -98,6 +119,7 @@ class AuthenticationController extends Controller
     Auth::login($user);
 
     $request->session()->regenerate();
+    TenantContext::setSchool($school);
 
     // Reset attempts
     $user->login_attempts = 0;
@@ -112,6 +134,12 @@ class AuthenticationController extends Controller
     $insertLogs->save();
 
     session()->put('userLogId', $insertLogs->id);
+
+    app(SchoolActivityLogger::class)->log(
+        action: 'staff.login',
+        description: 'Staff user signed in',
+        payload: ['user_id' => $user->id, 'email' => $user->email],
+    );
 
     return redirect()->intended('dashboard');
         

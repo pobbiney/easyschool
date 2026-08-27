@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\ParentPortal\ParentAccount;
+use App\Models\SuperAdmin;
 use App\Models\User;
 
 return [
@@ -47,6 +48,10 @@ return [
             'driver' => 'session',
             'provider' => 'parents',
         ],
+        'super_admin' => [
+            'driver' => 'session',
+            'provider' => 'super_admins',
+        ],
     ],
 
     /*
@@ -74,6 +79,10 @@ return [
         'parents' => [
             'driver' => 'eloquent',
             'model' => ParentAccount::class,
+        ],
+        'super_admins' => [
+            'driver' => 'eloquent',
+            'model' => SuperAdmin::class,
         ],
 
         // 'users' => [

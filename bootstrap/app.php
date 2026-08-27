@@ -12,6 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo(function () {
+            if (request()->is('super-admin') || request()->is('super-admin/*')) {
+                return route('super-admin.login');
+            }
+
             if (request()->is('parent') || request()->is('parent/*')) {
                 return route('parent.login');
             }
@@ -24,6 +28,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'teacher.owns.class' => \App\Http\Middleware\EnsureTeacherOwnsClass::class,
             'parent' => \App\Http\Middleware\EnsureParent::class,
             'parent.owns.student' => \App\Http\Middleware\EnsureParentOwnsStudent::class,
+            'school.tenant' => \App\Http\Middleware\EnsureSchoolTenant::class,
+            'staff.auth' => \App\Http\Middleware\EnsureStaffAuthenticated::class,
+            'parent.school' => \App\Http\Middleware\EnsureParentSchoolTenant::class,
+            'super.admin' => \App\Http\Middleware\EnsureSuperAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

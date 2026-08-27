@@ -1,4 +1,43 @@
 @php
+    use App\Support\TenantContext;
+    $isSuperAdminView = TenantContext::isSuperAdminViewing() && auth('super_admin')->check();
+
+    if ($isSuperAdminView) {
+        $staff_query = collect();
+        $links = DB::table('user_links')
+            ->where('status', 'Active')
+            ->orderBy('link_name')
+            ->get([
+                'link_id', 'page_id', 'page_id_sub', 'link_url', 'link_name', 'link_image', 'link_parent',
+            ]);
+
+        $parents = [];
+        $child = [];
+        foreach ($links as $row_links) {
+            if ($row_links->link_parent == 0) {
+                $parents[] = $row_links;
+            } else {
+                $child[] = $row_links;
+            }
+        }
+
+        $flatMenuPageIds = ['teacher-portal'];
+        $flatMenuLinkOrder = [
+            'teacher-dashboard',
+            'teacher-attendance',
+            'teacher-assessments',
+            'teacher-assessment-records',
+            'teacher-gradebook',
+        ];
+        $flatMenuLinkIcons = [
+            'teacher-dashboard' => 'ri-dashboard-3-line',
+            'teacher-attendance' => 'ri-calendar-check-line',
+            'teacher-assessments' => 'ri-file-edit-line',
+            'teacher-assessment-records' => 'ri-file-list-3-line',
+            'teacher-gradebook' => 'ri-book-read-line',
+        ];
+        $hasTeacherDashboard = collect($child)->contains(fn ($sub) => $sub->link_url === 'teacher-dashboard');
+    } else {
     $staff_query = DB::select('SELECT * FROM staff WHERE id = :id', ['id' => auth()->user()->staff_id]);
 
     $userId = auth()->user()->id;
@@ -55,6 +94,7 @@
         'teacher-gradebook' => 'ri-book-read-line',
     ];
     $hasTeacherDashboard = collect($child)->contains(fn ($sub) => $sub->link_url === 'teacher-dashboard');
+    }
 @endphp
 
 <!-- meta tags and other links -->
@@ -97,20 +137,245 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <style>
+    /* ── Clean light sidebar ── */
+    .sidebar {
+      background: #f8fafc !important;
+      border-right: 1px solid #e2e8f0 !important;
+      box-shadow: none !important;
+      overflow: visible !important;
+    }
+
+    .sidebar::before,
+    .sidebar::after {
+      display: none;
+    }
+
+    .sidebar > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .sidebar > .sidebar-profile-wrap {
+      z-index: 30;
+    }
+
+    .sidebar-logo {
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 8px;
+      background: #fff;
+      margin: 0;
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+
+    .sidebar .sidebar-logo img.light-logo {
+      display: inline-block !important;
+    }
+
+    .sidebar .sidebar-logo img.dark-logo {
+      display: none !important;
+    }
+
+    .sidebar .sidebar-toggle {
+      color: #94a3b8 !important;
+      transition: color 0.2s ease, background 0.2s ease;
+      border-radius: 8px;
+      padding: 4px;
+    }
+
+    .sidebar .sidebar-toggle:hover {
+      color: #25A194 !important;
+      background: rgba(37, 161, 148, 0.08);
+    }
+
+    .sidebar-close-btn {
+      border-color: #e2e8f0 !important;
+      color: #64748b !important;
+      background: #fff;
+    }
+
+    .sidebar-profile-wrap {
+      position: relative;
+      z-index: 30;
+      padding-top: 16px !important;
+      padding-bottom: 8px !important;
+    }
+
+    .sidebar .profile-dropdown__button {
+      background: #fff !important;
+      border: 1px solid #e2e8f0 !important;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .sidebar .profile-dropdown__button:hover {
+      border-color: #25A194 !important;
+      box-shadow: 0 4px 12px rgba(37, 161, 148, 0.12);
+    }
+
+    .sidebar .profile-dropdown__contents .h6,
+    .sidebar .profile-dropdown__contents .text-primary-light {
+      color: #1e293b !important;
+    }
+
+    .sidebar .profile-dropdown__contents .text-secondary-light {
+      color: #64748b !important;
+    }
+
+    .sidebar .profile-dropdown__icon {
+      color: #94a3b8 !important;
+    }
+
     .sidebar-menu {
-  font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-}
+      font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      padding-top: 4px;
+    }
 
-.sidebar-menu .menu-name,
-.sidebar-menu > li > a > span {
-  font-size: 16px;
-  font-weight: 600;
-}
+    .sidebar-menu .menu-name,
+    .sidebar-menu > li > a > span {
+      font-size: 14px;
+      font-weight: 500;
+    }
 
-.sidebar-submenu li a {
-  font-size: 16px;
-  font-weight: 600;
-}
+    .sidebar-submenu li a {
+      font-size: 13.5px;
+      font-weight: 500;
+    }
+
+    .sidebar-menu li a {
+      color: #475569 !important;
+      border-radius: 10px;
+      margin-bottom: 2px;
+      border-left: 3px solid transparent;
+      transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .sidebar-menu li a i {
+      color: #94a3b8;
+      transition: color 0.15s ease;
+    }
+
+    .sidebar-menu li a:hover {
+      color: #1e293b !important;
+      background: #fff !important;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
+    }
+
+    .sidebar-menu li a:hover i {
+      color: #25A194;
+    }
+
+    .sidebar-menu li > a.active-page,
+    .sidebar-menu li.dropdown.open > a,
+    .sidebar-menu li.dropdown.dropdown-open > a {
+      background: #fff !important;
+      color: #25A194 !important;
+      border-left-color: #25A194 !important;
+      box-shadow: 0 2px 8px rgba(37, 161, 148, 0.12);
+      font-weight: 600;
+    }
+
+    .sidebar-menu li > a.active-page i,
+    .sidebar-menu li.dropdown.open > a i,
+    .sidebar-menu li.dropdown.dropdown-open > a i {
+      color: #25A194 !important;
+    }
+
+    .sidebar-menu li > a.active-page:hover,
+    .sidebar-menu li.dropdown.open > a:hover,
+    .sidebar-menu li.dropdown.dropdown-open > a:hover {
+      color: #1e8578 !important;
+      transform: none;
+      box-shadow: 0 2px 10px rgba(37, 161, 148, 0.16);
+    }
+
+    .sidebar-menu .sidebar-submenu::before {
+      border-color: #cbd5e1 !important;
+    }
+
+    .sidebar-menu .sidebar-submenu li a {
+      color: #64748b !important;
+      border-left: none;
+      box-shadow: none !important;
+    }
+
+    .sidebar-menu .sidebar-submenu li a:hover {
+      color: #25A194 !important;
+      background: rgba(37, 161, 148, 0.06) !important;
+      box-shadow: none !important;
+    }
+
+    .sidebar-menu .sidebar-submenu li.active-page a,
+    .sidebar-menu .sidebar-submenu li a.active {
+      color: #25A194 !important;
+      background: rgba(37, 161, 148, 0.08) !important;
+      font-weight: 600;
+      border-radius: 8px;
+    }
+
+    .sidebar-menu .sidebar-submenu .circle-icon {
+      color: #cbd5e1 !important;
+      background: #f8fafc !important;
+      box-shadow: 0 0 0 8px #f8fafc !important;
+    }
+
+    .sidebar-menu .sidebar-submenu li.active-page a .circle-icon,
+    .sidebar-menu .sidebar-submenu li a.active .circle-icon {
+      color: #25A194 !important;
+    }
+
+    .sidebar-menu-area {
+      position: relative;
+      z-index: 1;
+      border-inline-end: none !important;
+      padding-top: 8px !important;
+    }
+
+    .sidebar-menu-area::-webkit-scrollbar {
+      width: 5px;
+      background: transparent;
+    }
+
+    .sidebar-menu-area::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
+    .sidebar-menu-area:hover::-webkit-scrollbar-thumb {
+      background: #94a3b8;
+    }
+
+    .sidebar-menu .menu-name.active {
+      color: inherit;
+    }
+
+    .sidebar.active .profile-dropdown__button {
+      background: #fff !important;
+      border: 1px solid #e2e8f0 !important;
+    }
+
+    .sidebar .profile-dropdown {
+      position: relative;
+      z-index: 30;
+    }
+
+    .sidebar .profile-dropdown .dropdown-menu {
+      position: static !important;
+      inset: auto !important;
+      transform: none !important;
+      float: none;
+      width: 100%;
+      min-width: 100%;
+      margin-top: 8px;
+      z-index: 40;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 12px !important;
+    }
+
+    .sidebar .profile-dropdown .dropdown-menu.show {
+      display: block;
+    }
 
 
 .app-toast.swal2-popup.swal2-toast {
@@ -378,12 +643,20 @@ body.swal2-toast-shown .swal2-container .swal2-popup {
     </div>
   </div>
   <!-- User Info start -->
-  <div class="mx-16 py-12">
+  <div class="mx-16 py-12 sidebar-profile-wrap">
     <div class="dropdown profile-dropdown">
       <button type="button"
         class="profile-dropdown__button d-flex align-items-center justify-content-between p-10 w-100 overflow-hidden bg-neutral-50 radius-12 "
         data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
         <span class="d-flex align-items-start gap-10">
+          @if($isSuperAdminView ?? false)
+            <img src="{{ asset('assets/images/thumbs/leave-request-img2.png') }}" alt="Super Admin"
+              class="w-40-px h-40-px rounded-circle object-fit-cover flex-shrink-0">
+            <span class="profile-dropdown__contents">
+             <span class="h6 mb-0 text-md d-block text-primary-light">{{ auth('super_admin')->user()->name }}</span>
+            <span class="text-secondary-light text-sm mb-0 d-block">Super Admin</span>
+          </span>
+          @else
           @php $navPhoto = auth()->user()->profilePhotoUrl(); @endphp
           @if($navPhoto)
             <img src="{{ $navPhoto }}" alt="{{ auth()->user()->name }}"
@@ -396,12 +669,14 @@ body.swal2-toast-shown .swal2-container .swal2-popup {
              <span class="h6 mb-0 text-md d-block text-primary-light">{{auth()->user()->name}}</span>
             <span class="text-secondary-light text-sm mb-0 d-block">{{auth()->user()->getUserCategory()}}</span>
           </span>
+          @endif
         </span>
         <span class="profile-dropdown__icon pe-8 text-xl d-flex line-height-1">
           <i class="ri-arrow-right-s-line"></i>
         </span>
       </button>
-      <ul class="dropdown-menu dropdown-menu-lg-end border p-12">
+      <ul class="dropdown-menu w-100 border p-12">
+        @if(! ($isSuperAdminView ?? false))
         <li>
           <a href="{{route('profile')}}" 
             class="dropdown-item rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-2 py-6">
@@ -416,15 +691,27 @@ body.swal2-toast-shown .swal2-container .swal2-popup {
             Setting
           </a>
         </li>
+        @endif
         <li>
+          @if($isSuperAdminView ?? false)
+            <form action="{{ route('super-admin.schools.exit') }}" method="POST">
+              @csrf
+              <button type="submit"
+                  class="dropdown-item rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-2 py-6">
+                  <i class="ri-logout-box-r-line"></i>
+                  Exit school view
+              </button>
+            </form>
+          @else
             <form action="{{ route('logout-authentication-process') }}" method="POST">
-									@csrf
-        <button type="submit" 
-            class="dropdown-item rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-2 py-6">
-            <i class="ri-shut-down-line"></i>
-            Log Out
-        </button>
-          </form>
+              @csrf
+              <button type="submit"
+                  class="dropdown-item rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 d-flex align-items-center gap-2 py-6">
+                  <i class="ri-shut-down-line"></i>
+                  Log Out
+              </button>
+            </form>
+          @endif
         </li>
       </ul>
     </div>
@@ -619,6 +906,16 @@ body.swal2-toast-shown .swal2-container .swal2-popup {
 </div>
 
 
+
+@if($isSuperAdminView ?? false)
+<div class="alert alert-warning mb-0 rounded-0 text-center d-flex align-items-center justify-content-center gap-3 flex-wrap" role="alert">
+    <span>Super admin view: {{ \App\Models\SchoolSetting::current()->name ?? 'School' }} ({{ TenantContext::schoolCode() }})</span>
+    <form method="POST" action="{{ route('super-admin.schools.exit') }}" class="m-0">
+        @csrf
+        <button type="submit" class="btn btn-sm btn-dark">Exit school view</button>
+    </form>
+</div>
+@endif
 
     @yield('content')
   

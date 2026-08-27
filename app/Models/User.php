@@ -7,6 +7,7 @@
 namespace App\Models;
 
 use Carbon\Carbon;
+use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -28,7 +29,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  */
 class User extends  Authenticatable
 {
-	use HasFactory, Notifiable;
+	use HasFactory, Notifiable, BelongsToSchool;
 	protected $table = 'users';
 
 	protected $casts = [
@@ -41,6 +42,7 @@ class User extends  Authenticatable
 	];
 
 	protected $fillable = [
+		'school_id',
 		'name',
 		'email',
 		'email_verified_at',

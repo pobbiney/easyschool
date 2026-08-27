@@ -21,7 +21,10 @@ class ParentAccountService
             return null;
         }
 
-        $existing = ParentAccount::query()->where('phone', $phone)->first();
+        $existing = ParentAccount::query()
+            ->where('school_id', $student->school_id)
+            ->where('phone', $phone)
+            ->first();
 
         if ($existing) {
             $existing->update([
@@ -32,6 +35,7 @@ class ParentAccountService
         }
 
         return ParentAccount::create([
+            'school_id' => $student->school_id,
             'phone' => $phone,
             'guardian_name' => $student->guardian_name,
             'password' => (string) config('parent.default_password', 'Parent123'),
@@ -60,10 +64,15 @@ class ParentAccountService
 
     public function resetToDefault(string $phone): ?ParentAccount
     {
-        $account = ParentAccount::query()
+        $query = ParentAccount::query()
             ->where('phone', $phone)
-            ->where('status', ParentAccount::STATUS_ACTIVE)
-            ->first();
+            ->where('status', ParentAccount::STATUS_ACTIVE);
+
+        if ($schoolId = \App\Support\TenantContext::schoolId()) {
+            $query->where('school_id', $schoolId);
+        }
+
+        $account = $query->first();
 
         if (! $account) {
             return null;

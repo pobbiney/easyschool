@@ -12,6 +12,7 @@ use App\Models\SchoolSetting;
 use App\Models\House;
 use App\Services\Billing\StudentBillSyncService;
 use App\Services\ParentPortal\ParentAccountService;
+use App\Support\TenantCodePrefix;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
@@ -50,6 +51,14 @@ class StudentController extends Controller
         $student->status = $this->resolveFinalStudentStatus($request);
         $student->updated_by = Auth::id();
         $student->save();
+
+        if (! $request->student_record_id) {
+            app(\App\Services\Tenant\SchoolActivityLogger::class)->log(
+                action: 'student.created',
+                description: 'Student registered: '.$student->student_id,
+                payload: ['student_id' => $student->id, 'student_code' => $student->student_id],
+            );
+        }
 
         if ($student->status === 'Active') {
             app(StudentBillSyncService::class)->syncForStudent($student->fresh(['schoolClass.category']));
@@ -226,9 +235,11 @@ class StudentController extends Controller
 
     private function generateStudentCode()
     {
-        $prefix = strtoupper(trim(config('school.student_id_prefix', 'STD')));
+        $prefix = TenantCodePrefix::segment()
+            ? TenantCodePrefix::with('STU')
+            : strtoupper(trim(config('school.student_id_prefix', 'STD')));
         $padLength = max(1, (int) config('school.student_id_pad_length', 3));
-        $pattern = '/^' . preg_quote($prefix, '/') . '-(\d+)$/i';
+        $pattern = '/^'.preg_quote($prefix, '/').'-(\d+)$/i';
 
         $lastNumber = Student::pluck('student_id')
             ->map(function ($studentId) use ($pattern) {

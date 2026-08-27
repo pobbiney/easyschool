@@ -428,7 +428,7 @@
         
       <div class="card-border-glow"></div>
       <div class="card">
-        <div class="logo"><img src="{{ $school?->logoUrl() ?: asset('assets/images/logo-icon.png') }}" alt="{{ $school?->name ?: 'EasySchool' }}"></div>
+        <div class="logo"><img src="{{ asset('assets/images/logo-light.png') }}" alt="EasySchool"></div>
         <h2>Welcome back!</h2>
         <p class="sub">Sign in to continue to your dashboard</p>
          @if (session('login_error_message'))
@@ -437,6 +437,17 @@
        
         <form id="loginForm" enctype="multipart/form-data" action="{{ route('authentication-process') }}" method="POST">
            @csrf
+          <div class="field">
+            <label for="school_code">School Code</label>
+            <div class="input-wrap">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#25A194" stroke-width="2">
+                <path d="M4 7h16M4 12h16M4 17h10"/>
+              </svg>
+              <input type="text" name="school_code" value="{{ old('school_code') }}" placeholder="e.g. SCH-2026-A7K9" required>
+               @error('school_code') <small style="color:red;">{{$message}}</small>@enderror
+            </div>
+          </div>
+
           <div class="field">
             <label for="staffId">Staff / Student ID / Email</label>
             <div class="input-wrap">
@@ -482,6 +493,10 @@
             </svg>
           </button>
         </form>
+
+        <p class="sub" style="margin-top:18px;text-align:center;">
+            New school? <a href="{{ route('register-school') }}" style="color:#25A194;">Register your school</a>
+        </p>
 
          
 

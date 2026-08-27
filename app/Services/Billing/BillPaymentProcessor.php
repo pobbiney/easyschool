@@ -2,6 +2,7 @@
 
 namespace App\Services\Billing;
 
+use App\Support\TenantCodePrefix;
 use App\Models\BillPayment;
 use App\Models\BillPaymentAllocation;
 use App\Models\Student;
@@ -200,7 +201,7 @@ class BillPaymentProcessor
     public function generateReceiptNumber(): string
     {
         $year = now()->format('Y');
-        $prefix = 'RCP-'.$year.'-';
+        $prefix = TenantCodePrefix::segment().'RCP-'.$year.'-';
         $last = BillPayment::query()
             ->where('receipt_no', 'like', $prefix.'%')
             ->orderByDesc('id')

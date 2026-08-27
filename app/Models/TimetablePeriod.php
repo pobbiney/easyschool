@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 
 class TimetablePeriod extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
+        'school_id',
         'sort_order',
         'label',
         'start_time',

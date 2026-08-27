@@ -533,6 +533,7 @@ class StaffController extends Controller
         $user->user_cat = $request->user_cat;
         $user->cat_id = $request->user_cat;
         $user->staff_id = $staff->id;
+        $user->school_id = $staff->school_id ?? \App\Support\TenantContext::schoolId();
         $user->status = trim($request->status);
         $user->save();
 

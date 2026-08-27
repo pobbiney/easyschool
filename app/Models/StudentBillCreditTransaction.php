@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 
 class StudentBillCreditTransaction extends Model
 {
+    use BelongsToSchool;
+
     public const TYPE_CREDIT = 'credit';
 
     public const TYPE_DEBIT = 'debit';
@@ -17,6 +20,7 @@ class StudentBillCreditTransaction extends Model
     public const SOURCE_ADJUSTMENT = 'adjustment';
 
     protected $fillable = [
+        'school_id',
         'student_id',
         'type',
         'amount',

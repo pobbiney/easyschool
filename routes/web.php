@@ -62,6 +62,11 @@ use App\Http\Controllers\ParentPortal\ParentReportCardController;
 use App\Http\Controllers\ParentPortal\ParentCommunicationsController;
 use App\Http\Controllers\ParentPortal\ParentBillPaymentController;
 use App\Http\Controllers\ParentPortal\AdminParentMessageController;
+use App\Http\Controllers\SchoolRegistrationController;
+use App\Http\Controllers\SuperAdmin\SuperAdminAuthController;
+use App\Http\Controllers\SuperAdmin\SuperAdminDashboardController;
+use App\Http\Controllers\SuperAdmin\SuperAdminProfileController;
+use App\Http\Controllers\SuperAdmin\SuperAdminUserController;
 
 /* Parent Portal (separate auth) */
 Route::prefix('parent')->group(function () {
@@ -70,7 +75,7 @@ Route::prefix('parent')->group(function () {
     Route::get('forgot-password', [ParentAuthController::class, 'showForgotPassword'])->name('parent.forgot-password');
     Route::post('forgot-password', [ParentAuthController::class, 'processForgotPassword'])->name('parent.forgot-password.process');
 
-    Route::middleware(['auth:parent', 'parent'])->group(function () {
+    Route::middleware(['auth:parent', 'parent', 'parent.school'])->group(function () {
         Route::post('logout', [ParentAuthController::class, 'logout'])->name('parent.logout');
         Route::get('/', [ParentDashboardController::class, 'index'])->name('parent.dashboard');
         Route::get('account', [ParentAccountController::class, 'show'])->name('parent.account');
@@ -104,13 +109,43 @@ Route::post('reset-otp-process/{id}',[AuthenticationController::class,'resetOtp'
 
 /** End of Frontend */
 
-/* Backend*/
+/* School registration */
+Route::get('register-school', [SchoolRegistrationController::class, 'create'])->name('register-school');
+Route::post('register-school', [SchoolRegistrationController::class, 'store'])->name('register-school.process');
+
+/* Super Admin */
+Route::prefix('super-admin')->name('super-admin.')->group(function () {
+    Route::get('login', [SuperAdminAuthController::class, 'showLogin'])->name('login');
+    Route::post('login', [SuperAdminAuthController::class, 'login'])->name('login.process');
+
+    Route::middleware('super.admin')->group(function () {
+        Route::post('logout', [SuperAdminAuthController::class, 'logout'])->name('logout');
+        Route::get('/', [SuperAdminDashboardController::class, 'index'])->name('dashboard');
+        Route::get('registrations', [SuperAdminDashboardController::class, 'registrations'])->name('registrations');
+        Route::post('registrations/{school}/approve', [SuperAdminDashboardController::class, 'approve'])->name('registrations.approve');
+        Route::post('registrations/{school}/reject', [SuperAdminDashboardController::class, 'reject'])->name('registrations.reject');
+        Route::post('schools/{school}/enter', [SuperAdminDashboardController::class, 'enterSchool'])->name('schools.enter');
+        Route::post('schools/{school}/suspend', [SuperAdminDashboardController::class, 'suspend'])->name('schools.suspend');
+        Route::post('schools/{school}/reactivate', [SuperAdminDashboardController::class, 'reactivate'])->name('schools.reactivate');
+        Route::post('exit-school', [SuperAdminDashboardController::class, 'exitSchool'])->name('schools.exit');
+        Route::get('activity', [SuperAdminDashboardController::class, 'activity'])->name('activity');
+        Route::get('profile', [SuperAdminProfileController::class, 'show'])->name('profile');
+        Route::post('profile/password', [SuperAdminProfileController::class, 'updatePassword'])->name('profile.password');
+        Route::get('admins', [SuperAdminUserController::class, 'index'])->name('admins');
+        Route::post('admins', [SuperAdminUserController::class, 'store'])->name('admins.store');
+        Route::post('admins/{superAdmin}/toggle-status', [SuperAdminUserController::class, 'toggleStatus'])->name('admins.toggle-status');
+    });
+});
+
+/* Backend public auth */
 Route::get('/', [AuthenticationController::class, 'getAdminLoginPage'])->name('admin-login');
 Route::get('login', fn () => redirect('/'))->name('login');
+Route::post('authentication-process',[AuthenticationController::class,'authenticationProcess'])->name('authentication-process');
+
+Route::middleware(['staff.auth', 'school.tenant'])->group(function () {
 Route::get('dashboard',[DashboardController::class,'index'])->name('dashboard');
  
 Route::get('user-profile',[AuthenticationController::class,'getUserProfile'])->name('user-profile');
-Route::post('authentication-process',[AuthenticationController::class,'authenticationProcess'])->name('authentication-process');
 Route::post('logout-authentication-process',[DashboardController::class,'logoutAuthenticationProcess'])->name('logout-authentication-process');
 /* Authentication */ 
 
@@ -506,3 +541,4 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         Route::get($reportUrl.'-excel', [ReportController::class, 'excel'])->defaults('key', $reportKey)->name($reportUrl.'-excel');
     }
 /* End Reports */
+});

@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 
 class AcademicTerm extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
+        'school_id',
         'name',
         'sort_order',
         'status',

@@ -15,7 +15,7 @@ class DashboardController extends Controller implements HasMiddleware
 
     public static function middleware(): array
     {
-        return ['auth'];
+        return ['staff.auth'];
     }
 
     public function index()
@@ -26,6 +26,7 @@ class DashboardController extends Controller implements HasMiddleware
     public function logoutAuthenticationProcess()
     {
         Auth::logout();
+        \App\Support\TenantContext::clear();
 
         $logId = (int) session('userLogId');
         if ($logId > 0) {

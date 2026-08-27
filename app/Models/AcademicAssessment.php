@@ -2,13 +2,17 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 
 class AcademicAssessment extends Model
 {
+    use BelongsToSchool;
+
     public const STATUSES = ['draft', 'published'];
 
     protected $fillable = [
+        'school_id',
         'type',
         'title',
         'description',

@@ -2,12 +2,17 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToSchool;
 use App\Support\MediaUrl;
+use App\Support\TenantContext;
 use Illuminate\Database\Eloquent\Model;
 
 class SchoolSetting extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
+        'school_id',
         'name',
         'motto',
         'address',
@@ -22,7 +27,16 @@ class SchoolSetting extends Model
 
     public static function current()
     {
-        return static::firstOrCreate([]);
+        $schoolId = TenantContext::schoolId();
+
+        if ($schoolId) {
+            return static::query()->firstOrCreate(
+                ['school_id' => $schoolId],
+                ['name' => 'My School']
+            );
+        }
+
+        return static::query()->withoutGlobalScopes()->first() ?? static::query()->make(['name' => 'EasySchool']);
     }
 
     public static function dummyLogoPath(): string

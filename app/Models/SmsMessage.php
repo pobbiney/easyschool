@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 
 class SmsMessage extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
+        'school_id',
         'audience',
         'school_class_id',
         'target_type',

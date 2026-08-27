@@ -2,11 +2,15 @@
 
 namespace App\Models\Pos;
 
+use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 
 class PosCategory extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
+        'school_id',
         'name',
         'description',
         'status',

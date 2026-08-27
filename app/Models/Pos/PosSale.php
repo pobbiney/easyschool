@@ -4,11 +4,15 @@ namespace App\Models\Pos;
 
 use App\Models\Student;
 use App\Models\User;
+use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 
 class PosSale extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
+        'school_id',
         'receipt_no',
         'student_id',
         'customer_name',
