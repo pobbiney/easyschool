@@ -332,6 +332,9 @@
                 <a href="{{ route('parent.communications') }}" class="sidebar-link {{ request()->routeIs('parent.communications') && !request()->routeIs('parent.communications.child') ? 'active' : '' }}">
                     <i class="ri-mail-send-line"></i> Message School
                 </a>
+                <a href="{{ route('parent.account') }}" class="sidebar-link {{ request()->routeIs('parent.account') ? 'active' : '' }}">
+                    <i class="ri-shield-keyhole-line"></i> Account
+                </a>
 
                 @isset($children)
                     @if($children->isNotEmpty())

@@ -419,6 +419,7 @@
                         <input type="checkbox" name="remember" value="1" @checked(old('remember'))>
                         Remember me
                     </label>
+                    <a href="{{ route('parent.forgot-password') }}" style="color:#0f766e;font-weight:700;text-decoration:none;font-size:13px;">Forgot password?</a>
                 </div>
                 <button type="submit" class="pl-submit">
                     <i class="ri-login-circle-line"></i> Sign in

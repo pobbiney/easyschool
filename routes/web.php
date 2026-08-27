@@ -51,6 +51,7 @@ use App\Http\Controllers\Expense\ExpenseController;
 use App\Http\Controllers\Expense\ExpenseCategoryController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Services\Reports\ReportCatalog;
+use App\Http\Controllers\ParentPortal\ParentAccountController;
 use App\Http\Controllers\ParentPortal\ParentAuthController;
 use App\Http\Controllers\ParentPortal\ParentDashboardController;
 use App\Http\Controllers\ParentPortal\ParentChildController;
@@ -66,10 +67,14 @@ use App\Http\Controllers\ParentPortal\AdminParentMessageController;
 Route::prefix('parent')->group(function () {
     Route::get('login', [ParentAuthController::class, 'showLogin'])->name('parent.login');
     Route::post('login', [ParentAuthController::class, 'login'])->name('parent.login.process');
+    Route::get('forgot-password', [ParentAuthController::class, 'showForgotPassword'])->name('parent.forgot-password');
+    Route::post('forgot-password', [ParentAuthController::class, 'processForgotPassword'])->name('parent.forgot-password.process');
 
     Route::middleware(['auth:parent', 'parent'])->group(function () {
         Route::post('logout', [ParentAuthController::class, 'logout'])->name('parent.logout');
         Route::get('/', [ParentDashboardController::class, 'index'])->name('parent.dashboard');
+        Route::get('account', [ParentAccountController::class, 'show'])->name('parent.account');
+        Route::post('account/password', [ParentAccountController::class, 'updatePassword'])->name('parent.account.password');
 
         Route::post('messages', [ParentCommunicationsController::class, 'storeMessage'])->name('parent.messages.store');
         Route::get('communications', [ParentCommunicationsController::class, 'index'])->name('parent.communications');

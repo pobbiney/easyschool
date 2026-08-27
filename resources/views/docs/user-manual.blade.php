@@ -87,6 +87,8 @@
         <tr><td class="mod">Timetable</td><td>Class Timetables; Period times; generate week; print</td><td>Admin</td></tr>
         <tr><td class="mod">Send SMS</td><td>Compose SMS to teachers, staff, a class, whole school, or individuals</td><td>Admin, office</td></tr>
         <tr><td class="mod">Reports</td><td>Students; Enrolment; Staff; Leave; Staff attendance; Payroll; Fee collection; Outstanding bills; POS sales; Expenses; Class attendance; SMS log &mdash; each with Print, PDF, Excel</td><td>Admin, management</td></tr>
+        <tr><td class="mod">Parent Portal</td><td>Parent sign-in; dashboard; child overview; academics; fees &amp; bills (Paystack); payment history &amp; receipts; report card; messages to school</td><td>Parents / guardians</td></tr>
+        <tr><td class="mod">Parent Messages</td><td>Inbox of messages sent by parents (staff view under Send SMS)</td><td>Admin, office</td></tr>
         <tr><td class="mod">Dormitory</td><td>Houses; dormitories; beds; assign / unassign students</td><td>Admin, boarding</td></tr>
         <tr><td class="mod">Settings</td><td>School Firm Setup; Academic Years; Academic Terms; Academic Session; Assessment Types; Promotion Settings</td><td>Admin</td></tr>
         <tr><td class="mod">User Management</td><td>User Categories (roles and menu access)</td><td>Admin</td></tr>
@@ -544,14 +546,89 @@
 </ol>
 <div class="tip">If someone says a page is missing, first check their category ticks, then confirm the employee is Active and has a login.</div>
 
-<h1>20. Your profile</h1>
+<h1>20. Parent Portal</h1>
+<p>The <strong>Parent Portal</strong> is a separate website for guardians. It uses a different sign-in page from staff (<em>/parent/login</em>). Parents see only their own children &mdash; linked by the <strong>guardian phone number</strong> stored on each student record.</p>
+
+<div class="tip"><strong>Account setup.</strong> When a student is registered or updated, EasySchool can create a parent account from the guardian phone. Administrators can backfill all active students with <em>php artisan parent:sync-accounts</em>. The default password is set in school configuration (commonly <em>Parent123</em> until the parent changes it).</div>
+
+<h2>20.1 How parents sign in</h2>
+<div class="fig">
+    <img src="{{ $pic('manual-parent-login.png') }}" alt="Parent portal sign in">
+    <div class="caption">Figure 13. Parent sign-in &mdash; guardian phone and password. Staff use the main school login instead.</div>
+</div>
+<ol>
+    <li>Open <strong>/parent/login</strong> (for example <em>http://127.0.0.1:8000/parent/login</em>).</li>
+    <li>Enter the <strong>guardian phone</strong> number exactly as stored on the student record.</li>
+    <li>Enter the password the school provided.</li>
+    <li>Click <strong>Sign in</strong>. Parents with more than one child see all linked learners on the dashboard.</li>
+</ol>
+<div class="warn"><strong>Wrong phone?</strong> If no children appear, confirm the guardian phone on the student profile matches the number the parent is using. Update the student record and run <em>parent:sync-accounts</em> if needed.</div>
+
+<h2>20.2 Parent dashboard and child overview</h2>
+<div class="fig">
+    <img src="{{ $pic('manual-parent.png') }}" alt="Parent portal dashboard">
+    <div class="caption">Figure 14. Parent dashboard &mdash; linked children, outstanding fees, quick pay links, and message to school.</div>
+</div>
+<ol>
+    <li>After login the parent sees a welcome banner, school name, and a card for each linked child.</li>
+    <li>Each card shows class, student ID, and <strong>outstanding fees</strong>. A green tick means fees are clear; red means payment is due.</li>
+    <li>Click <strong>Overview</strong> on a child to open their workspace with colourful quick-access tiles.</li>
+    <li>Quick tiles include <strong>Academics</strong>, <strong>Fees &amp; bills</strong>, <strong>Payments</strong>, <strong>Report card</strong>, and <strong>Messages</strong>.</li>
+    <li>Use the form at the bottom of the dashboard to send a quick message to the school office.</li>
+</ol>
+
+<h2>20.3 Academics and report card</h2>
+<ol>
+    <li><strong>Academics</strong> &mdash; pick academic year and term to view subject grades, class position, term average, and attendance summary.</li>
+    <li><strong>Report card</strong> &mdash; same period filters; preview grades and attendance, then click <strong>Print official report card</strong> to open the formal terminal report in a new tab for printing or saving as PDF.</li>
+    <li>Parents cannot edit grades; they only view published results.</li>
+</ol>
+
+<h2>20.4 Fees, bills, and online payment</h2>
+<div class="fig">
+    <img src="{{ $pic('manual-parent-bills.png') }}" alt="Parent fees and bills">
+    <div class="caption">Figure 15. Parent fees &amp; bills &mdash; outstanding table, statement tab, and Paystack pay panel.</div>
+</div>
+<ol>
+    <li>Open <strong>Fees &amp; bills</strong> for a child. The banner shows total outstanding, credit balance, and net amount to pay.</li>
+    <li>Filter by academic year and term if needed.</li>
+    <li>On the <strong>Bills to pay</strong> tab, review each fee item, amount due, and progress.</li>
+    <li>On the <strong>Statement</strong> tab, see the full bill history with status (Paid, Partial, Pending).</li>
+    <li>If Paystack is configured and there is a balance, use the <strong>Pay now</strong> panel: choose full balance or enter an amount, then complete payment on the Paystack screen (Mobile Money or card).</li>
+    <li>After a successful payment, open the receipt from the confirmation screen or from <strong>Payments</strong>.</li>
+</ol>
+
+<h2>20.5 Payment history and receipts</h2>
+<ol>
+    <li><strong>Payments</strong> lists every receipt with date, method, and amount.</li>
+    <li>Click <strong>Receipt</strong> to open a printable payment receipt showing how the money was applied to each bill.</li>
+    <li>Receipts show cash collected, credit applied, and any overpayment saved as credit.</li>
+</ol>
+
+<h2>20.6 Messages and school SMS</h2>
+<ol>
+    <li><strong>Messages</strong> lets a parent compose a note to the school (general or about a specific child).</li>
+    <li>The <strong>Received messages</strong> panel shows SMS alerts and school notices sent to that parent or their child&rsquo;s class.</li>
+    <li>School staff reply through the office; parents are notified by SMS when campaigns are sent from Send SMS.</li>
+</ol>
+
+<h1>21. Parent Messages (staff)</h1>
+<p><strong>Menu:</strong> Send SMS &rarr; Parent Messages</p>
+<ol>
+    <li>Open the inbox to see messages parents sent from the portal.</li>
+    <li>New messages are highlighted. Click <strong>View</strong> to read the full text.</li>
+    <li>Add an internal reply note if needed, then click <strong>Mark read / save reply</strong>.</li>
+    <li>Use this inbox daily so parent enquiries are not missed.</li>
+</ol>
+
+<h1>22. Your profile</h1>
 <ol>
     <li>Open Profile from the top menu / your name.</li>
     <li>Update your photo if the page allows it.</li>
     <li>Change password: current password, new password (at least 8 characters), confirm. Save.</li>
 </ol>
 
-<h1>21. Suggested daily work</h1>
+<h1>23. Suggested daily work</h1>
 <table>
     <thead><tr><th>Role</th><th>Typical daily / weekly tasks</th></tr></thead>
     <tbody>
@@ -559,12 +636,13 @@
         <tr><td>Subject teacher</td><td>Assessments and scores for assigned courses</td></tr>
         <tr><td>Cashier / bursar</td><td>Record fee payments; POS sales; review outstanding bills; record expenses</td></tr>
         <tr><td>HR</td><td>Staff attendance; leave approvals; monthly payroll</td></tr>
-        <tr><td>Office / admin</td><td>Admit students; SMS to parents; reports; timetable; school settings</td></tr>
+        <tr><td>Office / admin</td><td>Admit students; SMS to parents; parent message inbox; reports; timetable; school settings</td></tr>
         <tr><td>Head / management</td><td>Dashboard KPIs; enrolment and fee reports; payroll approval</td></tr>
+        <tr><td>Parent / guardian</td><td>Check fees on the portal; pay online; view grades and report cards; message the school</td></tr>
     </tbody>
 </table>
 
-<h1>22. Troubleshooting</h1>
+<h1>24. Troubleshooting</h1>
 <table>
     <thead><tr><th>Problem</th><th>What to try</th></tr></thead>
     <tbody>
@@ -578,6 +656,9 @@
         <tr><td>Print / PDF has no school name</td><td>Fill School Firm Setup (name and logo)</td></tr>
         <tr><td>Payroll amounts look wrong</td><td>Check pay grade on the employee and Statutory Settings before regenerating a draft month</td></tr>
         <tr><td>POS stock wrong</td><td>Post a stock adjustment; do not edit history sales</td></tr>
+        <tr><td>Parent cannot sign in</td><td>Confirm guardian phone on the student; run <em>parent:sync-accounts</em>; reset parent password if needed</td></tr>
+        <tr><td>Parent sees no children</td><td>Guardian phone must match an active student; check spelling and country format</td></tr>
+        <tr><td>Parent Pay now fails</td><td>Ensure Paystack keys are set; bills must exist; contact bursar if online pay is disabled</td></tr>
     </tbody>
 </table>
 
@@ -587,6 +668,6 @@
     The PDF is saved as <em>public/docs/EasySchool-User-Manual.pdf</em>.
 </div>
 
-<p class="footer" style="margin-top:28px;">EasySchool User Manual &middot; {{ $schoolName }} &middot; {{ $generatedAt }} &middot; For school staff. Menu access is controlled by user categories.</p>
+<p class="footer" style="margin-top:28px;">EasySchool User Manual &middot; {{ $schoolName }} &middot; {{ $generatedAt }} &middot; For school staff and parents. Staff menu access is controlled by user categories; parents see only their linked children.</p>
 </body>
 </html>

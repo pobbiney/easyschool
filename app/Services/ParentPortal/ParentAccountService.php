@@ -57,4 +57,23 @@ class ParentAccountService
 
         return $count;
     }
+
+    public function resetToDefault(string $phone): ?ParentAccount
+    {
+        $account = ParentAccount::query()
+            ->where('phone', $phone)
+            ->where('status', ParentAccount::STATUS_ACTIVE)
+            ->first();
+
+        if (! $account) {
+            return null;
+        }
+
+        $account->update([
+            'password' => (string) config('parent.default_password', 'Parent123'),
+            'must_change_password' => true,
+        ]);
+
+        return $account->fresh();
+    }
 }
