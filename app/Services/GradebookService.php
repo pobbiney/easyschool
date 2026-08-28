@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\AcademicAssessment;
 use App\Models\AssessmentType;
 use App\Models\ClassAttendance;
+use App\Models\ClassCourseAssessmentMark;
+use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\StudentPromotionLog;
 use Illuminate\Support\Collection;
@@ -15,12 +17,22 @@ class GradebookService
 
     public function classGradebook(int $classId, int $yearId, int $termId): array
     {
+        $schoolClass = SchoolClass::query()->findOrFail($classId);
+
         $assessmentTypes = AssessmentType::query()
             ->active()
+            ->forClassCategory($schoolClass->class_category_id)
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get()
             ->keyBy('slug');
+
+        $marksByCourse = ClassCourseAssessmentMark::query()
+            ->where('school_class_id', $classId)
+            ->where('academic_year_id', $yearId)
+            ->where('academic_term_id', $termId)
+            ->get()
+            ->groupBy('course_id');
 
         $assessments = AcademicAssessment::query()
             ->with(['course', 'scores', 'assessmentType'])
@@ -46,17 +58,18 @@ class GradebookService
 
         $byCourse = $assessments->groupBy(fn ($a) => $a->course_id ?? 0);
 
-        $courseSummaries = $byCourse->map(function (Collection $courseAssessments, $courseId) use ($students, $assessmentTypes) {
+        $courseSummaries = $byCourse->map(function (Collection $courseAssessments, $courseId) use ($students, $assessmentTypes, $marksByCourse) {
             $course = $courseId ? $courseAssessments->first()->course : null;
+            $courseMarks = collect($marksByCourse->get((int) $courseId, collect()))->keyBy('assessment_type_id');
 
-            $typeColumns = $this->buildTypeColumns($courseAssessments, $assessmentTypes);
+            $typeColumns = $this->buildTypeColumns($courseAssessments, $assessmentTypes, $courseMarks);
 
             $studentRows = $students->map(function (Student $student) use ($typeColumns, $assessmentTypes) {
                 $typeScores = $typeColumns->mapWithKeys(function (array $column) use ($student) {
                     $aggregate = $this->aggregateTypeScore(
                         $column['assessments'],
                         $student->id,
-                        $column['type']
+                        $column['total_score']
                     );
 
                     return [$column['type']->slug => $aggregate];
@@ -115,6 +128,7 @@ class GradebookService
 
         $assessmentTypes = AssessmentType::query()
             ->active()
+            ->forClassCategory($student->schoolClass?->class_category_id)
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get()
@@ -125,7 +139,7 @@ class GradebookService
         foreach ($gradebook['course_summaries'] as $summary) {
             $rankings = $summary['students']->map(function (array $row) use ($summary, $assessmentTypes) {
                 $components = $this->subjectComponents(
-                    $summary['assessments'],
+                    $summary['type_columns'],
                     $row['student']->id,
                     $assessmentTypes
                 );
@@ -171,7 +185,7 @@ class GradebookService
         $subjectGrades = $gradebook['course_summaries']
             ->map(function (array $summary) use ($student, $assessmentTypes, $subjectPositionsByCourse) {
                 $components = $this->subjectComponents(
-                    $summary['assessments'],
+                    $summary['type_columns'],
                     $student->id,
                     $assessmentTypes
                 );
@@ -298,19 +312,25 @@ class GradebookService
         return $promotion;
     }
 
-    private function buildTypeColumns(Collection $courseAssessments, Collection $assessmentTypes): Collection
+    private function buildTypeColumns(Collection $courseAssessments, Collection $assessmentTypes, Collection $courseMarks): Collection
     {
         return $courseAssessments
             ->groupBy('type')
-            ->map(function (Collection $assessments, string $typeSlug) use ($assessmentTypes) {
+            ->map(function (Collection $assessments, string $typeSlug) use ($assessmentTypes, $courseMarks) {
                 $type = $assessmentTypes->get($typeSlug);
 
                 if (! $type) {
                     return null;
                 }
 
+                $mark = $courseMarks->get($type->id);
+                $totalScore = (float) ($mark?->total_score ?? $type->total_score ?? $assessments->max('max_score') ?? 0);
+                $displayType = clone $type;
+                $displayType->total_score = $totalScore;
+
                 return [
-                    'type' => $type,
+                    'type' => $displayType,
+                    'total_score' => $totalScore,
                     'assessments' => $assessments->values(),
                     'assessment_count' => $assessments->count(),
                 ];
@@ -321,9 +341,9 @@ class GradebookService
     }
 
     /**
-     * Average all test marks for a type, scored against the type total_score from assessment_types.
+     * Average all test marks for a type, scored against the teacher total for this class + subject.
      */
-    private function aggregateTypeScore(Collection $assessments, int $studentId, AssessmentType $type): ?array
+    private function aggregateTypeScore(Collection $assessments, int $studentId, float $totalScore): ?array
     {
         $rawScores = collect();
         $breakdown = [];
@@ -347,7 +367,6 @@ class GradebookService
         }
 
         $averageScore = $rawScores->avg();
-        $totalScore = (float) $type->total_score;
         $percentage = $totalScore > 0 ? ($averageScore / $totalScore) * 100 : null;
 
         return [
@@ -404,15 +423,13 @@ class GradebookService
     /**
      * Class score (out of 50) + exam score (out of 50) = total (out of 100).
      */
-    private function subjectComponents(Collection $courseAssessments, int $studentId, Collection $assessmentTypes): array
+    private function subjectComponents(Collection $typeColumns, int $studentId, Collection $assessmentTypes): array
     {
-        $typeColumns = $this->buildTypeColumns($courseAssessments, $assessmentTypes);
-
         $typeScores = $typeColumns->mapWithKeys(function (array $column) use ($studentId) {
             $aggregate = $this->aggregateTypeScore(
                 $column['assessments'],
                 $studentId,
-                $column['type']
+                (float) $column['total_score']
             );
 
             return [$column['type']->slug => $aggregate];

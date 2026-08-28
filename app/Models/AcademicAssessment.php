@@ -72,17 +72,31 @@ class AcademicAssessment extends Model
 
     public function typeLabel(): string
     {
-        if ($this->relationLoaded('assessmentType') && $this->assessmentType) {
-            return $this->assessmentType->name;
-        }
+        $type = $this->resolvedAssessmentType();
 
-        $name = AssessmentType::query()->where('slug', $this->type)->value('name');
-
-        if ($name) {
-            return $name;
+        if ($type) {
+            return $type->name;
         }
 
         return ucfirst(str_replace('_', ' ', (string) $this->type));
+    }
+
+    public function resolvedAssessmentType(): ?AssessmentType
+    {
+        $this->loadMissing('schoolClass');
+
+        $categoryId = $this->schoolClass?->class_category_id;
+
+        if ($this->relationLoaded('assessmentType') && $this->assessmentType) {
+            if (! $categoryId || (int) $this->assessmentType->class_category_id === (int) $categoryId) {
+                return $this->assessmentType;
+            }
+        }
+
+        return AssessmentType::query()
+            ->where('slug', $this->type)
+            ->when($categoryId, fn ($query) => $query->where('class_category_id', $categoryId))
+            ->first();
     }
 
     public function hasRecordedScores(): bool

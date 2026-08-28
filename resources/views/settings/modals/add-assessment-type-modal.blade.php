@@ -9,6 +9,16 @@
         @csrf
         <div class="row g-3">
             <div class="col-sm-12">
+                <label class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Class Category</label>
+                <select class="form-control form-select" name="class_category_id" required>
+                    <option value="" disabled {{ old('class_category_id') ? '' : 'selected' }}>Select class category</option>
+                    @foreach($classCategories as $category)
+                        <option value="{{ $category->id }}" @selected((string) old('class_category_id', $selectedCategoryId) === (string) $category->id)>{{ $category->name }}</option>
+                    @endforeach
+                </select>
+                @error('class_category_id') <small class="text-danger">{{ $message }}</small> @enderror
+            </div>
+            <div class="col-sm-12">
                 <label class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Type Name</label>
                 <input type="text" class="form-control" name="name" placeholder="e.g. Quiz" value="{{ old('name') }}">
                 @error('name') <small class="text-danger">{{ $message }}</small> @enderror
@@ -26,16 +36,10 @@
             <div class="col-sm-6">
                 <label class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Max Number</label>
                 <input type="number" class="form-control" name="max_number" min="1" max="999" placeholder="e.g. 3" value="{{ old('max_number', 1) }}">
-                <small class="text-secondary-light">Maximum assessments allowed for this type.</small>
+                <small class="text-secondary-light">Maximum assessments of this type per class and subject this term.</small>
                 @error('max_number') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
             <div class="col-sm-6">
-                <label class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Total Score</label>
-                <input type="number" class="form-control" name="total_score" min="1" max="9999" step="0.01" placeholder="e.g. 100" value="{{ old('total_score', 100) }}">
-                <small class="text-secondary-light">Default score cap for each assessment of this type.</small>
-                @error('total_score') <small class="text-danger">{{ $message }}</small> @enderror
-            </div>
-            <div class="col-sm-12">
                 <label class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Sort Order</label>
                 <input type="number" class="form-control" name="sort_order" min="1" max="99" placeholder="e.g. 5" value="{{ old('sort_order', 1) }}">
                 @error('sort_order') <small class="text-danger">{{ $message }}</small> @enderror

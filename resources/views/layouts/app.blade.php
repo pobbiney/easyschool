@@ -1384,24 +1384,40 @@ body.swal2-toast-shown .swal2-container .swal2-popup {
 <script>
     $('.data-table').each(function () {
         const $table = $(this);
-        const options = {};
+        const options = {
+            layout: {
+                topStart: null,
+                topEnd: null,
+            },
+        };
 
         if ($table.hasClass('data-table-scroll-x')) {
             options.scrollX = true;
             options.autoWidth = false;
         }
 
-        const tableInstance = new DataTable(this, options);
+        const pageLength = parseInt($table.attr('data-page-length'), 10);
+        if (pageLength) {
+            options.pageLength = pageLength;
+        }
 
-        // Handle search input (inside same wrapper)
-        $table.closest('.dataTable-wrapper').find('.dt-search .dt-input').on('keyup', function () {
+        const tableInstance = new DataTable(this, options);
+        const $wrapper = $table.closest('.dataTable-wrapper');
+        const $scope = $wrapper.add($wrapper.parent());
+        const $searchInputs = $scope.find('.dt-search .dt-input').not('.dt-container .dt-search .dt-input');
+        const $lengthInputs = $scope.find('.dt-length .dt-input, .dt-length select').not('.dt-container .dt-length select');
+
+        $searchInputs.on('keyup input', function () {
             tableInstance.search(this.value).draw();
         });
 
-        // Handle page length change (inside same wrapper)
-        $table.closest('.dataTable-wrapper').find('.dt-length .dt-input').on('change', function () {
-            const value = $(this).val();
-            tableInstance.page.len(value).draw();
+        $searchInputs.closest('form').on('submit', function (e) {
+            e.preventDefault();
+            tableInstance.search($searchInputs.first().val()).draw();
+        });
+
+        $lengthInputs.on('change', function () {
+            tableInstance.page.len($(this).val()).draw();
         });
     });
     // ✅ Data Table end

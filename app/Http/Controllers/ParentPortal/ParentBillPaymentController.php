@@ -26,6 +26,59 @@ class ParentBillPaymentController extends Controller
         private BillPaymentSmsService $billPaymentSmsService,
     ) {}
 
+    public function applyCredit(Request $request, Student $student)
+    {
+        $parent = Auth::guard('parent')->user();
+        $child = $this->parentStudentService->findOwnedStudent($parent, $student->id);
+
+        if (! $child) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'credit_applied' => 'required|numeric|min:0.01',
+            'allocations' => 'nullable|array',
+            'allocations.*.student_bill_id' => 'required|exists:student_bills,id',
+            'allocations.*.amount' => 'required|numeric|min:0.01',
+        ]);
+
+        $creditApplied = round((float) $validated['credit_applied'], 2);
+
+        try {
+            $allocations = $this->paymentProcessor->resolveAllocations(
+                $child->id,
+                0,
+                $creditApplied,
+                collect($validated['allocations'] ?? [])
+            );
+
+            $payment = DB::transaction(function () use ($child, $creditApplied, $allocations) {
+                return $this->paymentProcessor->finalizePayment(
+                    student: $child,
+                    cashAmount: 0,
+                    creditApplied: $creditApplied,
+                    paymentMethod: 'Credit',
+                    paidAt: now()->toDateTimeString(),
+                    allocations: $allocations,
+                    notes: 'Credit applied via parent portal.',
+                    createdBy: null,
+                );
+            });
+        } catch (InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        $sms = $this->notifyParentBySms($payment);
+
+        return response()->json([
+            'message' => 'Credit applied successfully.',
+            'payment_id' => $payment->id,
+            'receipt_no' => $payment->receipt_no,
+            'receipt_url' => route('parent.payment.receipt', [$child, $payment]),
+            'sms' => $sms,
+        ]);
+    }
+
     public function initializePaystack(Request $request, Student $student)
     {
         if (! $this->paystackService->isConfigured()) {

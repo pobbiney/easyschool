@@ -22,13 +22,16 @@
                 <span class="text-secondary-light"> / {{ $schoolClass->name }} / Roster</span>
             </div>
         </div>
-        @if($isHomeroom)
         <div class="ac-action-pills">
+            @if($isHomeroom)
             <a href="{{ route('teacher-class-assessments', $schoolClass) }}" class="ac-action-pill ac-action-pill-rose"><i class="ri-file-list-3-line"></i> Assessments</a>
+            @endif
+            <a href="{{ route('teacher-class-assessment-marks', $schoolClass) }}" class="ac-action-pill ac-action-pill-teal"><i class="ri-percent-line"></i> Set marks</a>
+            @if($isHomeroom)
             <a href="{{ route('teacher-class-attendance', $schoolClass) }}" class="ac-action-pill ac-action-pill-amber"><i class="ri-calendar-check-line"></i> Attendance</a>
             <a href="{{ route('teacher-class-gradebook', $schoolClass) }}" class="ac-action-pill ac-action-pill-emerald"><i class="ri-bar-chart-box-line"></i> Gradebook</a>
+            @endif
         </div>
-        @endif
     </div>
 
     <div class="ac-hero d-flex align-items-start gap-16 mb-24">

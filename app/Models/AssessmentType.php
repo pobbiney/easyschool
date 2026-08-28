@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class AssessmentType extends Model
 {
@@ -20,6 +22,7 @@ class AssessmentType extends Model
 
     protected $fillable = [
         'school_id',
+        'class_category_id',
         'name',
         'slug',
         'category',
@@ -36,6 +39,16 @@ class AssessmentType extends Model
         'total_score' => 'decimal:2',
     ];
 
+    public function classCategory()
+    {
+        return $this->belongsTo(ClassCategory::class, 'class_category_id');
+    }
+
+    public function courseMarks()
+    {
+        return $this->hasMany(ClassCourseAssessmentMark::class, 'assessment_type_id');
+    }
+
     public function assessments()
     {
         return $this->hasMany(AcademicAssessment::class, 'type', 'slug');
@@ -44,6 +57,15 @@ class AssessmentType extends Model
     public function scopeActive($query)
     {
         return $query->where('status', 'Active');
+    }
+
+    public function scopeForClassCategory($query, ?int $classCategoryId)
+    {
+        if ($classCategoryId) {
+            return $query->where('class_category_id', $classCategoryId);
+        }
+
+        return $query->whereNull('class_category_id');
     }
 
     public function categoryLabel(): string
@@ -63,19 +85,57 @@ class AssessmentType extends Model
             ->orderBy('sort_order')
             ->orderBy('name')
             ->pluck('slug')
+            ->unique()
+            ->values()
             ->all();
     }
 
     public function isInUse(): bool
     {
-        if ($this->relationLoaded('assessments')) {
-            return $this->assessments->isNotEmpty();
-        }
-
         if (isset($this->assessments_count)) {
             return (int) $this->assessments_count > 0;
         }
 
-        return $this->assessments()->exists();
+        return $this->usageQuery()->exists();
+    }
+
+    public function usageQuery()
+    {
+        return AcademicAssessment::query()
+            ->where('type', $this->slug)
+            ->whereHas('schoolClass', function ($query) {
+                $query->where('class_category_id', $this->class_category_id);
+            });
+    }
+
+    public static function makeUniqueSlug(string $name, int $classCategoryId, ?int $ignoreId = null): string
+    {
+        $base = Str::slug($name, '_');
+        $slug = $base !== '' ? $base : 'type';
+        $counter = 2;
+
+        while (static::query()
+            ->where('class_category_id', $classCategoryId)
+            ->where('slug', $slug)
+            ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
+            ->exists()) {
+            $slug = $base.'_'.$counter;
+            $counter++;
+        }
+
+        return $slug;
+    }
+
+    public static function usageCountSubquery()
+    {
+        return AcademicAssessment::query()
+            ->selectRaw('count(*)')
+            ->whereColumn('academic_assessments.type', 'assessment_types.slug')
+            ->whereExists(function ($query) {
+                $query->select(DB::raw(1))
+                    ->from('school_classes')
+                    ->whereColumn('school_classes.id', 'academic_assessments.school_class_id')
+                    ->whereColumn('school_classes.class_category_id', 'assessment_types.class_category_id');
+            });
     }
 }

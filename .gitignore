@@ -19,6 +19,8 @@
 /storage/*.key
 /storage/pail
 /vendor
+/tools/ffmpeg.zip
+/tools/ffmpeg
 Homestead.json
 Homestead.yaml
 Thumbs.db

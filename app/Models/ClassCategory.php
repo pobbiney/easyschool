@@ -27,4 +27,9 @@ class ClassCategory extends Model
     {
         return $this->belongsToMany(Course::class, 'class_category_course', 'class_category_id', 'course_id');
     }
+
+    public function assessmentTypes()
+    {
+        return $this->hasMany(AssessmentType::class, 'class_category_id');
+    }
 }

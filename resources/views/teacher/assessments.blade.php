@@ -69,9 +69,20 @@
             </div>
         </div>
         @if($scope === 'pending')
-            <button type="button" class="btn btn-primary-600 d-flex align-items-center gap-6" data-bs-toggle="modal" data-bs-target="#createAssessmentModal">
-                <i class="ri-add-large-line"></i> New Assessment
-            </button>
+            <div class="d-flex flex-wrap gap-2">
+                @if($course)
+                    <a href="{{ route('teacher-course-assessment-marks', array_merge(['course' => $course, 'class' => $schoolClass], $periodQuery)) }}" class="btn btn-outline-primary-600 d-flex align-items-center gap-6">
+                        <i class="ri-percent-line"></i> Set marks
+                    </a>
+                @else
+                    <a href="{{ route('teacher-class-assessment-marks', array_merge(['class' => $schoolClass], $periodQuery)) }}" class="btn btn-outline-primary-600 d-flex align-items-center gap-6">
+                        <i class="ri-percent-line"></i> Set marks
+                    </a>
+                @endif
+                <button type="button" class="btn btn-primary-600 d-flex align-items-center gap-6" data-bs-toggle="modal" data-bs-target="#createAssessmentModal">
+                    <i class="ri-add-large-line"></i> New Assessment
+                </button>
+            </div>
         @else
             <a href="{{ $pendingRoute }}" class="btn btn-primary-600 d-flex align-items-center gap-6">
                 <i class="ri-add-large-line"></i> New Assessment

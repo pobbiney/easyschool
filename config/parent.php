@@ -10,4 +10,10 @@ return [
 
     'lockout_minutes' => 10,
 
+    'otp_expire_minutes' => 10,
+
+    'otp_resend_seconds' => 60,
+
+    'otp_max_attempts' => 5,
+
 ];

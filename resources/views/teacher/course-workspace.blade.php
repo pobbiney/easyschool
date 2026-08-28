@@ -15,7 +15,10 @@
                 <span class="text-secondary-light"> / {{ $course->name }} / {{ $schoolClass->name }}</span>
             </div>
         </div>
-        <a href="{{ route('teacher-course-assessments', [$course, $schoolClass]) }}" class="ac-action-pill ac-action-pill-rose"><i class="ri-file-list-3-line"></i> Assessments</a>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ route('teacher-course-assessments', [$course, $schoolClass]) }}" class="ac-action-pill ac-action-pill-rose"><i class="ri-file-list-3-line"></i> Assessments</a>
+            <a href="{{ route('teacher-course-assessment-marks', [$course, $schoolClass]) }}" class="ac-action-pill ac-action-pill-teal"><i class="ri-percent-line"></i> Set marks</a>
+        </div>
     </div>
 
     <div class="ac-hero d-flex align-items-start gap-16 mb-24">

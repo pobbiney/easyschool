@@ -10,6 +10,16 @@
         <input type="hidden" name="assessment_type_id" id="edit_assessment_type_id">
         <div class="row g-3">
             <div class="col-sm-12">
+                <label class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Class Category</label>
+                <select class="form-control form-select" name="class_category_id" id="edit_assessment_type_class_category_id" required>
+                    @foreach($classCategories as $category)
+                        <option value="{{ $category->id }}">{{ $category->name }}</option>
+                    @endforeach
+                </select>
+                <small class="text-secondary-light">Locked after the type is used on assessments.</small>
+                @error('class_category_id') <small class="text-danger">{{ $message }}</small> @enderror
+            </div>
+            <div class="col-sm-12">
                 <label class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Type Name</label>
                 <input type="text" class="form-control" name="name" id="edit_assessment_type_name" placeholder="e.g. Quiz">
                 @error('name') <small class="text-danger">{{ $message }}</small> @enderror
@@ -31,16 +41,10 @@
             <div class="col-sm-6">
                 <label class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Max Number</label>
                 <input type="number" class="form-control" name="max_number" id="edit_assessment_type_max_number" min="1" max="999">
-                <small class="text-secondary-light">Maximum assessments allowed for this type.</small>
+                <small class="text-secondary-light">Maximum assessments of this type per class and subject this term.</small>
                 @error('max_number') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
             <div class="col-sm-6">
-                <label class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Total Score</label>
-                <input type="number" class="form-control" name="total_score" id="edit_assessment_type_total_score" min="1" max="9999" step="0.01">
-                <small class="text-secondary-light">Default score cap for each assessment of this type.</small>
-                @error('total_score') <small class="text-danger">{{ $message }}</small> @enderror
-            </div>
-            <div class="col-sm-12">
                 <label class="text-sm fw-semibold text-primary-light d-inline-block mb-8">Sort Order</label>
                 <input type="number" class="form-control" name="sort_order" id="edit_assessment_type_sort_order" min="1" max="99">
                 @error('sort_order') <small class="text-danger">{{ $message }}</small> @enderror

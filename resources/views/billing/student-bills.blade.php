@@ -408,7 +408,7 @@
                         $initials = strtoupper(substr($row->student->firstname ?? '', 0, 1) . substr($row->student->surname ?? '', 0, 1));
                     @endphp
                     <tr>
-                        <td>
+                        <td data-search="{{ $row->student->full_name }} {{ $row->student->student_id }} {{ $row->student->firstname }} {{ $row->student->surname }} {{ $row->student->othername }}">
                             <div class="sb-student">
                                 <span class="sb-student-avatar">{{ $initials ?: '?' }}</span>
                                 <div>

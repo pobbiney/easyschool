@@ -29,10 +29,25 @@
         <div class="card h-100">
             <div class="card-body p-0 dataTable-wrapper">
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-16 px-20 py-12 border-bottom border-neutral-200">
+                    <div class="d-flex flex-wrap align-items-center gap-8">
+                        @forelse($classCategories as $category)
+                            <a href="{{ route('assessment-types', ['class_category_id' => $category->id]) }}"
+                                class="btn btn-sm {{ (int) $selectedCategoryId === (int) $category->id ? 'btn-primary-600' : 'btn-outline-primary-600' }}">
+                                {{ $category->name }}
+                            </a>
+                        @empty
+                            <span class="text-secondary-light text-sm">Add a class category first, then set assessment types for it.</span>
+                        @endforelse
+                    </div>
                     <form class="navbar-search dt-search m-0">
                         <input type="text" class="dt-input bg-transparent radius-4" aria-controls="dataTable" name="search" placeholder="Search...">
                         <iconify-icon icon="ion:search-outline" class="icon"></iconify-icon>
                     </form>
+                </div>
+                <div class="px-20 py-12 border-bottom border-neutral-200">
+                    <p class="text-sm text-secondary-light mb-0">
+                        Types are set per class category. Teachers assign the marks for each type on a class and subject for the current term.
+                    </p>
                 </div>
                 <div class="p-0">
                     <table class="table bordered-table mb-0 data-table" id="dataTable" data-page-length="10">
@@ -42,20 +57,20 @@
                                 <th>Assessment Type</th>
                                 <th>Category</th>
                                 <th>Code</th>
-                                <th>Total Score</th>
+                                <th>Max Number</th>
                                 <th>Order</th>
                                 <th>Status</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($assessmentTypes as $type)
+                            @forelse($assessmentTypes as $type)
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
                                 <td><span class="text-primary-600 fw-semibold">{{ $type->name }}</span></td>
                                 <td><span class="bg-neutral-100 text-secondary-light px-16 py-4 radius-4 fw-medium text-sm">{{ $type->categoryLabel() }}</span></td>
                                 <td><span class="bg-neutral-100 text-secondary-light px-16 py-4 radius-4 fw-medium text-sm">{{ $type->slug }}</span></td>
-                                <td>{{ number_format($type->total_score, 0) }}</td>
+                                <td>{{ $type->max_number }}</td>
                                 <td>{{ $type->sort_order }}</td>
                                 <td>
                                     @if($type->status == 'Active')
@@ -89,7 +104,13 @@
                                     </div>
                                 </td>
                             </tr>
-                            @endforeach
+                            @empty
+                            <tr>
+                                <td colspan="8" class="text-center text-secondary-light py-32">
+                                    No assessment types for this class category yet.
+                                </td>
+                            </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
@@ -125,11 +146,11 @@
     $('body').on('click', '.show-type-edit', function () {
         $.get($(this).data('url'), function (data) {
             $('#edit_assessment_type_id').val(data.id);
+            $('#edit_assessment_type_class_category_id').val(data.class_category_id);
             $('#edit_assessment_type_name').val(data.name);
             $('#edit_assessment_type_slug').val(data.slug);
             $('#edit_assessment_type_category').val(data.category);
             $('#edit_assessment_type_max_number').val(data.max_number);
-            $('#edit_assessment_type_total_score').val(data.total_score);
             $('#edit_assessment_type_sort_order').val(data.sort_order);
             $('#edit_assessment_type_status').val(data.status);
         });

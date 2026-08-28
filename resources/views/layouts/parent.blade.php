@@ -302,6 +302,50 @@
             .sidebar-toggle { display: inline-flex; }
             .parent-content { padding: 16px; }
         }
+
+        .parent-swal.swal2-popup {
+            border-radius: 22px !important;
+            padding: 28px 24px 24px !important;
+            font-family: 'Inter', sans-serif !important;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, .18) !important;
+        }
+        .parent-swal .swal2-title {
+            font-size: 1.35rem !important;
+            font-weight: 800 !important;
+            color: #0f172a !important;
+            letter-spacing: -.02em;
+        }
+        .parent-swal .swal2-html-container {
+            font-size: 14px !important;
+            font-weight: 600 !important;
+            color: #64748b !important;
+            margin-top: 6px !important;
+        }
+        .parent-swal .swal2-success {
+            border-color: #25A194 !important;
+            color: #25A194 !important;
+        }
+        .parent-swal .swal2-success [class^=swal2-success-line] {
+            background-color: #25A194 !important;
+        }
+        .parent-swal .swal2-success .swal2-success-ring {
+            border-color: rgba(37, 161, 148, .25) !important;
+        }
+        .parent-swal-btn {
+            background: linear-gradient(135deg, #0f766e, #25A194) !important;
+            border: 0 !important;
+            border-radius: 12px !important;
+            padding: 10px 28px !important;
+            font-weight: 800 !important;
+            box-shadow: 0 10px 22px rgba(37, 161, 148, .28) !important;
+        }
+        .parent-swal-error-btn {
+            background: linear-gradient(135deg, #b91c1c, #ef4444) !important;
+            border: 0 !important;
+            border-radius: 12px !important;
+            padding: 10px 28px !important;
+            font-weight: 800 !important;
+        }
     </style>
     @yield('css')
 </head>
@@ -399,19 +443,13 @@
             </header>
 
             <main class="parent-content">
-                @if(session('message_success'))
-                    <div class="alert alert-success">{{ session('message_success') }}</div>
-                @endif
-                @if(session('message_error'))
-                    <div class="alert alert-danger">{{ session('message_error') }}</div>
-                @endif
-
                 @yield('content')
             </main>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         (function () {
             const sidebar = document.getElementById('parentSidebar');
@@ -431,6 +469,42 @@
                     if (window.innerWidth < 992) closeSidebar();
                 });
             });
+
+            window.showParentAlert = function (type, message) {
+                if (!message) {
+                    return;
+                }
+
+                const isSuccess = type === 'success';
+                const lower = String(message).toLowerCase();
+                let title = isSuccess ? 'Success' : 'Please check';
+
+                if (isSuccess && lower.includes('password')) {
+                    title = 'Password updated';
+                } else if (!isSuccess && lower.includes('password')) {
+                    title = 'Password not updated';
+                }
+
+                Swal.fire({
+                    icon: isSuccess ? 'success' : 'error',
+                    title: title,
+                    text: message,
+                    confirmButtonText: 'OK',
+                    buttonsStyling: false,
+                    customClass: {
+                        popup: 'parent-swal',
+                        confirmButton: isSuccess ? 'parent-swal-btn' : 'parent-swal-error-btn',
+                    },
+                });
+            };
+
+            @if(session('message_success'))
+                showParentAlert('success', @json(session('message_success')));
+            @endif
+
+            @if(session('message_error'))
+                showParentAlert('error', @json(session('message_error')));
+            @endif
         })();
     </script>
     @yield('js')

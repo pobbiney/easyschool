@@ -171,9 +171,14 @@
                                 <span class="ac-pill ac-pill-teal">Homeroom</span>
                             </div>
                         </div>
-                        <a href="{{ route('teacher-class-assessments', array_merge(['class' => $class], $periodQuery)) }}" class="ac-action-pill ac-action-pill-teal">
-                            <i class="ri-arrow-right-line"></i> Open
-                        </a>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="{{ route('teacher-class-assessment-marks', array_merge(['class' => $class], $periodQuery)) }}" class="ac-action-pill ac-action-pill-teal">
+                                <i class="ri-percent-line"></i> Marks
+                            </a>
+                            <a href="{{ route('teacher-class-assessments', array_merge(['class' => $class], $periodQuery)) }}" class="ac-action-pill ac-action-pill-teal">
+                                <i class="ri-arrow-right-line"></i> Open
+                            </a>
+                        </div>
                     </div>
                 </div>
                 @empty
@@ -202,9 +207,14 @@
                             <span class="fw-semibold d-block">{{ $assignment->course?->name }}</span>
                             <span class="ac-pill ac-pill-indigo"><i class="ri-group-line"></i> {{ $assignment->schoolClass?->name }}</span>
                         </div>
-                        <a href="{{ route('teacher-course-assessments', array_merge(['course' => $assignment->course_id, 'class' => $assignment->school_class_id], $periodQuery)) }}" class="ac-action-pill ac-action-pill-indigo">
-                            <i class="ri-arrow-right-line"></i> Open
-                        </a>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="{{ route('teacher-course-assessment-marks', array_merge(['course' => $assignment->course_id, 'class' => $assignment->school_class_id], $periodQuery)) }}" class="ac-action-pill ac-action-pill-indigo">
+                                <i class="ri-percent-line"></i> Marks
+                            </a>
+                            <a href="{{ route('teacher-course-assessments', array_merge(['course' => $assignment->course_id, 'class' => $assignment->school_class_id], $periodQuery)) }}" class="ac-action-pill ac-action-pill-indigo">
+                                <i class="ri-arrow-right-line"></i> Open
+                            </a>
+                        </div>
                     </div>
                 </div>
                 @empty

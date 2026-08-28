@@ -267,6 +267,48 @@
         border-radius: 999px;
     }
 
+    .fees-lines { padding: 8px 0; }
+    .fees-line {
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        padding: 14px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        cursor: pointer;
+        user-select: none;
+    }
+    .fees-line:last-child { border-bottom: 0; }
+    .fees-line.is-locked { cursor: default; }
+    .fees-line.is-selected { background: #f0fdfa; }
+    .fees-line:hover { background: #f8fffe; }
+    .fees-check {
+        width: 28px; height: 28px; border-radius: 8px;
+        border: 1.5px solid #cbd5e1;
+        display: flex; align-items: center; justify-content: center;
+        color: #fff; background: #fff; font-size: 16px;
+    }
+    .fees-line.is-selected .fees-check {
+        background: var(--f-teal); border-color: var(--f-teal);
+    }
+    .fees-line.is-locked .fees-check {
+        background: #0f766e; border-color: #0f766e;
+    }
+    .fees-line-name { font-weight: 800; color: var(--f-ink); }
+    .fees-line-meta { font-size: 12px; color: var(--f-muted); font-weight: 600; margin-top: 2px; }
+    .fees-line-bal { font-weight: 800; color: var(--f-red); white-space: nowrap; text-align: right; }
+    .fees-line-bal small { display: block; font-size: 11px; color: var(--f-muted); font-weight: 700; }
+
+    .fees-credit {
+        display: flex; align-items: center; justify-content: space-between; gap: 10px;
+        padding: 12px 14px; border-radius: 14px; background: #fffbeb; border: 1px solid #fde68a;
+        margin-bottom: 16px;
+    }
+    .fees-credit strong { display: block; font-size: 14px; color: #92400e; }
+    .fees-credit span { font-size: 12px; color: #b45309; font-weight: 600; }
+    .fees-credit input { width: 18px; height: 18px; accent-color: #25A194; }
+    .fees-credit-amt { margin-bottom: 16px; display: none; }
+
     .fees-grid {
         display: grid;
         grid-template-columns: 1fr 320px;
@@ -554,46 +596,30 @@
                             <p>{{ $student->firstname }} has no outstanding bills. Thank you!</p>
                         </div>
                     @else
-                        <div class="fees-table-wrap">
-                            <table class="fees-table">
-                                <thead>
-                                    <tr>
-                                        <th>Fee item</th>
-                                        <th>Period</th>
-                                        <th class="text-end">Due</th>
-                                        <th class="text-end">Paid</th>
-                                        <th class="text-end">Balance</th>
-                                        <th>Progress</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($outstandingBills as $bill)
-                                        @php $pct = $bill['amount_due'] > 0 ? min(100, round(($bill['amount_paid'] / $bill['amount_due']) * 100)) : 0; @endphp
-                                        <tr>
-                                            <td>
-                                                <div class="item-name">
-                                                    {{ $bill['item_name'] }}
-                                                    @if($bill['is_compulsory'])<span class="fees-req">Required</span>@endif
-                                                </div>
-                                            </td>
-                                            <td class="text-muted">{{ trim(($bill['term_name'] ?? '').' '.($bill['year_name'] ?? '')) ?: '—' }}</td>
-                                            <td class="amt">GHS {{ number_format($bill['amount_due'], 2) }}</td>
-                                            <td class="amt ok">GHS {{ number_format($bill['amount_paid'], 2) }}</td>
-                                            <td class="amt due">GHS {{ number_format($bill['balance'], 2) }}</td>
-                                            <td>
-                                                <div class="fees-mini-bar"><span style="width:{{ $pct }}%"></span></div>
-                                                <div class="item-sub">{{ $pct }}%</div>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <td colspan="4" class="text-end">Total outstanding</td>
-                                        <td class="amt due" colspan="2">GHS {{ number_format($totalOutstanding, 2) }}</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                        <div class="fees-lines" id="feesLines">
+                            @foreach($outstandingBills as $bill)
+                                <div class="fees-line is-selected {{ $bill['is_compulsory'] ? 'is-locked' : '' }}"
+                                     data-bill-id="{{ $bill['id'] }}"
+                                     data-balance="{{ number_format($bill['balance'], 2, '.', '') }}"
+                                     data-compulsory="{{ $bill['is_compulsory'] ? '1' : '0' }}">
+                                    <span class="fees-check"><i class="{{ $bill['is_compulsory'] ? 'ri-lock-fill' : 'ri-check-line' }}"></i></span>
+                                    <div>
+                                        <div class="fees-line-name">
+                                            {{ $bill['item_name'] }}
+                                            @if($bill['is_compulsory'])<span class="fees-req">Required</span>@endif
+                                        </div>
+                                        <div class="fees-line-meta">
+                                            {{ trim(($bill['term_name'] ?? '').' '.($bill['year_name'] ?? '')) ?: 'Current' }}
+                                            · Due GHS {{ number_format($bill['amount_due'], 2) }}
+                                            · Paid GHS {{ number_format($bill['amount_paid'], 2) }}
+                                        </div>
+                                    </div>
+                                    <div class="fees-line-bal">
+                                        GHS {{ number_format($bill['balance'], 2) }}
+                                        <small>to pay</small>
+                                    </div>
+                                </div>
+                            @endforeach
                         </div>
                     @endif
                 </div>
@@ -649,47 +675,63 @@
         </div>
 
         <div>
-            @if($outstandingBills->isNotEmpty() && $paystackConfigured && $netPayable > 0)
-                <div class="fees-pay">
+            @if($outstandingBills->isNotEmpty())
+                <form class="fees-pay" id="parentPayForm" onsubmit="return false;">
+                    @csrf
                     <div class="fees-pay-head">
                         <i class="ri-bank-card-line"></i>
                         <h3>Pay school fees</h3>
-                        <p>Mobile Money or card via Paystack</p>
+                        <p>{{ $paystackConfigured ? 'Mobile Money or card via Paystack' : 'Enter the amount to pay for the selected bills' }}</p>
                     </div>
                     <div class="fees-pay-body">
                         <div class="fees-pay-total">
                             <label>You pay</label>
-                            <div><small>GHS </small><span id="showAmt">{{ number_format($netPayable, 2) }}</span></div>
+                            <div><small>GHS </small><span id="showAmt">{{ number_format($netPayable > 0 ? $netPayable : $totalOutstanding, 2) }}</span></div>
                         </div>
-                        <div class="fees-chips">
-                            <button type="button" class="fees-chip on" data-v="{{ $netPayable }}">Full balance</button>
-                            @if($netPayable >= 100)<button type="button" class="fees-chip" data-v="100">100</button>@endif
-                            @if($netPayable >= 200)<button type="button" class="fees-chip" data-v="200">200</button>@endif
-                            @if($netPayable >= 500)<button type="button" class="fees-chip" data-v="500">500</button>@endif
+
+                        @if($creditBalance > 0)
+                            <label class="fees-credit">
+                                <div>
+                                    <strong>Use credit GHS {{ number_format($creditBalance, 2) }}</strong>
+                                    <span>Apply remaining credit to this payment</span>
+                                </div>
+                                <input type="checkbox" id="useCredit" {{ $netPayable <= 0 ? 'checked' : '' }}>
+                            </label>
+                            <div class="fees-input-wrap fees-credit-amt" id="creditAmtWrap">
+                                <span>GHS</span>
+                                <input type="number" id="creditAmount" min="0" step="0.01" max="{{ $creditBalance }}" value="{{ number_format(min($creditBalance, $totalOutstanding), 2, '.', '') }}">
+                            </div>
+                        @endif
+
+                        <div class="fees-chips" id="payChips">
+                            <button type="button" class="fees-chip on" data-mode="full">Full balance</button>
+                            <button type="button" class="fees-chip" data-mode="half">Half</button>
+                            @if($netPayable >= 100 || $totalOutstanding >= 100)<button type="button" class="fees-chip" data-v="100">100</button>@endif
+                            @if($netPayable >= 200 || $totalOutstanding >= 200)<button type="button" class="fees-chip" data-v="200">200</button>@endif
+                            @if($netPayable >= 500 || $totalOutstanding >= 500)<button type="button" class="fees-chip" data-v="500">500</button>@endif
                         </div>
                         <div class="fees-input-wrap">
                             <span>GHS</span>
-                            <input type="number" id="payAmount" min="0.01" step="0.01" max="{{ $netPayable }}" value="{{ $netPayable }}">
+                            <input type="number" id="payAmount" min="0" step="0.01" value="{{ number_format($netPayable, 2, '.', '') }}">
                         </div>
                         <button type="button" id="paystackBtn" class="fees-pay-btn">
-                            <i class="ri-lock-unlock-line"></i> Pay now
+                            <i class="ri-lock-unlock-line"></i>
+                            <span id="payBtnLabel">{{ $netPayable > 0 ? 'Pay now' : 'Apply credit' }}</span>
                         </button>
-                        <div class="fees-pay-trust"><i class="ri-shield-check-line"></i> Secure payment</div>
+                        <div class="fees-pay-trust">
+                            <i class="ri-shield-check-line"></i>
+                            {{ $paystackConfigured ? 'Secure Paystack checkout' : 'Compulsory fees are paid first' }}
+                        </div>
                         <div id="payMessage" class="fees-msg"></div>
                     </div>
-                </div>
-            @elseif($totalOutstanding <= 0)
+                </form>
+            @else
                 <div class="fees-pay">
                     <div class="fees-pay-body fees-all-clear" style="border:none;box-shadow:none;margin:0;">
                         <i class="ri-emotion-happy-line"></i>
                         <h3>Nothing to pay</h3>
                         <p>Account is fully settled.</p>
                     </div>
-                </div>
-            @else
-                <div class="fees-note">
-                    <i class="ri-building-line"></i> Online payment is not available. Please pay at the school office or
-                    <a href="{{ route('parent.communications.child', $student) }}">contact the bursar</a>.
                 </div>
             @endif
 
@@ -715,60 +757,203 @@
     });
 })();
 </script>
-@if($paystackConfigured && $netPayable > 0)
+@if($outstandingBills->isNotEmpty())
 <script>
 (function () {
-    const max = {{ json_encode($netPayable) }};
+    const creditBalance = {{ json_encode((float) $creditBalance) }};
+    const paystackConfigured = {{ json_encode((bool) $paystackConfigured) }};
+    const csrf = @json(csrf_token());
+    const initUrl = @json(route('parent.paystack.initialize', $student));
+    const verifyUrl = @json(route('parent.paystack.verify', $student));
+    const creditUrl = @json(route('parent.pay-credit', $student));
     const input = document.getElementById('payAmount');
     const show = document.getElementById('showAmt');
     const msg = document.getElementById('payMessage');
-    const chips = document.querySelectorAll('.fees-chip');
+    const btn = document.getElementById('paystackBtn');
+    const btnLabel = document.getElementById('payBtnLabel');
+    const useCredit = document.getElementById('useCredit');
+    const creditInput = document.getElementById('creditAmount');
+    const creditWrap = document.getElementById('creditAmtWrap');
 
-    function fmt(n) { return Number(n).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
+    function round2(n) { return Math.round((n + Number.EPSILON) * 100) / 100; }
+    function fmt(n) { return Number(n || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
 
-    function set(v) {
-        const n = Math.min(Math.max(parseFloat(v)||0, 0.01), max);
-        input.value = n.toFixed(2);
-        show.textContent = fmt(n);
-        chips.forEach(c => c.classList.toggle('on', parseFloat(c.dataset.v) === n));
+    function selectedBills() {
+        return Array.from(document.querySelectorAll('.fees-line.is-selected')).map(function (el) {
+            return {
+                id: parseInt(el.dataset.billId, 10),
+                balance: parseFloat(el.dataset.balance),
+                compulsory: el.dataset.compulsory === '1',
+            };
+        });
     }
-    chips.forEach(c => c.addEventListener('click', () => set(c.dataset.v)));
-    input.addEventListener('input', () => { show.textContent = fmt(input.value); chips.forEach(c => c.classList.remove('on')); });
 
-    document.getElementById('paystackBtn').addEventListener('click', async function () {
-        const amount = parseFloat(input.value || '0');
-        const btn = this;
-        if (!amount || amount <= 0) { msg.textContent = 'Enter a valid amount.'; msg.className = 'fees-msg show err'; return; }
+    function selectedTotal() {
+        return round2(selectedBills().reduce((sum, bill) => sum + bill.balance, 0));
+    }
+
+    function creditApplied() {
+        if (!useCredit || !useCredit.checked) return 0;
+        const requested = parseFloat(creditInput?.value || '0') || 0;
+        return round2(Math.min(Math.max(requested, 0), creditBalance, selectedTotal()));
+    }
+
+    function cashAmount() {
+        return round2(Math.max(selectedTotal() - creditApplied(), 0));
+    }
+
+    function allocations(totalFunding) {
+        let remaining = round2(totalFunding);
+        const rows = [];
+        selectedBills().forEach(function (bill) {
+            if (remaining <= 0) return;
+            const amount = round2(Math.min(bill.balance, remaining));
+            if (amount > 0) {
+                rows.push({ student_bill_id: bill.id, amount: amount });
+                remaining = round2(remaining - amount);
+            }
+        });
+        return rows;
+    }
+
+    function sync() {
+        const cash = cashAmount();
+        const credit = creditApplied();
+        if (input && document.activeElement !== input) {
+            input.value = cash.toFixed(2);
+        }
+        if (show) show.textContent = fmt(cash > 0 ? cash : credit);
+        if (creditWrap) creditWrap.style.display = useCredit?.checked ? 'block' : 'none';
+        if (btnLabel) btnLabel.textContent = cash > 0.009 ? 'Pay now' : 'Apply credit';
+        document.querySelectorAll('.fees-chip').forEach(c => c.classList.remove('on'));
+    }
+
+    document.querySelectorAll('.fees-line').forEach(function (line) {
+        line.addEventListener('click', function () {
+            if (line.classList.contains('is-locked')) return;
+            line.classList.toggle('is-selected');
+            const icon = line.querySelector('.fees-check i');
+            if (icon) icon.className = line.classList.contains('is-selected') ? 'ri-check-line' : 'ri-subtract-line';
+            if (useCredit?.checked && creditInput) {
+                creditInput.value = Math.min(creditBalance, selectedTotal()).toFixed(2);
+            }
+            sync();
+        });
+    });
+
+    useCredit?.addEventListener('change', function () {
+        if (creditInput) creditInput.value = Math.min(creditBalance, selectedTotal()).toFixed(2);
+        sync();
+    });
+    creditInput?.addEventListener('input', sync);
+
+    document.querySelectorAll('.fees-chip').forEach(function (chip) {
+        chip.addEventListener('click', function () {
+            const total = selectedTotal();
+            const credit = creditApplied();
+            let value = total - credit;
+            if (chip.dataset.mode === 'half') value = round2((total - credit) / 2);
+            if (chip.dataset.v) value = parseFloat(chip.dataset.v);
+            input.value = Math.max(value, 0).toFixed(2);
+            show.textContent = fmt(input.value);
+            document.querySelectorAll('.fees-chip').forEach(c => c.classList.remove('on'));
+            chip.classList.add('on');
+            if (btnLabel) btnLabel.textContent = parseFloat(input.value) > 0.009 ? 'Pay now' : 'Apply credit';
+        });
+    });
+
+    input?.addEventListener('input', function () {
+        show.textContent = fmt(input.value);
+        document.querySelectorAll('.fees-chip').forEach(c => c.classList.remove('on'));
+        if (btnLabel) btnLabel.textContent = parseFloat(input.value || '0') > 0.009 ? 'Pay now' : 'Apply credit';
+    });
+
+    async function postJson(url, body) {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+            body: JSON.stringify(body),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || 'Request failed.');
+        return data;
+    }
+
+    function finish(data) {
+        if (data.receipt_url) {
+            location.href = data.receipt_url;
+            return;
+        }
+        msg.textContent = data.message || 'Payment successful!';
+        msg.className = 'fees-msg show ok';
+        setTimeout(() => location.reload(), 900);
+    }
+
+    btn?.addEventListener('click', async function () {
+        const selected = selectedBills();
+        if (!selected.length) {
+            msg.textContent = 'Select at least one bill to pay.';
+            msg.className = 'fees-msg show err';
+            return;
+        }
+
+        const cash = round2(parseFloat(input.value || '0') || 0);
+        const credit = creditApplied();
+        const funding = round2(cash + credit);
+
+        if (funding <= 0) {
+            msg.textContent = 'Enter an amount to pay, or apply credit.';
+            msg.className = 'fees-msg show err';
+            return;
+        }
+
+        const alloc = allocations(funding);
         btn.disabled = true;
-        msg.textContent = 'Opening payment…'; msg.className = 'fees-msg show';
+        msg.textContent = cash > 0 ? 'Opening payment…' : 'Applying credit…';
+        msg.className = 'fees-msg show';
+
         try {
-            const res = await fetch(@json(route('parent.paystack.initialize', $student)), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': @json(csrf_token()), 'Accept': 'application/json' },
-                body: JSON.stringify({ amount }),
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'Could not start payment.');
+            if (cash <= 0) {
+                const data = await postJson(creditUrl, { credit_applied: credit, allocations: alloc });
+                finish(data);
+                return;
+            }
+
+            if (!paystackConfigured || typeof PaystackPop === 'undefined') {
+                throw new Error('Online payment is not available yet. Please pay at the school office.');
+            }
+
+            const data = await postJson(initUrl, { amount: cash, credit_applied: credit, allocations: alloc });
             PaystackPop.setup({
-                key: data.public_key, email: data.email, amount: data.amount,
-                currency: data.currency || 'GHS', ref: data.reference, label: data.label,
-                callback(r) {
+                key: data.public_key,
+                email: data.email,
+                amount: data.amount,
+                currency: data.currency || 'GHS',
+                ref: data.reference,
+                label: data.label,
+                callback(response) {
                     msg.textContent = 'Verifying…';
-                    fetch(@json(route('parent.paystack.verify', $student)), {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': @json(csrf_token()), 'Accept': 'application/json' },
-                        body: JSON.stringify({ reference: r.reference }),
-                    }).then(x => x.json()).then(d => {
-                        if (d.receipt_url) location.href = d.receipt_url;
-                        else { msg.textContent = 'Payment successful!'; msg.className = 'fees-msg show ok'; setTimeout(() => location.reload(), 1000); }
-                    }).catch(() => { msg.textContent = 'Verification failed.'; msg.className = 'fees-msg show err'; btn.disabled = false; });
+                    postJson(verifyUrl, { reference: response.reference })
+                        .then(finish)
+                        .catch(function (err) {
+                            msg.textContent = err.message || 'Verification failed.';
+                            msg.className = 'fees-msg show err';
+                            btn.disabled = false;
+                        });
                 },
-                onClose() { btn.disabled = false; msg.className = 'fees-msg'; }
+                onClose() {
+                    btn.disabled = false;
+                    msg.className = 'fees-msg';
+                },
             }).openIframe();
-        } catch (e) {
-            msg.textContent = e.message; msg.className = 'fees-msg show err'; btn.disabled = false;
+        } catch (err) {
+            msg.textContent = err.message;
+            msg.className = 'fees-msg show err';
+            btn.disabled = false;
         }
     });
+
+    sync();
 })();
 </script>
 @endif

@@ -1,6 +1,4 @@
 @php
-    use App\Models\AssessmentType;
-
     $courseOptionsForJs = collect($subjectAssignments ?? [])->map(function ($a) {
         return [
             'class_id' => (string) $a->school_class_id,
@@ -32,10 +30,6 @@
             'homeroom' => $homeroomIds->has($defaultClassId),
         ]);
     }
-
-    $assessmentTypeOptions = isset($assessmentTypes) && $assessmentTypes->isNotEmpty()
-        ? $assessmentTypes
-        : AssessmentType::query()->active()->orderBy('sort_order')->orderBy('name')->get();
 @endphp
 
 <div class="modal fade" id="createAssessmentModal" tabindex="-1"
@@ -43,7 +37,10 @@
     data-default-class="{{ $defaultClassIdJs }}"
     data-default-course="{{ $defaultCourseIdJs }}"
     data-lock-class="{{ $lockClass ? '1' : '0' }}"
-    data-lock-course="{{ $lockCourse ? '1' : '0' }}">
+    data-lock-course="{{ $lockCourse ? '1' : '0' }}"
+    data-setup-url="{{ route('teacher-assessment-setup-options') }}"
+    data-year-id="{{ $period['year_id'] ?? '' }}"
+    data-term-id="{{ $period['term_id'] ?? '' }}">
     <div class="modal-dialog modal-lg">
         <form action="{{ route('teacher-assessments-process') }}" method="POST" class="modal-content">
             @csrf
@@ -64,34 +61,8 @@
                         <span>This assessment will be recorded for <strong>{{ $period['year_name'] }} · {{ $period['term_name'] }}</strong></span>
                     </div>
                 @endif
+                <div id="assessment_setup_hint" class="alert alert-warning py-10 px-14 mb-16 d-none"></div>
                 <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Type</label>
-                        <select name="type" class="form-select" required @disabled($assessmentTypeOptions->isEmpty())>
-                            <option value="" disabled @selected(! old('type'))>Select assessment type</option>
-                            @foreach($assessmentTypeOptions as $assessmentType)
-                                <option value="{{ $assessmentType->slug }}"
-                                    data-total-score="{{ $assessmentType->total_score }}"
-                                    data-max-number="{{ $assessmentType->max_number }}"
-                                    @selected(old('type') === $assessmentType->slug)>{{ $assessmentType->name }}</option>
-                            @endforeach
-                        </select>
-                        @if($assessmentTypeOptions->isEmpty())
-                            <div class="form-text text-danger-600">No assessment types found. Add them under <a href="{{ route('assessment-types') }}">Settings → Assessment Types</a>.</div>
-                        @endif
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Status</label>
-                        <select name="status" class="form-select" required>
-                            @foreach(\App\Models\AcademicAssessment::STATUSES as $status)
-                                <option value="{{ $status }}" @selected($status === 'published')>{{ ucfirst($status) }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Title</label>
-                        <input type="text" name="title" class="form-control" required maxlength="200">
-                    </div>
                     <div class="col-md-6">
                         <label class="form-label">Class</label>
                         @if($lockClass && $defaultClassIdJs)
@@ -121,9 +92,29 @@
                         @endif
                         <div class="form-text" id="assessment_course_hint">Courses update when you change the class.</div>
                     </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Type</label>
+                        <select name="type" id="assessment_type_id" class="form-select" required>
+                            <option value="" disabled selected>Select class and subject first</option>
+                        </select>
+                        <div class="form-text" id="assessment_type_hint">Types follow the class category. Set marks before creating an assessment.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-select" required>
+                            @foreach(\App\Models\AcademicAssessment::STATUSES as $status)
+                                <option value="{{ $status }}" @selected($status === 'published')>{{ ucfirst($status) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Title</label>
+                        <input type="text" name="title" class="form-control" required maxlength="200">
+                    </div>
                     <div class="col-md-4">
                         <label class="form-label">Max Score</label>
-                        <input type="number" name="max_score" id="assessment_max_score" class="form-control" value="{{ old('max_score', $assessmentTypeOptions->first()?->total_score ?? 100) }}" min="1" required>
+                        <input type="number" name="max_score" id="assessment_max_score" class="form-control" min="1" readonly>
+                        <div class="form-text">Filled from the marks you set for this type.</div>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Assessment Date</label>
@@ -140,7 +131,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="submit" class="btn btn-primary-600">Create Assessment</button>
+                <button type="submit" class="btn btn-primary-600" id="assessment_create_submit">Create Assessment</button>
             </div>
         </form>
     </div>
@@ -160,9 +151,14 @@
         const modal = document.getElementById('createAssessmentModal');
         const classSelect = document.getElementById('assessment_class_id');
         const courseSelect = document.getElementById('assessment_course_id');
+        const typeSelect = document.getElementById('assessment_type_id');
+        const maxScoreInput = document.getElementById('assessment_max_score');
         const hint = document.getElementById('assessment_course_hint');
+        const typeHint = document.getElementById('assessment_type_hint');
+        const setupHint = document.getElementById('assessment_setup_hint');
+        const submitBtn = document.getElementById('assessment_create_submit');
 
-        if (! modal || ! classSelect || ! courseSelect) {
+        if (! modal || ! classSelect || ! courseSelect || ! typeSelect) {
             return;
         }
 
@@ -171,12 +167,23 @@
         const defaultCourse = modal.getAttribute('data-default-course') || '';
         const lockClass = modal.getAttribute('data-lock-class') === '1';
         const lockCourse = modal.getAttribute('data-lock-course') === '1';
+        const setupUrl = modal.getAttribute('data-setup-url');
+        const yearId = modal.getAttribute('data-year-id') || '';
+        const termId = modal.getAttribute('data-term-id') || '';
+        let setupRequest = 0;
 
         function currentClassId() {
             if (lockClass) {
                 return defaultClass || classSelect.value;
             }
             return classSelect.value;
+        }
+
+        function currentCourseId() {
+            if (lockCourse) {
+                return defaultCourse || courseSelect.value;
+            }
+            return courseSelect.value;
         }
 
         function coursesForClass(classId) {
@@ -200,6 +207,7 @@
                 opt.selected = true;
                 courseSelect.appendChild(opt);
                 hint.textContent = 'Subject is fixed for this workspace.';
+                loadTypeOptions();
                 return;
             }
 
@@ -214,6 +222,7 @@
                 courseSelect.appendChild(placeholder);
                 courseSelect.required = false;
                 hint.textContent = 'Select a class first to see available courses.';
+                clearTypes('Select a class first.');
                 return;
             }
 
@@ -226,6 +235,7 @@
                 courseSelect.appendChild(emptyOpt);
                 courseSelect.required = false;
                 hint.textContent = 'No subject assignments for this class.';
+                clearTypes('No subject selected.');
                 return;
             }
 
@@ -248,6 +258,149 @@
             }
 
             hint.textContent = courses.length + ' subject' + (courses.length === 1 ? '' : 's') + ' available for this class.';
+            loadTypeOptions();
+        }
+
+        function clearTypes(message) {
+            typeSelect.innerHTML = '';
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = message || 'Select class and subject first';
+            opt.disabled = true;
+            opt.selected = true;
+            typeSelect.appendChild(opt);
+            typeSelect.disabled = true;
+            if (maxScoreInput) {
+                maxScoreInput.value = '';
+            }
+            if (typeHint) {
+                typeHint.textContent = message || '';
+            }
+            if (setupHint) {
+                setupHint.classList.add('d-none');
+                setupHint.innerHTML = '';
+            }
+            if (submitBtn) {
+                submitBtn.disabled = true;
+            }
+        }
+
+        function applyTypeDefaults() {
+            const option = typeSelect.options[typeSelect.selectedIndex];
+            const totalScore = option?.dataset?.totalScore;
+
+            if (maxScoreInput) {
+                maxScoreInput.value = totalScore || '';
+            }
+        }
+
+        function loadTypeOptions() {
+            const classId = currentClassId();
+            const courseId = currentCourseId();
+
+            if (! classId || ! courseId || ! setupUrl) {
+                clearTypes('Select class and subject first.');
+                return;
+            }
+
+            const requestId = ++setupRequest;
+            const params = new URLSearchParams({
+                school_class_id: classId,
+                course_id: courseId,
+            });
+            if (yearId) params.set('academic_year_id', yearId);
+            if (termId) params.set('academic_term_id', termId);
+
+            fetch(setupUrl + '?' + params.toString(), {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            })
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
+                    if (requestId !== setupRequest) {
+                        return;
+                    }
+
+                    const types = data.types || [];
+                    typeSelect.innerHTML = '';
+
+                    if (types.length === 0) {
+                        clearTypes('No assessment types for this class category.');
+                        if (setupHint) {
+                            setupHint.classList.remove('d-none');
+                            setupHint.innerHTML = 'Ask an administrator to add assessment types for this class category.';
+                        }
+                        return;
+                    }
+
+                    const placeholder = document.createElement('option');
+                    placeholder.value = '';
+                    placeholder.textContent = 'Select assessment type';
+                    placeholder.disabled = true;
+                    placeholder.selected = true;
+                    typeSelect.appendChild(placeholder);
+
+                    let firstUsable = null;
+                    let unsetCount = 0;
+
+                    types.forEach(function (type) {
+                        const opt = document.createElement('option');
+                        opt.value = type.slug;
+                        opt.dataset.totalScore = type.total_score || '';
+                        opt.dataset.maxNumber = type.max_number || '';
+                        opt.dataset.remaining = type.remaining;
+
+                        if (! type.marks_set) {
+                            opt.textContent = type.name + ' — set marks first';
+                            opt.disabled = true;
+                            unsetCount += 1;
+                        } else if (type.remaining <= 0) {
+                            opt.textContent = type.name + ' — limit reached (' + type.max_number + ')';
+                            opt.disabled = true;
+                        } else {
+                            opt.textContent = type.name + ' / ' + type.total_score;
+                            if (! firstUsable) {
+                                firstUsable = type.slug;
+                            }
+                        }
+
+                        typeSelect.appendChild(opt);
+                    });
+
+                    typeSelect.disabled = ! firstUsable;
+
+                    if (firstUsable) {
+                        typeSelect.value = firstUsable;
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                        }
+                    } else if (submitBtn) {
+                        submitBtn.disabled = true;
+                    }
+
+                    applyTypeDefaults();
+
+                    if (typeHint) {
+                        typeHint.textContent = firstUsable
+                            ? 'Max score is taken from the marks you set for this class and subject.'
+                            : 'Set assessment marks for this subject before creating an assessment.';
+                    }
+
+                    if (setupHint) {
+                        if (unsetCount > 0 && data.marks_url) {
+                            setupHint.classList.remove('d-none');
+                            setupHint.innerHTML = 'Set assessment marks for this subject first. <a href="' + data.marks_url + '" class="fw-semibold">Open marks setup</a>.';
+                        } else {
+                            setupHint.classList.add('d-none');
+                            setupHint.innerHTML = '';
+                        }
+                    }
+                })
+                .catch(function () {
+                    if (requestId !== setupRequest) {
+                        return;
+                    }
+                    clearTypes('Could not load assessment types.');
+                });
         }
 
         if (! lockClass) {
@@ -255,6 +408,12 @@
                 rebuildCourseSelect('');
             });
         }
+
+        if (! lockCourse) {
+            courseSelect.addEventListener('change', loadTypeOptions);
+        }
+
+        typeSelect.addEventListener('change', applyTypeDefaults);
 
         if (! modal.dataset.filterBound) {
             modal.dataset.filterBound = '1';
@@ -266,35 +425,10 @@
         rebuildCourseSelect(defaultCourse);
     }
 
-    function initAssessmentTypeDefaults() {
-        const typeSelect = document.querySelector('#createAssessmentModal select[name="type"]');
-        const maxScoreInput = document.getElementById('assessment_max_score');
-
-        if (! typeSelect || ! maxScoreInput) {
-            return;
-        }
-
-        function applyTypeDefaults() {
-            const option = typeSelect.options[typeSelect.selectedIndex];
-            const totalScore = option?.dataset?.totalScore;
-
-            if (totalScore) {
-                maxScoreInput.value = totalScore;
-            }
-        }
-
-        typeSelect.addEventListener('change', applyTypeDefaults);
-        applyTypeDefaults();
-    }
-
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function () {
-            initAssessmentClassCourseFilter();
-            initAssessmentTypeDefaults();
-        });
+        document.addEventListener('DOMContentLoaded', initAssessmentClassCourseFilter);
     } else {
         initAssessmentClassCourseFilter();
-        initAssessmentTypeDefaults();
     }
 })();
 </script>

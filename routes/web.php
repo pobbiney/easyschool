@@ -93,6 +93,7 @@ Route::prefix('parent')->group(function () {
             Route::get('children/{student}/report-card', [ParentReportCardController::class, 'index'])->name('parent.report-card');
             Route::get('children/{student}/report-card/print', [ParentReportCardController::class, 'print'])->name('parent.report-card.print');
             Route::get('children/{student}/communications', [ParentCommunicationsController::class, 'index'])->name('parent.communications.child');
+            Route::post('children/{student}/pay-credit', [ParentBillPaymentController::class, 'applyCredit'])->name('parent.pay-credit');
             Route::post('children/{student}/paystack/initialize', [ParentBillPaymentController::class, 'initializePaystack'])->name('parent.paystack.initialize');
             Route::post('children/{student}/paystack/verify', [ParentBillPaymentController::class, 'verifyPaystack'])->name('parent.paystack.verify');
         });
@@ -436,10 +437,14 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
    Route::controller(AssessmentController::class)->group(function () {
         Route::get('teacher-assessments', 'hub')->name('teacher-assessments');
         Route::get('teacher-assessment-records', 'records')->name('teacher-assessment-records');
+        Route::get('teacher/assessment-setup-options', 'setupOptions')->name('teacher-assessment-setup-options');
         Route::get('teacher/classes/{class}/assessments', 'classIndex')->name('teacher-class-assessments');
         Route::get('teacher/classes/{class}/assessment-records', 'classRecords')->name('teacher-class-assessment-records');
+        Route::get('teacher/classes/{class}/assessment-marks', 'classMarks')->name('teacher-class-assessment-marks');
         Route::get('teacher/courses/{course}/classes/{class}/assessments', 'courseIndex')->name('teacher-course-assessments');
         Route::get('teacher/courses/{course}/classes/{class}/assessment-records', 'courseRecords')->name('teacher-course-assessment-records');
+        Route::get('teacher/courses/{course}/classes/{class}/assessment-marks', 'courseMarks')->name('teacher-course-assessment-marks');
+        Route::post('teacher/courses/{course}/classes/{class}/assessment-marks', 'saveCourseMarks')->name('teacher-course-assessment-marks-process');
         Route::post('teacher-assessments-process', 'store')->name('teacher-assessments-process');
         Route::get('teacher/assessments/{assessment}/scores', 'scores')->name('teacher-assessment-scores');
         Route::post('teacher/assessments/{assessment}/scores', 'saveScores')->name('teacher-assessment-scores-process');

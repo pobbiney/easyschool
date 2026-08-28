@@ -8,9 +8,12 @@ use App\Models\AssessmentScore;
 use App\Models\AssessmentType;
 use App\Models\AcademicTerm;
 use App\Models\AcademicYear;
+use App\Models\ClassCourseAssessmentMark;
 use App\Models\Course;
+use App\Models\CourseTeachingAssignment;
 use App\Models\GradingScheme;
 use App\Models\SchoolClass;
+use App\Services\AssessmentMarksService;
 use App\Services\GradingService;
 use App\Services\TeacherAccessService;
 use App\Support\AcademicPeriodDefaults;
@@ -23,7 +26,8 @@ class AssessmentController extends Controller implements HasMiddleware
 {
     public function __construct(
         private TeacherAccessService $teacherAccess,
-        private GradingService $grading
+        private GradingService $grading,
+        private AssessmentMarksService $assessmentMarks
     ) {}
 
     public static function middleware(): array
@@ -67,8 +71,9 @@ class AssessmentController extends Controller implements HasMiddleware
         $yearId = AcademicPeriodDefaults::yearId($request);
         $termId = AcademicPeriodDefaults::termId($request);
 
-        $homeroomClasses = $this->teacherAccess->homeroomClasses($staffId);
+        $homeroomClasses = $this->teacherAccess->homeroomClasses($staffId)->load('category');
         $subjectAssignments = $this->teacherAccess->subjectAssignments($staffId, $yearId, $termId);
+        $subjectAssignments->loadMissing(['schoolClass.category', 'course']);
 
         $assessments = $this->teacherAssessmentsQuery($request, $scope)->get();
 
@@ -90,7 +95,7 @@ class AssessmentController extends Controller implements HasMiddleware
             'homeroomClasses' => $homeroomClasses,
             'subjectAssignments' => $subjectAssignments,
             'assessments' => $assessments,
-            'assessmentTypes' => $this->activeAssessmentTypes(),
+            'assessmentTypes' => $this->legendAssessmentTypes(),
             ...$this->assessmentPageData($request),
             'stats' => [
                 'total' => $assessments->count(),
@@ -112,13 +117,15 @@ class AssessmentController extends Controller implements HasMiddleware
         $termId = AcademicPeriodDefaults::termId($request);
 
         $this->teacherAccess->assertCanAccessClass($staffId, $class->id, $course?->id, $request);
+        $class->loadMissing('category');
 
         $assessments = $this->teacherAssessmentsQuery($request, $scope, $class->id, $course?->id)
             ->orderByDesc('assessment_date')
             ->get();
 
-        $homeroomClasses = $this->teacherAccess->homeroomClasses($staffId);
+        $homeroomClasses = $this->teacherAccess->homeroomClasses($staffId)->load('category');
         $subjectAssignments = $this->teacherAccess->subjectAssignments($staffId, $yearId, $termId);
+        $subjectAssignments->loadMissing(['schoolClass.category', 'course']);
 
         $pendingCount = $scope === 'pending'
             ? $assessments->count()
@@ -135,7 +142,7 @@ class AssessmentController extends Controller implements HasMiddleware
             ...$this->assessmentPageData($request),
             'homeroomClasses' => $homeroomClasses,
             'subjectAssignments' => $subjectAssignments,
-            'assessmentTypes' => $this->activeAssessmentTypes(),
+            'assessmentTypes' => $this->assessmentMarks->typesForClass($class),
             'defaultClassId' => $class->id,
             'defaultCourseId' => $course?->id,
             'lockClass' => true,
@@ -175,22 +182,22 @@ class AssessmentController extends Controller implements HasMiddleware
         $staffId = $this->teacherAccess->staffId();
 
         $validated = $request->validate([
-            'type' => 'required|in:'.implode(',', AssessmentType::activeSlugs()),
+            'type' => 'required|string|max:50',
             'title' => 'required|string|max:200',
             'description' => 'nullable|string|max:2000',
             'due_date' => 'nullable|date',
             'assessment_date' => 'nullable|date',
             'school_class_id' => 'required|exists:school_classes,id',
             'course_id' => 'required|exists:courses,id',
-            'max_score' => 'required|numeric|min:1|max:9999',
             'status' => 'required|in:'.implode(',', AcademicAssessment::STATUSES),
         ]);
 
         $courseId = (int) $validated['course_id'];
-        $this->teacherAccess->assertCanAccessClass($staffId, (int) $validated['school_class_id'], $courseId, $request);
+        $classId = (int) $validated['school_class_id'];
+        $this->teacherAccess->assertCanAccessClass($staffId, $classId, $courseId, $request);
 
-        if (! $this->teacherAccess->ownsSubjectAssignment($staffId, $courseId, (int) $validated['school_class_id'], AcademicPeriodDefaults::yearId($request), AcademicPeriodDefaults::termId($request))
-            && ! $this->teacherAccess->ownsHomeroomClass($staffId, (int) $validated['school_class_id'])) {
+        if (! $this->teacherAccess->ownsSubjectAssignment($staffId, $courseId, $classId, AcademicPeriodDefaults::yearId($request), AcademicPeriodDefaults::termId($request))
+            && ! $this->teacherAccess->ownsHomeroomClass($staffId, $classId)) {
             return back()->with('message_error', 'You are not assigned to teach this course in this class.');
         }
 
@@ -201,9 +208,41 @@ class AssessmentController extends Controller implements HasMiddleware
             return back()->with('message_error', 'Set a default academic year and term in school settings.');
         }
 
+        $class = SchoolClass::findOrFail($classId);
+        $type = $this->assessmentMarks->resolveTypeForClass($class, $validated['type']);
+
+        if (! $type) {
+            return back()->with('message_error', 'That assessment type is not available for this class category.');
+        }
+
+        $mark = $this->assessmentMarks->markForType($classId, $courseId, $type->id, $yearId, $termId);
+
+        if (! $mark) {
+            return back()->with(
+                'message_error',
+                'Set the total marks for '.$type->name.' in '.$class->name.' before creating this assessment.'
+            );
+        }
+
+        $used = $this->assessmentMarks->usedCount($classId, $courseId, $type->slug, $yearId, $termId);
+
+        if ($used >= (int) $type->max_number) {
+            return back()->with(
+                'message_error',
+                'You can only create '.$type->max_number.' '.$type->name.' assessment'.((int) $type->max_number === 1 ? '' : 's').' for this subject this term.'
+            );
+        }
+
         AcademicAssessment::create([
-            ...$validated,
+            'type' => $type->slug,
+            'title' => $validated['title'],
+            'description' => $validated['description'] ?? null,
+            'due_date' => $validated['due_date'] ?? null,
+            'assessment_date' => $validated['assessment_date'] ?? null,
+            'school_class_id' => $classId,
             'course_id' => $courseId,
+            'max_score' => $mark->total_score,
+            'status' => $validated['status'],
             'academic_year_id' => $yearId,
             'academic_term_id' => $termId,
             'staff_id' => $staffId,
@@ -211,6 +250,175 @@ class AssessmentController extends Controller implements HasMiddleware
         ]);
 
         return back()->with('message_success', 'Assessment created successfully.');
+    }
+
+    public function setupOptions(Request $request)
+    {
+        $staffId = $this->teacherAccess->staffId();
+
+        $validated = $request->validate([
+            'school_class_id' => 'required|exists:school_classes,id',
+            'course_id' => 'required|exists:courses,id',
+        ]);
+
+        $classId = (int) $validated['school_class_id'];
+        $courseId = (int) $validated['course_id'];
+        $this->teacherAccess->assertCanAccessClass($staffId, $classId, $courseId, $request);
+
+        $yearId = AcademicPeriodDefaults::yearId($request);
+        $termId = AcademicPeriodDefaults::termId($request);
+
+        if (! $yearId || ! $termId) {
+            return response()->json([
+                'types' => [],
+                'message' => 'Set a default academic year and term in school settings.',
+            ]);
+        }
+
+        $class = SchoolClass::findOrFail($classId);
+
+        return response()->json([
+            'types' => $this->assessmentMarks->setupOptions($class, $courseId, $yearId, $termId),
+            'marks_url' => route('teacher-course-assessment-marks', [
+                'course' => $courseId,
+                'class' => $classId,
+                'academic_year_id' => $yearId,
+                'academic_term_id' => $termId,
+            ]),
+        ]);
+    }
+
+    public function classMarks(Request $request, SchoolClass $class)
+    {
+        $staffId = $this->teacherAccess->staffId();
+        $this->teacherAccess->assertCanAccessClass($staffId, $class->id, null, $request);
+        $class->loadMissing(['category.courses']);
+
+        $yearId = AcademicPeriodDefaults::yearId($request);
+        $termId = AcademicPeriodDefaults::termId($request);
+
+        if (! $yearId || ! $termId) {
+            return back()->with('message_error', 'Set a default academic year and term in school settings.');
+        }
+
+        $courses = $this->markableCourses($staffId, $class, $yearId, $termId);
+        $types = $this->assessmentMarks->typesForClass($class);
+
+        $courseRows = $courses->map(function (Course $course) use ($class, $yearId, $termId, $types) {
+            $marks = $this->assessmentMarks->marksFor($class->id, $course->id, $yearId, $termId);
+            $setCount = $types->filter(fn (AssessmentType $type) => $marks->has($type->id))->count();
+
+            return [
+                'course' => $course,
+                'set_count' => $setCount,
+                'type_count' => $types->count(),
+                'complete' => $types->isNotEmpty() && $setCount === $types->count(),
+            ];
+        });
+
+        return view('teacher.assessment-marks-class', [
+            'schoolClass' => $class,
+            'courseRows' => $courseRows,
+            ...$this->assessmentPageData($request),
+        ]);
+    }
+
+    public function courseMarks(Request $request, Course $course, SchoolClass $class)
+    {
+        $staffId = $this->teacherAccess->staffId();
+        $this->teacherAccess->assertCanAccessClass($staffId, $class->id, $course->id, $request);
+        $class->loadMissing('category');
+
+        $yearId = AcademicPeriodDefaults::yearId($request);
+        $termId = AcademicPeriodDefaults::termId($request);
+
+        if (! $yearId || ! $termId) {
+            return back()->with('message_error', 'Set a default academic year and term in school settings.');
+        }
+
+        $types = $this->assessmentMarks->typesForClass($class);
+        $marks = $this->assessmentMarks->marksFor($class->id, $course->id, $yearId, $termId);
+
+        $rows = $types->map(function (AssessmentType $type) use ($class, $course, $yearId, $termId, $marks) {
+            $mark = $marks->get($type->id);
+
+            return [
+                'type' => $type,
+                'total_score' => $mark?->total_score,
+                'used_count' => $this->assessmentMarks->usedCount($class->id, $course->id, $type->slug, $yearId, $termId),
+            ];
+        });
+
+        return view('teacher.assessment-marks', [
+            'schoolClass' => $class,
+            'course' => $course,
+            'rows' => $rows,
+            ...$this->assessmentPageData($request),
+        ]);
+    }
+
+    public function saveCourseMarks(Request $request, Course $course, SchoolClass $class)
+    {
+        $staffId = $this->teacherAccess->staffId();
+        $this->teacherAccess->assertCanAccessClass($staffId, $class->id, $course->id, $request);
+
+        $yearId = AcademicPeriodDefaults::yearId($request);
+        $termId = AcademicPeriodDefaults::termId($request);
+
+        if (! $yearId || ! $termId) {
+            return back()->with('message_error', 'Set a default academic year and term in school settings.');
+        }
+
+        $validated = $request->validate([
+            'marks' => 'required|array',
+            'marks.*.assessment_type_id' => 'required|exists:assessment_types,id',
+            'marks.*.total_score' => 'nullable|numeric|min:1|max:9999',
+        ]);
+
+        $allowedTypeIds = $this->assessmentMarks->typesForClass($class)->pluck('id')->all();
+
+        DB::transaction(function () use ($validated, $allowedTypeIds, $class, $course, $yearId, $termId, $staffId) {
+            foreach ($validated['marks'] as $row) {
+                $typeId = (int) $row['assessment_type_id'];
+
+                if (! in_array($typeId, $allowedTypeIds, true)) {
+                    continue;
+                }
+
+                $score = $row['total_score'] ?? null;
+
+                if ($score === null || $score === '') {
+                    ClassCourseAssessmentMark::query()
+                        ->where('school_class_id', $class->id)
+                        ->where('course_id', $course->id)
+                        ->where('assessment_type_id', $typeId)
+                        ->where('academic_year_id', $yearId)
+                        ->where('academic_term_id', $termId)
+                        ->delete();
+
+                    continue;
+                }
+
+                $mark = ClassCourseAssessmentMark::query()->firstOrNew([
+                    'school_class_id' => $class->id,
+                    'course_id' => $course->id,
+                    'assessment_type_id' => $typeId,
+                    'academic_year_id' => $yearId,
+                    'academic_term_id' => $termId,
+                ]);
+
+                if (! $mark->exists) {
+                    $mark->created_by = Auth::id();
+                }
+
+                $mark->total_score = round((float) $score, 2);
+                $mark->staff_id = $staffId;
+                $mark->updated_by = Auth::id();
+                $mark->save();
+            }
+        });
+
+        return back()->with('message_success', 'Assessment marks saved for this subject and term.');
     }
 
     public function scores(AcademicAssessment $assessment)
@@ -309,13 +517,52 @@ class AssessmentController extends Controller implements HasMiddleware
         return back()->with('message_success', 'Assessment deleted successfully.');
     }
 
-    private function activeAssessmentTypes()
+    private function legendAssessmentTypes()
     {
         return AssessmentType::query()
             ->active()
             ->orderBy('sort_order')
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->unique('slug')
+            ->values();
+    }
+
+    private function markableCourses(int $staffId, SchoolClass $class, int $yearId, int $termId)
+    {
+        if ($this->teacherAccess->ownsHomeroomClass($staffId, $class->id)) {
+            $fromAssignments = CourseTeachingAssignment::query()
+                ->with('course')
+                ->where('school_class_id', $class->id)
+                ->when($yearId, fn ($query) => $query->where(function ($inner) use ($yearId) {
+                    $inner->where('academic_year_id', $yearId)->orWhereNull('academic_year_id');
+                }))
+                ->when($termId, fn ($query) => $query->where(function ($inner) use ($termId) {
+                    $inner->where('academic_term_id', $termId)->orWhereNull('academic_term_id');
+                }))
+                ->get()
+                ->pluck('course')
+                ->filter();
+
+            $fromCategory = $class->category
+                ? $class->category->courses()->orderBy('name')->get()
+                : collect();
+
+            return $fromAssignments
+                ->concat($fromCategory)
+                ->unique('id')
+                ->sortBy('name')
+                ->values();
+        }
+
+        return $this->teacherAccess
+            ->subjectAssignments($staffId, $yearId, $termId)
+            ->where('school_class_id', $class->id)
+            ->pluck('course')
+            ->filter()
+            ->unique('id')
+            ->sortBy('name')
+            ->values();
     }
 
     private function assessmentPageData(Request $request): array
