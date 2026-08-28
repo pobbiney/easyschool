@@ -400,11 +400,29 @@
                                 @endif
                             </td>
                             <td>
-                                <button type="button"
-                                    data-url="{{ route('get-pos-category-id', $category->id) }}"
-                                    class="edit-sidebar-btn btn btn-sm btn-outline-primary-600 pos-cat-edit-btn show-pos-category-edit">
-                                    <i class="ri-edit-2-line"></i> Edit
-                                </button>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button type="button"
+                                        data-url="{{ route('get-pos-category-id', $category->id) }}"
+                                        class="edit-sidebar-btn btn btn-sm btn-outline-primary-600 pos-cat-edit-btn show-pos-category-edit">
+                                        <i class="ri-edit-2-line"></i> Edit
+                                    </button>
+                                    @if($category->isInUse())
+                                        <button type="button" class="btn btn-sm btn-outline-neutral-400 text-secondary-light pos-cat-edit-btn"
+                                            title="Cannot delete — used by {{ $category->products_count }} product{{ $category->products_count === 1 ? '' : 's' }}"
+                                            disabled style="opacity:0.65;cursor:not-allowed;">
+                                            <i class="ri-delete-bin-line"></i> Delete
+                                        </button>
+                                    @else
+                                        <form action="{{ route('delete-pos-category-process') }}" method="POST" class="d-inline"
+                                            onsubmit="return confirm('Delete {{ $category->name }}? This cannot be undone.');">
+                                            @csrf
+                                            <input type="hidden" name="category_id" value="{{ $category->id }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger-600 pos-cat-edit-btn">
+                                                <i class="ri-delete-bin-line"></i> Delete
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                         @endforeach

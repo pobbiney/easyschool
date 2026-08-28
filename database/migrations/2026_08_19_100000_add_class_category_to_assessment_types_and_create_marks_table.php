@@ -9,17 +9,35 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('assessment_types', function (Blueprint $table) {
-            $table->dropUnique('assessment_types_slug_unique');
-        });
+        $indexes = collect(Schema::getIndexes('assessment_types'))->pluck('name');
 
-        Schema::table('assessment_types', function (Blueprint $table) {
-            $table->foreignId('class_category_id')
-                ->nullable()
-                ->after('id')
-                ->constrained('class_categories')
-                ->cascadeOnDelete();
-        });
+        if ($indexes->contains('assessment_types_slug_unique')) {
+            Schema::table('assessment_types', function (Blueprint $table) {
+                $table->dropUnique('assessment_types_slug_unique');
+            });
+        } elseif ($indexes->contains('slug')) {
+            Schema::table('assessment_types', function (Blueprint $table) {
+                $table->dropUnique('slug');
+            });
+        } else {
+            $slugUnique = $indexes->first(fn ($name) => is_string($name) && str_contains($name, 'slug') && str_contains($name, 'unique'));
+
+            if ($slugUnique) {
+                Schema::table('assessment_types', function (Blueprint $table) use ($slugUnique) {
+                    $table->dropUnique($slugUnique);
+                });
+            }
+        }
+
+        if (! Schema::hasColumn('assessment_types', 'class_category_id')) {
+            Schema::table('assessment_types', function (Blueprint $table) {
+                $table->foreignId('class_category_id')
+                    ->nullable()
+                    ->after('id')
+                    ->constrained('class_categories')
+                    ->cascadeOnDelete();
+            });
+        }
 
         $templates = DB::table('assessment_types')->whereNull('class_category_id')->get();
         $categories = DB::table('class_categories')
@@ -38,6 +56,15 @@ return new class extends Migration
 
             foreach ($categories->skip(1) as $category) {
                 foreach ($templates as $template) {
+                    $exists = DB::table('assessment_types')
+                        ->where('class_category_id', $category->id)
+                        ->where('slug', $template->slug)
+                        ->exists();
+
+                    if ($exists) {
+                        continue;
+                    }
+
                     DB::table('assessment_types')->insert([
                         'class_category_id' => $category->id,
                         'name' => $template->name,
@@ -56,29 +83,37 @@ return new class extends Migration
             }
         }
 
-        Schema::table('assessment_types', function (Blueprint $table) {
-            $table->unique(['class_category_id', 'name'], 'assessment_types_category_name_unique');
-            $table->unique(['class_category_id', 'slug'], 'assessment_types_category_slug_unique');
+        $indexes = collect(Schema::getIndexes('assessment_types'))->pluck('name');
+
+        Schema::table('assessment_types', function (Blueprint $table) use ($indexes) {
+            if (! $indexes->contains('assessment_types_category_name_unique')) {
+                $table->unique(['class_category_id', 'name'], 'assessment_types_category_name_unique');
+            }
+            if (! $indexes->contains('assessment_types_category_slug_unique')) {
+                $table->unique(['class_category_id', 'slug'], 'assessment_types_category_slug_unique');
+            }
         });
 
-        Schema::create('class_course_assessment_marks', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('school_class_id')->constrained('school_classes')->cascadeOnDelete();
-            $table->foreignId('course_id')->constrained('courses')->cascadeOnDelete();
-            $table->foreignId('assessment_type_id')->constrained('assessment_types')->cascadeOnDelete();
-            $table->foreignId('academic_year_id')->constrained('academic_years')->cascadeOnDelete();
-            $table->foreignId('academic_term_id')->constrained('academic_terms')->cascadeOnDelete();
-            $table->decimal('total_score', 8, 2);
-            $table->foreignId('staff_id')->constrained('staff')->cascadeOnDelete();
-            $table->unsignedBigInteger('created_by')->nullable();
-            $table->unsignedBigInteger('updated_by')->nullable();
-            $table->timestamps();
+        if (! Schema::hasTable('class_course_assessment_marks')) {
+            Schema::create('class_course_assessment_marks', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('school_class_id')->constrained('school_classes')->cascadeOnDelete();
+                $table->foreignId('course_id')->constrained('courses')->cascadeOnDelete();
+                $table->foreignId('assessment_type_id')->constrained('assessment_types')->cascadeOnDelete();
+                $table->foreignId('academic_year_id')->constrained('academic_years')->cascadeOnDelete();
+                $table->foreignId('academic_term_id')->constrained('academic_terms')->cascadeOnDelete();
+                $table->decimal('total_score', 8, 2);
+                $table->foreignId('staff_id')->constrained('staff')->cascadeOnDelete();
+                $table->unsignedBigInteger('created_by')->nullable();
+                $table->unsignedBigInteger('updated_by')->nullable();
+                $table->timestamps();
 
-            $table->unique(
-                ['school_class_id', 'course_id', 'assessment_type_id', 'academic_year_id', 'academic_term_id'],
-                'class_course_assess_marks_unique'
-            );
-        });
+                $table->unique(
+                    ['school_class_id', 'course_id', 'assessment_type_id', 'academic_year_id', 'academic_term_id'],
+                    'class_course_assess_marks_unique'
+                );
+            });
+        }
     }
 
     public function down(): void

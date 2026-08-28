@@ -63,9 +63,12 @@ use App\Http\Controllers\ParentPortal\ParentCommunicationsController;
 use App\Http\Controllers\ParentPortal\ParentBillPaymentController;
 use App\Http\Controllers\ParentPortal\AdminParentMessageController;
 use App\Http\Controllers\SchoolRegistrationController;
+use App\Http\Controllers\Subscription\SchoolSubscriptionPaymentController;
 use App\Http\Controllers\SuperAdmin\SuperAdminAuthController;
 use App\Http\Controllers\SuperAdmin\SuperAdminDashboardController;
 use App\Http\Controllers\SuperAdmin\SuperAdminProfileController;
+use App\Http\Controllers\SuperAdmin\SuperAdminSchoolTermController;
+use App\Http\Controllers\SuperAdmin\SuperAdminSubscriptionController;
 use App\Http\Controllers\SuperAdmin\SuperAdminUserController;
 
 /* Parent Portal (separate auth) */
@@ -114,6 +117,13 @@ Route::post('reset-otp-process/{id}',[AuthenticationController::class,'resetOtp'
 Route::get('register-school', [SchoolRegistrationController::class, 'create'])->name('register-school');
 Route::post('register-school', [SchoolRegistrationController::class, 'store'])->name('register-school.process');
 
+Route::get('renew-subscription', [SchoolSubscriptionPaymentController::class, 'show'])->name('renew-subscription');
+Route::get('renew-subscription/school', [SchoolSubscriptionPaymentController::class, 'lookupSchool'])->name('renew-subscription.school');
+Route::post('renew-subscription/paystack/initialize', [SchoolSubscriptionPaymentController::class, 'initializePaystack'])->name('renew-subscription.paystack.initialize');
+Route::post('renew-subscription/paystack/verify', [SchoolSubscriptionPaymentController::class, 'verifyPaystack'])->name('renew-subscription.paystack.verify');
+Route::get('renew-subscription/activate', [SchoolSubscriptionPaymentController::class, 'showActivate'])->name('renew-subscription.activate');
+Route::post('renew-subscription/activate', [SchoolSubscriptionPaymentController::class, 'activate'])->name('renew-subscription.activate.process');
+
 /* Super Admin */
 Route::prefix('super-admin')->name('super-admin.')->group(function () {
     Route::get('login', [SuperAdminAuthController::class, 'showLogin'])->name('login');
@@ -125,6 +135,8 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
         Route::get('registrations', [SuperAdminDashboardController::class, 'registrations'])->name('registrations');
         Route::post('registrations/{school}/approve', [SuperAdminDashboardController::class, 'approve'])->name('registrations.approve');
         Route::post('registrations/{school}/reject', [SuperAdminDashboardController::class, 'reject'])->name('registrations.reject');
+        Route::get('schools/{school}/subscriptions', [SuperAdminSchoolTermController::class, 'show'])->name('schools.subscriptions');
+        Route::post('schools/{school}/term-dates', [SuperAdminSchoolTermController::class, 'updateDates'])->name('schools.term-dates.update');
         Route::post('schools/{school}/enter', [SuperAdminDashboardController::class, 'enterSchool'])->name('schools.enter');
         Route::post('schools/{school}/suspend', [SuperAdminDashboardController::class, 'suspend'])->name('schools.suspend');
         Route::post('schools/{school}/reactivate', [SuperAdminDashboardController::class, 'reactivate'])->name('schools.reactivate');
@@ -135,6 +147,10 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
         Route::get('admins', [SuperAdminUserController::class, 'index'])->name('admins');
         Route::post('admins', [SuperAdminUserController::class, 'store'])->name('admins.store');
         Route::post('admins/{superAdmin}/toggle-status', [SuperAdminUserController::class, 'toggleStatus'])->name('admins.toggle-status');
+        Route::get('subscriptions', [SuperAdminSubscriptionController::class, 'index'])->name('subscriptions');
+        Route::post('subscriptions', [SuperAdminSubscriptionController::class, 'store'])->name('subscriptions.store');
+        Route::get('subscriptions/{subscription}/edit', [SuperAdminSubscriptionController::class, 'edit'])->name('subscriptions.edit');
+        Route::post('subscriptions/{subscription}', [SuperAdminSubscriptionController::class, 'update'])->name('subscriptions.update');
     });
 });
 
@@ -512,6 +528,7 @@ Route::post('logout-authentication-process',[DashboardController::class,'logoutA
         Route::post('add-pos-category-process', 'store')->name('add-pos-category-process');
         Route::get('get-pos-category-id/{id}', 'show')->name('get-pos-category-id');
         Route::post('update-pos-category-process', 'update')->name('update-pos-category-process');
+        Route::post('delete-pos-category-process', 'destroy')->name('delete-pos-category-process');
     });
 
    Route::controller(PosStockController::class)->group(function () {

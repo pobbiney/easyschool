@@ -269,13 +269,29 @@ class BillPaymentController extends Controller
             return response()->json(['message' => 'Missing reference.'], 422);
         }
 
+        if (str_starts_with((string) $reference, 'SUB-')) {
+            try {
+                app(\App\Http\Controllers\Subscription\SchoolSubscriptionPaymentController::class)
+                    ->completePaystackFromWebhook((string) $reference);
+            } catch (InvalidArgumentException|RuntimeException) {
+                return response()->json(['message' => 'Unable to process webhook.'], 422);
+            }
+
+            return response()->json(['message' => 'Webhook processed.']);
+        }
+
         try {
             $this->completePaystackTransaction($reference);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             try {
                 app(PosSaleController::class)->completePaystackFromWebhook($reference);
-            } catch (InvalidArgumentException|RuntimeException) {
-                return response()->json(['message' => 'Unable to process webhook.'], 422);
+            } catch (InvalidArgumentException|RuntimeException|\Illuminate\Database\Eloquent\ModelNotFoundException) {
+                try {
+                    app(\App\Http\Controllers\Subscription\SchoolSubscriptionPaymentController::class)
+                        ->completePaystackFromWebhook((string) $reference);
+                } catch (InvalidArgumentException|RuntimeException) {
+                    return response()->json(['message' => 'Unable to process webhook.'], 422);
+                }
             }
         } catch (InvalidArgumentException|RuntimeException) {
             return response()->json(['message' => 'Unable to process webhook.'], 422);

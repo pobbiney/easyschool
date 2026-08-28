@@ -622,6 +622,59 @@
         color: #94a3b8;
     }
 
+    .session-date {
+        display: block;
+        width: 100%;
+        min-height: 48px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        border: 1.5px solid #e2e8f0;
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 1.4;
+        color: var(--firm-ink);
+        background-color: #fff;
+        cursor: pointer;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .session-date:focus {
+        border-color: var(--firm-teal);
+        box-shadow: 0 0 0 4px rgba(37, 161, 148, 0.12);
+        outline: none;
+    }
+
+    .session-date.is-locked {
+        background-color: #f8fafc;
+        cursor: not-allowed;
+        color: #64748b;
+    }
+
+    .alert.session-lock-note {
+        display: none;
+        margin: 0 0 16px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        background: #f8d7da;
+        border: 1px solid #f1aeb5;
+        color: #842029;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .alert.session-lock-note.is-visible {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .alert.session-lock-note i {
+        color: #dc3545;
+        font-size: 18px;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
     @media (max-width: 767px) {
         .firm-session-grid {
             grid-template-columns: 1fr;
@@ -652,7 +705,8 @@
 
     <div class="firm-session-card{{ !empty($focusAcademicSession) ? ' is-highlighted' : '' }}" id="academicSessionSection">
         <h3><i class="ri-calendar-2-line"></i> Current Academic Session</h3>
-        <p class="session-hint">Choose the active year and term used as the default across billing, registration, and student forms. Click <strong>Save Changes</strong> when done.</p>
+        <p class="session-hint">Choose the active year and term used as the default across billing, registration, and student forms. Opening and vacation dates are required the first time you save a year and term. After that, those dates cannot be changed here. To set a new period, choose a different year and term. Click <strong>Save Changes</strong> when done.</p>
+        <p class="alert alert-danger session-lock-note" id="sessionDatesLockNote" role="alert"><i class="ri-error-warning-fill"></i><span>Opening and vacation dates for this year and term are locked. Choose a new year and term to set the next period, or ask the platform administrator to change these dates.</span></p>
         <div class="firm-session-grid">
             <div class="session-field">
                 <label for="default_academic_year_id">
@@ -660,9 +714,9 @@
                     Academic Year <span class="req">*</span>
                 </label>
                 <select id="default_academic_year_id" name="default_academic_year_id" class="session-select" required>
-                    <option value="" disabled {{ old('default_academic_year_id', $school->default_academic_year_id ?? '') ? '' : 'selected' }}>Select academic year</option>
+                    <option value="" disabled {{ ($selectedYearId ?? $school->default_academic_year_id ?? '') ? '' : 'selected' }}>Select academic year</option>
                     @forelse($academicYears ?? [] as $year)
-                        <option value="{{ $year->id }}" @selected(old('default_academic_year_id', $school->default_academic_year_id ?? '') == $year->id)>{{ $year->name }}</option>
+                        <option value="{{ $year->id }}" @selected(($selectedYearId ?? $school->default_academic_year_id ?? '') == $year->id)>{{ $year->name }}</option>
                     @empty
                         <option value="" disabled>No active academic years — add them under Settings first</option>
                     @endforelse
@@ -675,14 +729,32 @@
                     Academic Term <span class="req">*</span>
                 </label>
                 <select id="default_academic_term_id" name="default_academic_term_id" class="session-select" required>
-                    <option value="" disabled {{ old('default_academic_term_id', $school->default_academic_term_id ?? '') ? '' : 'selected' }}>Select academic term</option>
+                    <option value="" disabled {{ ($selectedTermId ?? $school->default_academic_term_id ?? '') ? '' : 'selected' }}>Select academic term</option>
                     @forelse($academicTerms ?? [] as $term)
-                        <option value="{{ $term->id }}" @selected(old('default_academic_term_id', $school->default_academic_term_id ?? '') == $term->id)>{{ $term->name }}</option>
+                        <option value="{{ $term->id }}" @selected(($selectedTermId ?? $school->default_academic_term_id ?? '') == $term->id)>{{ $term->name }}</option>
                     @empty
                         <option value="" disabled>No active academic terms — add them under Settings first</option>
                     @endforelse
                 </select>
                 @error('default_academic_term_id') <small class="text-danger">{{ $message }}</small> @enderror
+            </div>
+            <div class="session-field">
+                <label for="term_opening_date">
+                    <i class="ri-login-circle-line"></i>
+                    Opening Date <span class="req">*</span>
+                </label>
+                <input type="date" id="term_opening_date" name="term_opening_date" class="session-date" required
+                    value="{{ old('term_opening_date', optional($currentCalendar ?? null)->opening_date?->format('Y-m-d')) }}">
+                @error('term_opening_date') <small class="text-danger">{{ $message }}</small> @enderror
+            </div>
+            <div class="session-field">
+                <label for="term_vacation_date">
+                    <i class="ri-logout-circle-line"></i>
+                    Vacation Date <span class="req">*</span>
+                </label>
+                <input type="date" id="term_vacation_date" name="term_vacation_date" class="session-date" required
+                    value="{{ old('term_vacation_date', optional($currentCalendar ?? null)->vacation_date?->format('Y-m-d')) }}">
+                @error('term_vacation_date') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
         </div>
     </div>
@@ -871,7 +943,7 @@
             $('.firm-tab[data-tab="contact"]').addClass('active');
             $('.firm-tab-pane').removeClass('active');
             $('#tab-contact').addClass('active');
-        @elseif($errors->has('default_academic_year_id') || $errors->has('default_academic_term_id'))
+        @elseif($errors->has('default_academic_year_id') || $errors->has('default_academic_term_id') || $errors->has('term_opening_date') || $errors->has('term_vacation_date'))
             document.getElementById('academicSessionSection')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         @else
             $('.firm-tab').removeClass('active');
@@ -927,6 +999,56 @@
     }
 
     $('#inputName, #inputMotto, #inputAddress, #inputPhone, #inputEmail, #inputWebsite').on('input', updatePreview);
+
+    const termCalendars = @json($termCalendars ?? []);
+    const canEditLockedTermDates = @json((bool) ($canEditLockedTermDates ?? false));
+
+    function selectedTermIsLocked() {
+        if (canEditLockedTermDates) {
+            return false;
+        }
+
+        const yearId = $('#default_academic_year_id').val();
+        const termId = $('#default_academic_term_id').val();
+        const saved = (yearId && termId) ? (termCalendars[yearId + ':' + termId] || {}) : {};
+
+        return !!(saved.locked && saved.opening_date && saved.vacation_date);
+    }
+
+    function applyTermDateLock() {
+        const locked = selectedTermIsLocked();
+        const $dates = $('#term_opening_date, #term_vacation_date');
+
+        $dates.prop('readonly', locked).toggleClass('is-locked', locked);
+        $('#sessionDatesLockNote').toggleClass('is-visible', locked);
+    }
+
+    function fillTermDates() {
+        const yearId = $('#default_academic_year_id').val();
+        const termId = $('#default_academic_term_id').val();
+        const saved = (yearId && termId) ? (termCalendars[yearId + ':' + termId] || {}) : {};
+
+        $('#term_opening_date').val(saved.opening_date || '');
+        $('#term_vacation_date').val(saved.vacation_date || '');
+        applyTermDateLock();
+    }
+
+    $('#default_academic_year_id, #default_academic_term_id').on('change', fillTermDates);
+
+    $('#term_opening_date, #term_vacation_date').on('keydown mousedown click focus', function (e) {
+        if (!$(this).prop('readonly')) {
+            return;
+        }
+
+        e.preventDefault();
+        this.blur();
+    });
+
+    applyTermDateLock();
+
+    $('#term_opening_date').on('change', function () {
+        $('#term_vacation_date').attr('min', this.value || '');
+    }).trigger('change');
 
     $('#schoolLogoInput').on('change', function () {
         let file = this.files[0];

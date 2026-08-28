@@ -77,4 +77,26 @@ class PosCategoryController extends Controller
 
         return back()->with('message_success', 'Category updated successfully.');
     }
+
+    public function destroy(Request $request)
+    {
+        $request->validate([
+            'category_id' => 'required|exists:pos_categories,id',
+        ]);
+
+        $category = PosCategory::query()
+            ->withCount('products')
+            ->findOrFail($request->category_id);
+
+        if ($category->isInUse()) {
+            return back()->with(
+                'message_error',
+                'This category cannot be deleted because it is used by '.$category->products_count.' product'.($category->products_count === 1 ? '' : 's').'.'
+            );
+        }
+
+        $category->delete();
+
+        return back()->with('message_success', 'Category deleted successfully.');
+    }
 }

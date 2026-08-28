@@ -95,6 +95,21 @@ class SchoolSetting extends Model
         return $this->belongsTo(AcademicTerm::class, 'default_academic_term_id');
     }
 
+    public function currentTermCalendar(): ?AcademicTermCalendar
+    {
+        $schoolId = $this->school_id ?: TenantContext::schoolId();
+
+        $query = AcademicTermCalendar::query()
+            ->orderByDesc('updated_at')
+            ->orderByDesc('id');
+
+        if ($schoolId) {
+            $query->where('school_id', $schoolId);
+        }
+
+        return $query->first();
+    }
+
     public function defaultAcademicYearId(): ?int
     {
         $year = $this->defaultAcademicYear;

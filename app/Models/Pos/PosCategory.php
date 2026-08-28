@@ -22,4 +22,13 @@ class PosCategory extends Model
     {
         return $this->hasMany(PosProduct::class, 'pos_category_id');
     }
+
+    public function isInUse(): bool
+    {
+        if (isset($this->products_count)) {
+            return (int) $this->products_count > 0;
+        }
+
+        return $this->products()->exists();
+    }
 }

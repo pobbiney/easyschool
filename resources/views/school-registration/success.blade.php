@@ -156,6 +156,11 @@
     <p>Thank you, <span class="school-name">{{ $school->name }}</span>.</p>
     <p>Your application is pending approval by the system administrator.</p>
     <p>Once approved, you will receive your unique school code and can sign in as school administrator.</p>
+    @if(!empty($smsSent))
+      <p>We have sent an SMS to confirm we received your registration. You will be notified when it is approved.</p>
+    @elseif($school->admin_phone || $school->phone)
+      <p>You will be notified by SMS when your registration is approved.</p>
+    @endif
     <a href="{{ route('admin-login') }}" class="submit">
       Return to sign in
       <i class="ri-arrow-right-line"></i>

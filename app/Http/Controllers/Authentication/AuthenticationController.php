@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\School;
 use App\Models\User;
 use App\Services\Tenant\SchoolActivityLogger;
+use App\Support\SchoolAdminCategory;
 use App\Support\TenantContext;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
@@ -55,11 +56,7 @@ class AuthenticationController extends Controller
         return back()->with('login_error_message', 'Invalid school code or school is not approved.');
     }
 
-    if ($school->isSuspended()) {
-        return back()->with('login_error_message', "This school's account is suspended. Contact support.");
-    }
-
-    if (! $school->isApproved()) {
+    if ($school->isPending() || $school->status === School::STATUS_REJECTED) {
         return back()->with('login_error_message', 'Invalid school code or school is not approved.');
     }
 
@@ -113,6 +110,25 @@ class AuthenticationController extends Controller
             'login_error_message',
             "Wrong password. {$attemptsLeft} attempt(s) left before account lock."
         );
+    }
+
+    if ($school->isSuspendedByAdmin()) {
+        return back()->with('login_error_message', "This school's account is suspended. Contact support.");
+    }
+
+    if ($school->isSubscriptionExpired() || $school->isSuspendedForSubscription()) {
+        if (SchoolAdminCategory::userIsAdmin($user, $school)) {
+            return back()
+                ->withInput($request->only('school_code', 'email'))
+                ->with('login_error_message', 'Your school subscription has ended. Renew to sign in.')
+                ->with('subscription_renew_url', route('renew-subscription', ['school_code' => $school->code]));
+        }
+
+        return back()->with('login_error_message', 'Subscription has ended. Ask your school administrator to renew.');
+    }
+
+    if (! $school->isApproved()) {
+        return back()->with('login_error_message', 'Invalid school code or school is not approved.');
     }
 
     // Login successful

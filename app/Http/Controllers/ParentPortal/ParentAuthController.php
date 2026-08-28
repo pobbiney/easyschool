@@ -46,10 +46,16 @@ class ParentAuthController extends Controller
                 ->with('login_error_message', 'Invalid school code or school portal is unavailable.');
         }
 
-        if ($school->isSuspended()) {
+        if ($school->isSuspendedByAdmin()) {
             return back()
                 ->withInput($request->only('school_code', 'phone'))
                 ->with('login_error_message', "This school's account is suspended. Contact support.");
+        }
+
+        if ($school->isSubscriptionExpired() || $school->isSuspendedForSubscription()) {
+            return back()
+                ->withInput($request->only('school_code', 'phone'))
+                ->with('login_error_message', 'The school subscription has ended. Ask the school administrator to renew.');
         }
 
         if (! $school->isApproved()) {

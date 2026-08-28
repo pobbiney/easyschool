@@ -20,6 +20,7 @@ class SchoolProvisioningService
     public function __construct(
         protected SchoolCodeGenerator $codeGenerator,
         protected SchoolActivityLogger $activityLogger,
+        protected SchoolRegistrationSmsService $registrationSms,
     ) {}
 
     public function approve(School $school, SuperAdmin $approver): School
@@ -28,60 +29,68 @@ class SchoolProvisioningService
             throw new \InvalidArgumentException('Only pending schools can be approved.');
         }
 
-        return DB::transaction(function () use ($school, $approver) {
-            $code = $this->codeGenerator->generate();
+        try {
+            $school = DB::transaction(function () use ($school, $approver) {
+                $code = $this->codeGenerator->generate();
 
-            $school->update([
-                'code' => $code,
-                'status' => School::STATUS_APPROVED,
-                'approved_at' => now(),
-                'approved_by' => $approver->id,
-            ]);
+                $school->update([
+                    'code' => $code,
+                    'status' => School::STATUS_APPROVED,
+                    'approved_at' => now(),
+                    'approved_by' => $approver->id,
+                ]);
 
-            TenantContext::forceSchool($school->id, $code);
+                TenantContext::forceSchool($school->id, $code);
 
-            $settings = SchoolSetting::query()->create([
-                'school_id' => $school->id,
-                'name' => $school->name,
-                'address' => $school->address,
-                'phone' => $school->phone,
-                'email' => $school->email,
-                'website' => $school->website,
-            ]);
+                $settings = SchoolSetting::query()->updateOrCreate(
+                    ['school_id' => $school->id],
+                    [
+                        'name' => $school->name,
+                        'address' => $school->address,
+                        'phone' => $school->phone,
+                        'email' => $school->email,
+                        'website' => $school->website,
+                    ]
+                );
 
-            [$year, $term] = $this->seedAcademicDefaults($school, $settings);
-            $adminCategoryId = $this->seedUserCategories($school);
+                [$year, $term] = $this->seedAcademicDefaults($school, $settings);
+                $adminCategoryId = $this->seedUserCategories($school);
 
-            $adminUser = User::query()->create([
-                'school_id' => $school->id,
-                'name' => $school->admin_name,
-                'email' => $school->admin_email,
-                'phone' => $school->admin_phone,
-                'password' => (string) $school->getAttributes()['admin_password'],
-                'user_cat' => $adminCategoryId,
-                'cat_id' => $adminCategoryId,
-                'status' => 'Active',
-            ]);
-
-            $this->grantAdminAccessLinks($adminUser, $adminCategoryId);
-
-            TenantContext::forceSchool(null);
-
-            $this->activityLogger->log(
-                action: 'school.approved',
-                description: "School approved with code {$code}",
-                payload: [
+                $adminUser = User::query()->create([
                     'school_id' => $school->id,
-                    'admin_user_id' => $adminUser->id,
-                ],
-                schoolId: $school->id,
-                schoolCode: $code,
-                actorType: 'super_admin',
-                actorId: $approver->id,
-            );
+                    'name' => $school->admin_name,
+                    'email' => $school->admin_email,
+                    'phone' => $school->admin_phone,
+                    'password' => (string) $school->getAttributes()['admin_password'],
+                    'user_cat' => $adminCategoryId,
+                    'cat_id' => $adminCategoryId,
+                    'status' => 'Active',
+                ]);
 
-            return $school->fresh(['settings']);
-        });
+                $this->grantAdminAccessLinks($adminUser, $adminCategoryId);
+
+                $this->activityLogger->log(
+                    action: 'school.approved',
+                    description: "School approved with code {$code}",
+                    payload: [
+                        'school_id' => $school->id,
+                        'admin_user_id' => $adminUser->id,
+                    ],
+                    schoolId: $school->id,
+                    schoolCode: $code,
+                    actorType: 'super_admin',
+                    actorId: $approver->id,
+                );
+
+                return $school->fresh(['settings']);
+            });
+        } finally {
+            TenantContext::forceSchool(null);
+        }
+
+        $this->registrationSms->notifyApproved($school);
+
+        return $school;
     }
 
     public function reject(School $school, SuperAdmin $approver, string $reason): School
@@ -107,6 +116,26 @@ class SchoolProvisioningService
 
     protected function seedAcademicDefaults(School $school, SchoolSetting $settings): array
     {
+        $existingYear = AcademicYear::query()
+            ->where('school_id', $school->id)
+            ->orderBy('id')
+            ->first();
+
+        $existingTerm = AcademicTerm::query()
+            ->where('school_id', $school->id)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->first();
+
+        if ($existingYear && $existingTerm) {
+            $settings->update([
+                'default_academic_year_id' => $existingYear->id,
+                'default_academic_term_id' => $existingTerm->id,
+            ]);
+
+            return [$existingYear, $existingTerm];
+        }
+
         $yearLabel = now()->format('Y').'/'.now()->addYear()->format('Y');
 
         $year = AcademicYear::query()->create([
@@ -134,6 +163,20 @@ class SchoolProvisioningService
 
     protected function seedUserCategories(School $school): int
     {
+        $existingAdmin = UserCat::query()
+            ->withoutGlobalScopes()
+            ->where('school_id', $school->id)
+            ->where(function ($query) {
+                $query->where('cat_name', 'Admin')
+                    ->orWhere('cat_name', 'Administrator');
+            })
+            ->orderBy('cat_id')
+            ->first();
+
+        if ($existingAdmin) {
+            return (int) $existingAdmin->cat_id;
+        }
+
         $templateSchoolId = School::query()
             ->where('status', School::STATUS_APPROVED)
             ->where('id', '!=', $school->id)

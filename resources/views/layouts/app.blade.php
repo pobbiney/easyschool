@@ -917,6 +917,33 @@ body.swal2-toast-shown .swal2-container .swal2-popup {
 </div>
 @endif
 
+@if(! empty($subscriptionNotice))
+  @php
+    $ended = ($subscriptionNotice['phase'] ?? '') === 'ended';
+    $daysLeft = (int) ($subscriptionNotice['days_left'] ?? 0);
+    $daysLabel = $daysLeft === 0 ? 'today' : ($daysLeft === 1 ? '1 day' : $daysLeft.' days');
+  @endphp
+  <div class="alert {{ $ended ? 'alert-danger' : 'alert-warning' }} mb-0 rounded-0 text-center d-flex align-items-center justify-content-center gap-3 flex-wrap" role="alert">
+    <i class="{{ $ended ? 'ri-error-warning-fill' : 'ri-time-line' }}"></i>
+    <span>
+      @if($ended)
+        This school's subscription ended on {{ $subscriptionNotice['vacation_date']->format('d M Y') }}.
+        Renew within {{ $daysLabel }} (by {{ $subscriptionNotice['access_ends_on']->format('d M Y') }}) or access will be suspended.
+      @else
+        This school's subscription expires in {{ $daysLabel }} ({{ $subscriptionNotice['vacation_date']->format('d M Y') }}). Please renew to avoid interruption.
+      @endif
+      @unless($subscriptionNotice['can_renew'] ?? false)
+        Ask your school administrator to renew.
+      @endunless
+    </span>
+    @if(! empty($subscriptionNotice['renew_url']))
+      <a href="{{ $subscriptionNotice['renew_url'] }}" class="btn btn-sm {{ $ended ? 'btn-danger' : 'btn-warning' }}">
+        Renew subscription
+      </a>
+    @endif
+  </div>
+@endif
+
     @yield('content')
   
 

@@ -354,6 +354,34 @@
   .sa-badge.pending { background: rgba(245,158,11,0.15); color: #fcd34d; border: 1px solid rgba(245,158,11,0.3); }
   .sa-badge.suspended { background: rgba(244,63,94,0.15); color: #fda4af; border: 1px solid rgba(244,63,94,0.3); }
   .sa-badge.rejected { background: rgba(255,255,255,0.06); color: #A6A39B; border: 1px solid rgba(255,255,255,0.1); }
+  .sa-badge.paid { background: rgba(37,161,148,0.15); color: #5eead4; border: 1px solid rgba(37,161,148,0.3); }
+  .sa-badge.activated { background: rgba(124,92,255,0.15); color: #C4B5FD; border: 1px solid rgba(124,92,255,0.3); }
+
+  .sa-muted { color: #706D66; }
+
+  .sa-school-pay {
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .sa-school-pay:last-child { border-bottom: none; }
+
+  .sa-school-pay-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 18px 24px 12px;
+  }
+
+  .sa-school-pay-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin-top: 8px;
+    font-size: 12.5px;
+    color: #83807A;
+  }
 
   .sa-actions {
     display: flex;
@@ -530,7 +558,30 @@
     background: rgba(124,92,255,0.06);
   }
 
-  .sa-input::placeholder { color: #706D66; }
+  .sa-input[type="date"],
+  select.sa-input {
+    color-scheme: dark;
+  }
+
+  select.sa-input {
+    appearance: none;
+    -webkit-appearance: none;
+    background-color: #151918;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23C9C6BE' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 40px;
+  }
+
+  select.sa-input:focus {
+    background-color: #1c2422;
+  }
+
+  select.sa-input option,
+  select.sa-input optgroup {
+    background-color: #151918;
+    color: #F5F3EE;
+  }
 
   .sa-input[disabled] {
     opacity: 0.65;
@@ -605,6 +656,9 @@
       </a>
       <a href="{{ route('super-admin.registrations') }}" class="{{ request()->routeIs('super-admin.registrations*') ? 'active' : '' }}">
         <i class="ri-user-received-2-line"></i> Registrations
+      </a>
+      <a href="{{ route('super-admin.subscriptions') }}" class="{{ request()->routeIs('super-admin.subscriptions*') ? 'active' : '' }}">
+        <i class="ri-bank-card-line"></i> Subscription
       </a>
       <a href="{{ route('super-admin.activity') }}" class="{{ request()->routeIs('super-admin.activity') ? 'active' : '' }}">
         <i class="ri-history-line"></i> Activity

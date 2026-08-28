@@ -431,8 +431,16 @@
         <div class="logo"><img src="{{ asset('assets/images/logo-light.png') }}" alt="EasySchool"></div>
         <h2>Welcome back!</h2>
         <p class="sub">Sign in to continue to your dashboard</p>
+         @if (session('login_success_message'))
+            <p class="alert" align="center" style="background:rgba(37,161,148,0.15);border:1px solid rgba(37,161,148,0.35);color:#5eead4;">{{ session('login_success_message') }}</p>
+        @endif
          @if (session('login_error_message'))
             <p class="alert alert-danger" align="center">{{session('login_error_message')}}</p>
+            @if(session('subscription_renew_url'))
+              <p align="center" style="margin-top:-8px;margin-bottom:16px;">
+                <a href="{{ session('subscription_renew_url') }}" style="color:#25A194;font-weight:600;text-decoration:none;">Renew subscription</a>
+              </p>
+            @endif
         @endif<br/>
        
         <form id="loginForm" enctype="multipart/form-data" action="{{ route('authentication-process') }}" method="POST">
@@ -455,7 +463,7 @@
                 <circle cx="12" cy="8" r="4"/>
                 <path d="M4 20c0-4 3.5-7 8-7s8 3 8 7"/>
               </svg>
-              <input type="text" name="email" placeholder="Enter your Email" required>
+              <input type="text" name="email" value="{{ old('email') }}" placeholder="Enter your Email" required>
                @error('email') <small style="color:red;">{{$message}}</small>@enderror
             </div>
           </div>

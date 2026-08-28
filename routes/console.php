@@ -2,6 +2,7 @@
 
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -29,3 +30,5 @@ Artisan::command('parent:sync-accounts', function () {
     $count = app(\App\Services\ParentPortal\ParentAccountService::class)->syncAllActiveStudents();
     $this->info("Synced parent accounts for {$count} active student record(s).");
 })->purpose('Create or update parent portal accounts from active students');
+
+Schedule::command('subscriptions:expire')->daily();

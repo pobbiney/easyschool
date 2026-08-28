@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class School extends Model
@@ -15,6 +16,10 @@ class School extends Model
 
     public const STATUS_SUSPENDED = 'suspended';
 
+    public const SUSPENSION_REASON_SUBSCRIPTION = 'subscription';
+
+    public const SUSPENSION_REASON_ADMIN = 'admin';
+
     protected $fillable = [
         'code',
         'name',
@@ -23,6 +28,7 @@ class School extends Model
         'email',
         'website',
         'status',
+        'suspension_reason',
         'admin_name',
         'admin_email',
         'admin_phone',
@@ -46,6 +52,16 @@ class School extends Model
         return $this->hasOne(SchoolSetting::class);
     }
 
+    public function subscriptionPayments(): HasMany
+    {
+        return $this->hasMany(SchoolSubscriptionPayment::class);
+    }
+
+    public function termCalendars(): HasMany
+    {
+        return $this->hasMany(AcademicTermCalendar::class);
+    }
+
     public function isApproved(): bool
     {
         return $this->status === self::STATUS_APPROVED;
@@ -59,6 +75,21 @@ class School extends Model
     public function isSuspended(): bool
     {
         return $this->status === self::STATUS_SUSPENDED;
+    }
+
+    public function isSuspendedForSubscription(): bool
+    {
+        return $this->isSuspended() && $this->suspension_reason === self::SUSPENSION_REASON_SUBSCRIPTION;
+    }
+
+    public function isSuspendedByAdmin(): bool
+    {
+        return $this->isSuspended() && $this->suspension_reason !== self::SUSPENSION_REASON_SUBSCRIPTION;
+    }
+
+    public function isSubscriptionExpired(): bool
+    {
+        return app(\App\Services\Subscription\SchoolSubscriptionService::class)->isSubscriptionExpired($this);
     }
 
     public function displayLabel(): string

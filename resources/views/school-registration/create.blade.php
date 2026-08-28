@@ -393,7 +393,7 @@
         <div class="step-num">1</div>
         <div>
           <strong>Submit registration</strong>
-          <span>Fill in your school details and administrator account.</span>
+          <span>Fill in your school details and administrator account. We SMS the admin phone after you submit.</span>
         </div>
       </div>
       <div class="step">
@@ -508,10 +508,10 @@
           </div>
 
           <div class="field">
-            <label>Admin phone</label>
+            <label>Admin phone <span class="req">*</span></label>
             <div class="input-wrap">
               <i class="ri-smartphone-line"></i>
-              <input type="text" name="admin_phone" value="{{ old('admin_phone') }}" placeholder="024xxxxxxx">
+              <input type="text" name="admin_phone" value="{{ old('admin_phone') }}" placeholder="024xxxxxxx" required>
             </div>
             @error('admin_phone')<span class="field-error">{{ $message }}</span>@enderror
           </div>

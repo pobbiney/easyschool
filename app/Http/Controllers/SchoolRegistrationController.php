@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\School;
 use App\Services\Tenant\SchoolActivityLogger;
+use App\Services\Tenant\SchoolRegistrationSmsService;
+use App\Support\GhanaPhone;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Password;
 
@@ -24,7 +26,16 @@ class SchoolRegistrationController extends Controller
             'website' => 'nullable|string|max:255',
             'admin_name' => 'required|string|max:255',
             'admin_email' => 'required|email|max:255',
-            'admin_phone' => 'nullable|string|max:50',
+            'admin_phone' => [
+                'required',
+                'string',
+                'max:50',
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    if (! GhanaPhone::normalize(is_string($value) ? $value : null)) {
+                        $fail('Enter a valid Ghana phone number (e.g. 024xxxxxxx).');
+                    }
+                },
+            ],
             'admin_password' => ['required', 'confirmed', Password::min(8)],
         ]);
 
@@ -48,6 +59,8 @@ class SchoolRegistrationController extends Controller
             schoolId: $school->id,
         );
 
-        return view('school-registration.success', compact('school'));
+        $smsSent = app(SchoolRegistrationSmsService::class)->notifySubmitted($school);
+
+        return view('school-registration.success', compact('school', 'smsSent'));
     }
 }

@@ -50,6 +50,7 @@
                     </p>
                 </div>
                 <div class="p-0">
+                    @if($assessmentTypes->isNotEmpty())
                     <table class="table bordered-table mb-0 data-table" id="dataTable" data-page-length="10">
                         <thead>
                             <tr>
@@ -64,7 +65,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($assessmentTypes as $type)
+                            @foreach($assessmentTypes as $type)
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
                                 <td><span class="text-primary-600 fw-semibold">{{ $type->name }}</span></td>
@@ -104,15 +105,24 @@
                                     </div>
                                 </td>
                             </tr>
-                            @empty
-                            <tr>
-                                <td colspan="8" class="text-center text-secondary-light py-32">
-                                    No assessment types for this class category yet.
-                                </td>
-                            </tr>
-                            @endforelse
+                            @endforeach
                         </tbody>
                     </table>
+                    @else
+                    <div class="text-center py-56 px-24">
+                        <h6 class="fw-semibold mb-6">No assessment types yet</h6>
+                        <p class="text-sm text-secondary-light mb-16">
+                            @if($classCategories->isEmpty())
+                                Add a class category first, then set assessment types for it.
+                            @else
+                                No assessment types for this class category yet.
+                            @endif
+                        </p>
+                        @if($classCategories->isNotEmpty())
+                            <button type="button" class="my-sidebar-btn btn btn-primary-600 btn-sm">Add Assessment Type</button>
+                        @endif
+                    </div>
+                    @endif
                 </div>
             </div>
         </div>

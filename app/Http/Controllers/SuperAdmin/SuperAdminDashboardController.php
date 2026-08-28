@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AcademicTermCalendar;
 use App\Models\School;
 use App\Models\SchoolActivityLog;
 use App\Models\Staff;
@@ -19,27 +20,50 @@ class SuperAdminDashboardController extends Controller
     public function index()
     {
         $schools = School::query()
-            ->withCount([
-                'settings',
+            ->with([
+                'settings' => function ($query) {
+                    $query->withoutGlobalScopes();
+                },
+                'subscriptionPayments' => function ($query) {
+                    $query->with('subscription')->latest('id');
+                },
             ])
+            ->withCount('subscriptionPayments')
             ->orderByDesc('created_at')
-            ->get()
-            ->map(function (School $school) {
-                $school->students_count = Student::query()
-                    ->withoutGlobalScopes()
-                    ->where('school_id', $school->id)
-                    ->count();
-                $school->staff_count = Staff::query()
-                    ->withoutGlobalScopes()
-                    ->where('school_id', $school->id)
-                    ->count();
-                $school->users_count = User::query()
-                    ->withoutGlobalScopes()
-                    ->where('school_id', $school->id)
-                    ->count();
+            ->get();
 
-                return $school;
-            });
+        $calendarsBySchool = $schools->isEmpty()
+            ? collect()
+            : AcademicTermCalendar::query()
+                ->withoutGlobalScopes()
+                ->whereIn('school_id', $schools->pluck('id'))
+                ->get()
+                ->groupBy('school_id');
+
+        $schools = $schools->map(function (School $school) use ($calendarsBySchool) {
+            $school->students_count = Student::query()
+                ->withoutGlobalScopes()
+                ->where('school_id', $school->id)
+                ->count();
+            $school->staff_count = Staff::query()
+                ->withoutGlobalScopes()
+                ->where('school_id', $school->id)
+                ->count();
+            $school->users_count = User::query()
+                ->withoutGlobalScopes()
+                ->where('school_id', $school->id)
+                ->count();
+
+            $schoolCalendars = $calendarsBySchool->get($school->id, collect());
+            $school->current_calendar = $schoolCalendars
+                ->sortByDesc(function (AcademicTermCalendar $calendar) {
+                    return [$calendar->updated_at?->timestamp ?? 0, $calendar->id];
+                })
+                ->first();
+            $school->latest_payment = $school->subscriptionPayments->first();
+
+            return $school;
+        });
 
         $pendingCount = $schools->where('status', School::STATUS_PENDING)->count();
         $approvedCount = $schools->where('status', School::STATUS_APPROVED)->count();
@@ -68,7 +92,7 @@ class SuperAdminDashboardController extends Controller
 
         return redirect()
             ->route('super-admin.registrations')
-            ->with('message_success', "Approved {$school->name}. School code: {$school->code}");
+            ->with('message_success', "Approved {$school->name}. School code: {$school->code}. An SMS was sent to the registrant with login details.");
     }
 
     public function reject(Request $request, School $school, SchoolProvisioningService $provisioning)
@@ -106,7 +130,10 @@ class SuperAdminDashboardController extends Controller
 
     public function suspend(School $school, SchoolActivityLogger $logger)
     {
-        $school->update(['status' => School::STATUS_SUSPENDED]);
+        $school->update([
+            'status' => School::STATUS_SUSPENDED,
+            'suspension_reason' => School::SUSPENSION_REASON_ADMIN,
+        ]);
 
         $logger->log(
             action: 'school.suspended',
@@ -123,7 +150,10 @@ class SuperAdminDashboardController extends Controller
 
     public function reactivate(School $school, SchoolActivityLogger $logger)
     {
-        $school->update(['status' => School::STATUS_APPROVED]);
+        $school->update([
+            'status' => School::STATUS_APPROVED,
+            'suspension_reason' => null,
+        ]);
 
         $logger->log(
             action: 'school.reactivated',
