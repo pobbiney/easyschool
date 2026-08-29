@@ -132,10 +132,12 @@ class AuthenticationController extends Controller
     }
 
     // Login successful
+    Auth::guard('parent')->logout();
     Auth::login($user);
 
     $request->session()->regenerate();
     TenantContext::setSchool($school);
+    $request->session()->forget('url.intended');
 
     // Reset attempts
     $user->login_attempts = 0;
@@ -157,7 +159,7 @@ class AuthenticationController extends Controller
         payload: ['user_id' => $user->id, 'email' => $user->email],
     );
 
-    return redirect()->intended('dashboard');
+    return redirect()->route('dashboard');
         
     }
 

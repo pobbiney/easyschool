@@ -90,6 +90,7 @@ class ParentAuthController extends Controller
                 ->with('login_error_message', 'Phone number or password is incorrect.');
         }
 
+        Auth::logout();
         Auth::guard('parent')->login($parent, $request->boolean('remember'));
         TenantContext::setSchool($school);
         $parent->update(['last_login_at' => now()]);
@@ -100,7 +101,14 @@ class ParentAuthController extends Controller
                 ->with('message_success', 'Welcome back. Please set a new password for your account.');
         }
 
-        return redirect()->intended(route('parent.dashboard'));
+        $intended = session()->pull('url.intended');
+        $path = is_string($intended) ? (parse_url($intended, PHP_URL_PATH) ?? '') : '';
+
+        if ($path !== '' && str_starts_with($path, '/parent')) {
+            return redirect()->to($intended);
+        }
+
+        return redirect()->route('parent.dashboard');
     }
 
     public function logout(Request $request)

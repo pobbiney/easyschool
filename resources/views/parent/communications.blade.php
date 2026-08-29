@@ -257,7 +257,11 @@
     }
     .com-item-icon.sms { background: #ecfdf5; color: var(--c-teal-d); }
     .com-item-icon.portal { background: #eff6ff; color: var(--c-blue); }
+    .com-item-icon.reply { background: #ecfdf5; color: var(--c-teal-d); }
+    .com-item-icon.outbound { background: #f5f3ff; color: #6d28d9; }
     .com-item-icon.default { background: #f8fafc; color: var(--c-muted); }
+    .com-item.is-inbound { border-color: #bbf7d0; background: #f0fdf4; }
+    .com-item.is-outbound { border-color: #ddd6fe; background: #faf5ff; }
     .com-item-body { flex: 1; min-width: 0; }
     .com-item-top {
         display: flex;
@@ -280,6 +284,8 @@
     }
     .com-channel.sms { background: #e6f7f5; color: var(--c-teal-d); }
     .com-channel.portal { background: #dbeafe; color: #1e40af; }
+    .com-channel.reply { background: #d1fae5; color: #047857; }
+    .com-channel.outbound { background: #ede9fe; color: #5b21b6; }
     .com-channel.default { background: #f1f5f9; color: var(--c-muted); }
     .com-date {
         font-size: 12px;
@@ -477,13 +483,20 @@
                         @foreach($timeline as $item)
                             @php
                                 $channel = strtolower($item['channel'] ?? 'notice');
-                                $isSms = $channel === 'sms' || ($item['type'] ?? '') === 'sms';
-                                $iconClass = $isSms ? 'sms' : ($channel === 'portal' ? 'portal' : 'default');
-                                $channelClass = $isSms ? 'sms' : ($channel === 'portal' ? 'portal' : 'default');
-                                $icon = $isSms ? 'ri-message-2-line' : 'ri-notification-3-line';
-                                $channelLabel = $isSms ? 'SMS' : ucwords(str_replace('_', ' ', $channel));
+                                $itemType = $item['type'] ?? '';
+                                $direction = $item['direction'] ?? null;
+                                $isSms = $channel === 'sms' || $itemType === 'sms';
+                                $isReply = $itemType === 'school_reply';
+                                $isOutbound = $direction === 'outbound' || $itemType === 'parent_message';
+                                $iconClass = $isReply ? 'reply' : ($isOutbound ? 'outbound' : ($isSms ? 'sms' : ($channel === 'portal' ? 'portal' : 'default')));
+                                $channelClass = $isReply ? 'reply' : ($isOutbound ? 'outbound' : ($isSms ? 'sms' : ($channel === 'portal' ? 'portal' : 'default')));
+                                $icon = $isReply ? 'ri-reply-line' : ($isOutbound ? 'ri-send-plane-line' : ($isSms ? 'ri-message-2-line' : 'ri-notification-3-line'));
+                                $channelLabel = ! empty($item['label'])
+                                    ? $item['label']
+                                    : ($isSms ? 'SMS' : ucwords(str_replace('_', ' ', $channel)));
+                                $itemClass = $isReply ? 'is-inbound' : ($isOutbound ? 'is-outbound' : '');
                             @endphp
-                            <article class="com-item">
+                            <article class="com-item {{ $itemClass }}">
                                 <div class="com-item-icon {{ $iconClass }}">
                                     <i class="{{ $icon }}"></i>
                                 </div>
@@ -492,9 +505,6 @@
                                         <span class="com-channel {{ $channelClass }}">{{ $channelLabel }}</span>
                                         <span class="com-date">{{ optional($item['sent_at'])->format('d M Y, g:i A') }}</span>
                                     </div>
-                                    @if(!empty($item['label']))
-                                        <div class="com-label">{{ $item['label'] }}</div>
-                                    @endif
                                     <div class="com-text">{{ $item['message'] }}</div>
                                 </div>
                             </article>

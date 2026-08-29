@@ -79,6 +79,18 @@ class ParentCommunicationsController extends Controller
             ->limit(100)
             ->get();
 
+        $parentMessages = ParentMessage::query()
+            ->where('parent_account_id', $parent->id)
+            ->when($selectedStudent, function ($q) use ($selectedStudent) {
+                $q->where(function ($inner) use ($selectedStudent) {
+                    $inner->where('student_id', $selectedStudent->id)
+                        ->orWhereNull('student_id');
+                });
+            })
+            ->orderByDesc('created_at')
+            ->limit(50)
+            ->get();
+
         $smsCampaigns = SmsMessage::query()
             ->where('status', 'sent')
             ->where(function ($query) use ($children, $selectedStudent) {
@@ -122,6 +134,30 @@ class ParentCommunicationsController extends Controller
                 'sent_at' => $log->sent_at,
                 'student_id' => $log->student_id,
             ]);
+        }
+
+        foreach ($parentMessages as $parentMessage) {
+            $items->push([
+                'type' => 'parent_message',
+                'channel' => 'portal',
+                'message' => $parentMessage->message,
+                'sent_at' => $parentMessage->created_at,
+                'student_id' => $parentMessage->student_id,
+                'label' => 'Your message',
+                'direction' => 'outbound',
+            ]);
+
+            if (filled($parentMessage->admin_reply)) {
+                $items->push([
+                    'type' => 'school_reply',
+                    'channel' => 'portal',
+                    'message' => $parentMessage->admin_reply,
+                    'sent_at' => $parentMessage->read_at ?? $parentMessage->updated_at,
+                    'student_id' => $parentMessage->student_id,
+                    'label' => 'School reply',
+                    'direction' => 'inbound',
+                ]);
+            }
         }
 
         foreach ($smsCampaigns as $campaign) {
