@@ -1,4 +1,4 @@
-name: Goblust
+name: Portal
 on: 'push'
 jobs:
   web-deploy:
