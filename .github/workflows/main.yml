@@ -1,40 +1,35 @@
- 
-name: EasySchool Deployment
+
+name: FTP Directory Diagnostic
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
-  web-deploy:
-    name: Deploy
+  ftp-check:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Get latest code
-        uses: actions/checkout@v4
-      - name: Verify FTP destination
+      - name: Install FTP diagnostic tool
         run: |
-          echo "FTP deployment destination:"
-          echo "public_html/"
+          sudo apt-get update
+          sudo apt-get install -y lftp
 
-      - name: Sync files to server
-        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
-        with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftp
-          port: 21
-          security: loose
-          timeout: 180000
-          local-dir: ./
-          server-dir: public_html/
-          exclude: |
-            **/.git*
-            **/.github/**
-            **/node_modules/**
-            **/vendor/**
-            **/.env
-            **/tests/**
+      - name: Inspect FTP directories
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST" -e "
+            set ftp:ssl-allow no;
+            set net:max-retries 1;
+            set net:timeout 20;
+            echo '=== FTP ROOT ===';
+            pwd;
+            cls -la;
+            echo '=== PUBLIC_HTML ===';
+            cd public_html;
+            pwd;
+            cls -la;
+            bye
+          "
