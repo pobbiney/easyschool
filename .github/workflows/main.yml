@@ -1,19 +1,36 @@
-name: Portal
-on: 'push'
+ 
+name: EasySchool Deployment
+
+on:
+  push:
+    branches:
+      - main
+
 jobs:
   web-deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    steps:
-    - name: Get latest code
-      uses: actions/checkout@v4
-    - name: Sync files to server
-      uses: SamKirkland/FTP-Deploy-Action@v4.4.0
-      with:
-        server: ${{ secrets.FTP_HOST }}
-        username: ${{ secrets.FTP_USERNAME }}
-        password: ${{ secrets.FTP_PASSWORD }}
-        protocol: ftps
-        port: 21
 
-        
+    steps:
+      - name: Get latest code
+        uses: actions/checkout@v4
+
+      - name: Sync files to server
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
+          security: loose
+          timeout: 180000
+          local-dir: ./
+          server-dir: public_html/
+          exclude: |
+            **/.git*
+            **/.github/**
+            **/node_modules/**
+            **/vendor/**
+            **/.env
+            **/tests/**
