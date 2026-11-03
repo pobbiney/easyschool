@@ -14,6 +14,10 @@ jobs:
     steps:
       - name: Get latest code
         uses: actions/checkout@v4
+      - name: Verify FTP destination
+        run: |
+          echo "FTP deployment destination:"
+          echo "public_html/"
 
       - name: Sync files to server
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
