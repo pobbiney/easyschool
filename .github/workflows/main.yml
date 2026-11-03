@@ -1,17 +1,49 @@
 name: Eayschool Deployment
 
-on: 'push'
+on:
+  push:
+    branches: [main]   # change if your branch is named differently
+
 jobs:
   web-deploy:
     name: Deploy
     runs-on: ubuntu-latest
     steps:
-    - name: Get latest code
-      uses: actions/checkout@v4
+      - name: Get latest code
+        uses: actions/checkout@v4
 
-    - name: Sync files to server
-      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-      with:
-        server: ftp.achildsplaceportal.com
-        username: admin@achildsplaceportal.com
-        password: gW$MgVLiDD}ZV(P@1
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'   # match your server's PHP version
+
+      - name: Install dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction
+
+      - name: Point index.php to the app folder
+        run: sed -i "s#/../#/../laravel-app/#g" public/index.php
+
+      - name: Deploy app (private)
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: laravel-app/
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            public/**
+            .env
+            storage/**
+            tests/**
+
+      - name: Deploy public folder
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./public/
+          server-dir: public_html/
