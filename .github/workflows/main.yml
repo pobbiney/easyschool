@@ -1,4 +1,4 @@
-name: Portal
+name: Eayschool Deployment
 
 on: 'push'
 jobs:
