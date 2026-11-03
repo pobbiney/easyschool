@@ -1,4 +1,5 @@
 name: Portal
+
 on: 'push'
 jobs:
   web-deploy:
@@ -7,13 +8,12 @@ jobs:
     steps:
     - name: Get latest code
       uses: actions/checkout@v4
+
     - name: Sync files to server
       uses: SamKirkland/FTP-Deploy-Action@v4.3.5
       with:
         server: ${{ secrets.FTP_HOST }}
         username: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
-        protocol: ftp
-        port: 21
 
         
